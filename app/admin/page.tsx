@@ -71,6 +71,7 @@ export default function AdminPage() {
 
   const [savingMatch, setSavingMatch] = useState(false);
   const [publishingWeek, setPublishingWeek] = useState(false);
+  const [declaringChampion, setDeclaringChampion] = useState(false);
   const [savingResultId, setSavingResultId] = useState<string | null>(
     null
   );
@@ -437,6 +438,255 @@ export default function AdminPage() {
       );
     } finally {
       setPublishingWeek(false);
+    }
+  }
+
+
+  async function handleDeclareWeeklyChampion() {
+    setMessage("");
+
+    const weekNumber = Number(week);
+
+    if (!Number.isInteger(weekNumber) || weekNumber < 1) {
+      setMessage("Geçerli bir hafta numarası gir.");
+      return;
+    }
+
+    if (!user) {
+      setMessage("Haftalık şampiyonu belirlemek için yeniden giriş yap.");
+      return;
+    }
+
+    const weekMatches = matches.filter(
+      (match) => match.week === weekNumber
+    );
+
+    if (weekMatches.length === 0) {
+      setMessage(`${weekNumber}. haftaya ait maç bulunamadı.`);
+      return;
+    }
+
+    const unfinishedMatches = weekMatches.filter(
+      (match) =>
+        match.status !== "finished" ||
+        match.pointsCalculated !== true
+    );
+
+    if (unfinishedMatches.length > 0) {
+      setMessage(
+        `${weekNumber}. haftanın bütün maç sonuçlarını girip puanları hesaplamadan haftalık şampiyon belirlenemez.`
+      );
+      return;
+    }
+
+    const championReference = doc(
+      db,
+      "weeklyChampions",
+      String(weekNumber)
+    );
+
+    try {
+      const championSnapshot = await getDoc(championReference);
+
+      if (
+        championSnapshot.exists() &&
+        championSnapshot.data().awarded === true
+      ) {
+        setMessage(
+          `${weekNumber}. haftanın bonusu daha önce verilmiş. İkinci kez +1 puan verilmedi.`
+        );
+        return;
+      }
+
+      const correctCounts = new Map<string, number>();
+
+      for (const match of weekMatches) {
+        const predictionsSnapshot = await getDocs(
+          query(
+            collection(db, "predictions"),
+            where("matchId", "==", match.id)
+          )
+        );
+
+        predictionsSnapshot.forEach((predictionDocument) => {
+          const predictionData = predictionDocument.data();
+
+          if (
+            predictionData.isCorrect === true &&
+            predictionData.awardedPoints === 1 &&
+            typeof predictionData.userId === "string"
+          ) {
+            correctCounts.set(
+              predictionData.userId,
+              (correctCounts.get(predictionData.userId) ?? 0) + 1
+            );
+          }
+        });
+      }
+
+      if (correctCounts.size === 0) {
+        setMessage(
+          `${weekNumber}. haftada doğru tahmini bulunan kullanıcı yok. Bonus verilmedi.`
+        );
+        return;
+      }
+
+      const highestCorrectCount = Math.max(
+        ...Array.from(correctCounts.values())
+      );
+
+      const winnerIds = Array.from(correctCounts.entries())
+        .filter(([, correctCount]) => correctCount === highestCorrectCount)
+        .map(([userId]) => userId);
+
+      const winnerProfiles = await Promise.all(
+        winnerIds.map(async (winnerId) => {
+          const winnerSnapshot = await getDoc(
+            doc(db, "users", winnerId)
+          );
+
+          if (!winnerSnapshot.exists()) {
+            throw new Error(
+              `Kazanan kullanıcı profili bulunamadı: ${winnerId}`
+            );
+          }
+
+          const winnerData = winnerSnapshot.data();
+
+          const username =
+            typeof winnerData.username === "string" &&
+            winnerData.username.trim()
+              ? winnerData.username.trim()
+              : typeof winnerData.displayName === "string" &&
+                  winnerData.displayName.trim()
+                ? winnerData.displayName.trim()
+                : typeof winnerData.email === "string" &&
+                    winnerData.email.trim()
+                  ? winnerData.email.trim()
+                  : "İsimsiz kullanıcı";
+
+          const correctPredictions =
+            typeof winnerData.correctPredictions === "number"
+              ? winnerData.correctPredictions
+              : 0;
+
+          const currentWeeklyWins =
+            typeof winnerData.weeklyWins === "number"
+              ? winnerData.weeklyWins
+              : 0;
+
+          return {
+            id: winnerId,
+            username,
+            correctPredictions,
+            newWeeklyWins: currentWeeklyWins + 1,
+          };
+        })
+      );
+
+      const winnerNames = winnerProfiles
+        .map((winner) => winner.username)
+        .join(", ");
+
+      const confirmed = window.confirm(
+        `${weekNumber}. haftanın en yüksek doğru sayısı: ${highestCorrectCount}\n\nKazananlar: ${winnerNames}\n\nHer kazanana +1 bonus puan vermek istiyor musun?`
+      );
+
+      if (!confirmed) return;
+
+      setDeclaringChampion(true);
+
+      const championBatch = writeBatch(db);
+
+      for (const winner of winnerProfiles) {
+        championBatch.update(doc(db, "users", winner.id), {
+          weeklyWins: winner.newWeeklyWins,
+          totalPoints:
+            winner.correctPredictions + winner.newWeeklyWins,
+          updatedAt: serverTimestamp(),
+        });
+      }
+
+      championBatch.set(championReference, {
+        week: weekNumber,
+        winnerIds,
+        winnerNames: winnerProfiles.map(
+          (winner) => winner.username
+        ),
+        winnerCount: winnerProfiles.length,
+        highestCorrectCount,
+        bonusPerWinner: 1,
+        awarded: true,
+        awardedBy: user.uid,
+        awardedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      await championBatch.commit();
+
+      let notificationMessage = "";
+
+      try {
+        const idToken = await user.getIdToken();
+
+        const notificationResponse = await fetch(
+          "/api/send-notification",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({
+              title:
+                winnerProfiles.length === 1
+                  ? `🏆 ${weekNumber}. haftanın şampiyonu`
+                  : `🏆 ${weekNumber}. haftanın ortak şampiyonları`,
+              body:
+                winnerProfiles.length === 1
+                  ? `${winnerNames}, ${highestCorrectCount} doğru tahminle haftayı kazandı ve +1 bonus puan aldı!`
+                  : `${winnerNames}, ${highestCorrectCount} doğru tahminle haftayı ortak kazandı. Her biri +1 bonus puan aldı!`,
+              targetUrl: "/standings",
+            }),
+          }
+        );
+
+        const notificationData =
+          await notificationResponse.json();
+
+        if (!notificationResponse.ok) {
+          throw new Error(
+            notificationData.error ||
+              "Şampiyon bildirimi gönderilemedi."
+          );
+        }
+
+        notificationMessage = ` Bildirim başarılı: ${
+          notificationData.successCount ?? 0
+        }, başarısız: ${
+          notificationData.failureCount ?? 0
+        }.`;
+      } catch (notificationError) {
+        console.error(notificationError);
+        notificationMessage =
+          " Bonus puanlar verildi fakat bildirim gönderilemedi.";
+      }
+
+      setMessage(
+        `${weekNumber}. haftanın ${
+          winnerProfiles.length === 1 ? "şampiyonu" : "ortak şampiyonları"
+        }: ${winnerNames}. Her kazanana +1 bonus puan verildi.${notificationMessage}`
+      );
+    } catch (error) {
+      console.error(error);
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Haftalık şampiyon belirlenemedi."
+      );
+    } finally {
+      setDeclaringChampion(false);
     }
   }
 
@@ -957,6 +1207,34 @@ if (idToken) {
                 {publishingWeek
                   ? `${week}. Hafta Yayınlanıyor...`
                   : `${week}. Haftayı Yayınla`}
+              </button>
+            </div>
+
+            <div className="mt-6 border-t border-zinc-800 pt-6">
+              <h3 className="font-black text-green-400">
+                Haftalık Şampiyonu Belirle
+              </h3>
+
+              <p className="mt-2 text-sm text-zinc-500">
+                Haftanın bütün maç sonuçları kaydedildikten sonra
+                en çok doğru tahmini yapan kullanıcıya +1 bonus
+                puan verir. Eşitlikte bütün ortak kazananlar +1 alır.
+              </p>
+
+              <button
+                type="button"
+                onClick={handleDeclareWeeklyChampion}
+                disabled={
+                  declaringChampion ||
+                  publishingWeek ||
+                  savingMatch ||
+                  savingResultId !== null
+                }
+                className="mt-4 w-full rounded-xl bg-green-500 px-4 py-3 font-black text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {declaringChampion
+                  ? `${week}. Hafta Hesaplanıyor...`
+                  : `${week}. Hafta Şampiyonunu Belirle`}
               </button>
             </div>
           </div>
