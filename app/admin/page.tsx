@@ -21,6 +21,8 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
+import SeasonLabel from "@/components/SeasonLabel";
+import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 
 type MatchResult = "1" | "X" | "2";
 
@@ -80,6 +82,10 @@ export default function AdminPage() {
   >(null);
 
   const [message, setMessage] = useState("");
+
+  const [seasonId, setSeasonId] = useState(DEFAULT_SEASON_ID);
+  const [seasonName, setSeasonName] = useState(DEFAULT_SEASON_NAME);
+  const [savingSeason, setSavingSeason] = useState(false);
 
   const [notificationTitle, setNotificationTitle] = useState("");
   const [notificationBody, setNotificationBody] = useState("");
@@ -174,6 +180,78 @@ export default function AdminPage() {
 
     return unsubscribe;
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const unsubscribe = onSnapshot(
+      doc(db, "settings", "currentSeason"),
+      (snapshot) => {
+        if (!snapshot.exists()) return;
+
+        const data = snapshot.data();
+
+        setSeasonId(
+          typeof data.seasonId === "string" && data.seasonId.trim()
+            ? data.seasonId.trim()
+            : DEFAULT_SEASON_ID
+        );
+
+        setSeasonName(
+          typeof data.name === "string" && data.name.trim()
+            ? data.name.trim()
+            : DEFAULT_SEASON_NAME
+        );
+      },
+      (error) => {
+        console.error(error);
+        setMessage("Sezon bilgisi alınamadı.");
+      }
+    );
+
+    return unsubscribe;
+  }, [isAdmin]);
+
+  async function handleSaveSeason(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage("");
+
+    const cleanSeasonId = seasonId.trim();
+    const cleanSeasonName = seasonName.trim();
+
+    if (!cleanSeasonId || !cleanSeasonName) {
+      setMessage("Sezon kimliği ve sezon adı boş bırakılamaz.");
+      return;
+    }
+
+    if (!user) {
+      setMessage("Sezonu kaydetmek için yeniden giriş yap.");
+      return;
+    }
+
+    setSavingSeason(true);
+
+    try {
+      await setDoc(
+        doc(db, "settings", "currentSeason"),
+        {
+          seasonId: cleanSeasonId,
+          name: cleanSeasonName,
+          isActive: true,
+          updatedBy: user.uid,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      setMessage(`${cleanSeasonName} aktif sezon olarak kaydedildi.`);
+    } catch (error) {
+      console.error(error);
+      setMessage("Sezon kaydedilemedi. Firestore kurallarını kontrol et.");
+    } finally {
+      setSavingSeason(false);
+    }
+  }
 
   async function handleSendNotification(
     event: FormEvent<HTMLFormElement>
@@ -297,6 +375,7 @@ export default function AdminPage() {
     try {
       await addDoc(collection(db, "matches"), {
         week: weekNumber,
+        seasonId: seasonId.trim() || DEFAULT_SEASON_ID,
         homeTeam: homeTeam.trim(),
         awayTeam: awayTeam.trim(),
         kickoff: Timestamp.fromDate(kickoffDate),
@@ -414,6 +493,8 @@ export default function AdminPage() {
         publicationReference,
         {
           week: weekNumber,
+          seasonId: seasonId.trim() || DEFAULT_SEASON_ID,
+          seasonName: seasonName.trim() || DEFAULT_SEASON_NAME,
           matchCount: weekMatches.length,
           published: true,
           publishedBy: user.uid,
@@ -609,6 +690,8 @@ export default function AdminPage() {
 
       championBatch.set(championReference, {
         week: weekNumber,
+        seasonId: seasonId.trim() || DEFAULT_SEASON_ID,
+        seasonName: seasonName.trim() || DEFAULT_SEASON_NAME,
         winnerIds,
         winnerNames: winnerProfiles.map(
           (winner) => winner.username
@@ -953,6 +1036,8 @@ if (idToken) {
               Has Gardaşlar Ligi
             </p>
 
+            <SeasonLabel className="text-yellow-300" />
+
             <h1 className="mt-1 text-3xl font-black">
               👑 Admin Paneli
             </h1>
@@ -976,6 +1061,58 @@ if (idToken) {
             {message}
           </div>
         )}
+
+        <section className="mb-8 rounded-3xl border border-emerald-500/30 bg-zinc-950 p-6">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-widest text-emerald-400">
+              Aktif Sezon
+            </p>
+
+            <h2 className="mt-1 text-2xl font-black">
+              {seasonName}
+            </h2>
+
+            <p className="mt-2 text-sm text-zinc-400">
+              Bu bilgi tüm sayfalarda görünür ve puan ya da maç sıfırlama işlemlerinden etkilenmez.
+            </p>
+          </div>
+
+          <form onSubmit={handleSaveSeason} className="mt-6 grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-300">
+                Sezon kimliği
+              </label>
+              <input
+                type="text"
+                value={seasonId}
+                onChange={(event) => setSeasonId(event.target.value)}
+                placeholder="2026-2027"
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-300">
+                Görünecek sezon adı
+              </label>
+              <input
+                type="text"
+                value={seasonName}
+                onChange={(event) => setSeasonName(event.target.value)}
+                placeholder="2026-2027 Sezonu"
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={savingSeason}
+              className="md:col-span-2 rounded-xl bg-emerald-500 px-5 py-3 font-black text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {savingSeason ? "Sezon Kaydediliyor..." : "Aktif Sezonu Kaydet"}
+            </button>
+          </form>
+        </section>
 
         <section className="mb-8 rounded-3xl border border-blue-500/30 bg-zinc-950 p-6">
           <div className="flex flex-col gap-2">
@@ -1234,7 +1371,7 @@ if (idToken) {
               >
                 {declaringChampion
                   ? `${week}. Hafta Hesaplanıyor...`
-                  : `${week}. Hafta Şampiyonunu Belirle`}
+                  : "Hafta Şampiyonunu Belirle"}
               </button>
             </div>
           </div>

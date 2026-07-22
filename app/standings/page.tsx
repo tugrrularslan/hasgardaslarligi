@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
+import SeasonLabel from "@/components/SeasonLabel";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
 type StandingUser = {
@@ -216,6 +217,8 @@ export default function StandingsPage() {
               >
                 Has Gardaşlar Ligi
               </p>
+
+              <SeasonLabel className={activeTheme.mutedTextClass} />
 
               <h1
                 className={`mt-1 text-2xl sm:text-3xl lg:text-4xl font-black ${activeTheme.titleClass}`}

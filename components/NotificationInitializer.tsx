@@ -28,7 +28,18 @@ export default function NotificationInitializer() {
 
         console.log("Bildirimler başarıyla etkinleştirildi.");
       } catch (error) {
-        console.error("Bildirim izni alınamadı:", error);
+        const message =
+          error instanceof Error ? error.message : String(error);
+
+        console.warn(
+          "Bildirim servisi bu tarayıcıda kullanılamadı:",
+          message
+        );
+
+        localStorage.setItem(
+          "notificationPermissionAsked",
+          "true"
+        );
       }
     });
 

@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
+import SeasonLabel from "@/components/SeasonLabel";
 import { getThemeById } from "@/lib/themes";
 
 type ProfileData = {
@@ -322,6 +323,8 @@ export default function ProfilePage() {
               >
                 Has Gardaşlar Ligi
               </p>
+
+              <SeasonLabel className={activeTheme.mutedTextClass} />
 
               <h1
                 className={`mt-1 text-3xl font-black ${activeTheme.titleClass}`}

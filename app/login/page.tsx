@@ -6,6 +6,7 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import SeasonLabel from "@/components/SeasonLabel";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -82,6 +83,7 @@ export default function LoginPage() {
     <main className="login-page">
       <section className="login-card">
         <h1>Has Gardaşlar Ligi</h1>
+        <SeasonLabel className="season-label" />
         <p className="login-description">Hesabınıza giriş yapın</p>
 
         <form onSubmit={handleLogin}>
@@ -147,6 +149,12 @@ export default function LoginPage() {
           margin: 0;
           text-align: center;
           color: #123c2b;
+        }
+
+        .season-label {
+          margin: 8px 0 0;
+          text-align: center;
+          color: #146c43;
         }
 
         .login-description {

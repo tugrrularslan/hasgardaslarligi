@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
+import SeasonLabel from "@/components/SeasonLabel";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
 type UserProfile = {
@@ -218,6 +219,8 @@ export default function Home() {
             >
               Has Gardaşlar Ligi
             </p>
+
+            <SeasonLabel className={activeTheme.mutedTextClass} />
 
             <h1
               className={`mt-2 text-3xl font-black ${activeTheme.titleClass}`}

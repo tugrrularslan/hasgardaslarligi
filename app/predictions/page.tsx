@@ -17,6 +17,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
+import SeasonLabel from "@/components/SeasonLabel";
+import { useCurrentSeason } from "@/hooks/useCurrentSeason";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
 type PredictionValue = "1" | "X" | "2";
@@ -39,6 +41,7 @@ type UserProfile = {
 
 export default function PredictionsPage() {
   const router = useRouter();
+  const currentSeason = useCurrentSeason();
 
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -208,6 +211,7 @@ export default function PredictionsPage() {
         userId: user.uid,
         matchId: match.id,
         week: match.week,
+        seasonId: currentSeason.seasonId,
         prediction,
         updatedAt: serverTimestamp(),
       });
@@ -255,6 +259,8 @@ export default function PredictionsPage() {
               >
                 Has Gardaşlar Ligi
               </p>
+
+              <SeasonLabel className={activeTheme.mutedTextClass} />
 
               <h1
                 className={`mt-1 text-2xl sm:text-3xl lg:text-4xl font-black ${activeTheme.titleClass}`}
