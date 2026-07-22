@@ -23,6 +23,14 @@ import { auth, db } from "@/lib/firebase";
 
 type MatchResult = "1" | "X" | "2";
 
+type NotificationTarget =
+  | "/"
+  | "/predictions"
+  | "/standings"
+  | "/profile"
+  | "/themes"
+  | "custom";
+
 type Match = {
   id: string;
   week: number;
@@ -69,6 +77,14 @@ export default function AdminPage() {
   >(null);
 
   const [message, setMessage] = useState("");
+
+  const [notificationTitle, setNotificationTitle] = useState("");
+  const [notificationBody, setNotificationBody] = useState("");
+  const [notificationTarget, setNotificationTarget] =
+    useState<NotificationTarget>("/predictions");
+  const [customTargetUrl, setCustomTargetUrl] = useState("");
+  const [sendingNotification, setSendingNotification] =
+    useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
@@ -155,6 +171,91 @@ export default function AdminPage() {
 
     return unsubscribe;
   }, [isAdmin]);
+
+  async function handleSendNotification(
+    event: FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
+    setMessage("");
+
+    const title = notificationTitle.trim();
+    const body = notificationBody.trim();
+
+    const targetUrl =
+      notificationTarget === "custom"
+        ? customTargetUrl.trim()
+        : notificationTarget;
+
+    if (!title) {
+      setMessage("Bildirim başlığını gir.");
+      return;
+    }
+
+    if (!body) {
+      setMessage("Bildirim mesajını gir.");
+      return;
+    }
+
+    if (!targetUrl.startsWith("/")) {
+      setMessage(
+        "Yönlendirme adresi site içi bir sayfa olmalı ve / ile başlamalı."
+      );
+      return;
+    }
+
+    if (!user) {
+      setMessage("Bildirim göndermek için yeniden giriş yap.");
+      return;
+    }
+
+    setSendingNotification(true);
+
+    try {
+      const idToken = await user.getIdToken();
+
+      const response = await fetch("/api/send-notification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          title,
+          body,
+          targetUrl,
+        }),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          responseData.error || "Bildirim gönderilemedi."
+        );
+      }
+
+      setNotificationTitle("");
+      setNotificationBody("");
+      setNotificationTarget("/predictions");
+      setCustomTargetUrl("");
+
+      setMessage(
+        `Bildirim gönderildi. Başarılı: ${
+          responseData.successCount ?? 0
+        }, başarısız: ${responseData.failureCount ?? 0}.`
+      );
+    } catch (error) {
+      console.error(error);
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Bildirim gönderilemedi."
+      );
+    } finally {
+      setSendingNotification(false);
+    }
+  }
 
   async function handleAddMatch(
     event: FormEvent<HTMLFormElement>
@@ -446,7 +547,7 @@ export default function AdminPage() {
 
   if (checkingAccess) {
     return (
-      <main className="flex min-h-screen items-center justify-center activeTheme.pageClass text-white">
+      <main className="flex min-h-screen items-center justify-center bg-black text-white">
         Yönetici yetkisi kontrol ediliyor...
       </main>
     );
@@ -457,7 +558,7 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen activeTheme.pageClass px-4 py-8 text-white">
+    <main className="min-h-screen bg-black px-4 py-8 text-white">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex flex-col gap-4 border-b border-zinc-800 pb-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -489,8 +590,128 @@ export default function AdminPage() {
           </div>
         )}
 
+        <section className="mb-8 rounded-3xl border border-blue-500/30 bg-zinc-950 p-6">
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-bold uppercase tracking-widest text-blue-400">
+              Bildirim Merkezi
+            </p>
+
+            <h2 className="text-2xl font-black">
+              Herkese Manuel Bildirim Gönder
+            </h2>
+
+            <p className="text-sm text-zinc-400">
+              Başlık, mesaj ve bildirime dokunulduğunda açılacak sayfayı seç.
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleSendNotification}
+            className="mt-6 grid gap-5 lg:grid-cols-2"
+          >
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-300">
+                Bildirim başlığı
+              </label>
+
+              <input
+                type="text"
+                maxLength={60}
+                value={notificationTitle}
+                onChange={(event) =>
+                  setNotificationTitle(event.target.value)
+                }
+                placeholder="Örneğin: Puan durumu güncellendi"
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-blue-500"
+              />
+
+              <p className="mt-1 text-right text-xs text-zinc-500">
+                {notificationTitle.length}/60
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-300">
+                Açılacak sayfa
+              </label>
+
+              <select
+                value={notificationTarget}
+                onChange={(event) =>
+                  setNotificationTarget(
+                    event.target.value as NotificationTarget
+                  )
+                }
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-blue-500"
+              >
+                <option value="/">Ana Sayfa</option>
+                <option value="/predictions">Tahminler</option>
+                <option value="/standings">Puan Durumu</option>
+                <option value="/profile">Profil</option>
+                <option value="/themes">Tema Mağazası</option>
+                <option value="custom">Özel site içi bağlantı</option>
+              </select>
+            </div>
+
+            <div className="lg:col-span-2">
+              <label className="mb-2 block text-sm font-medium text-zinc-300">
+                Bildirim mesajı
+              </label>
+
+              <textarea
+                maxLength={180}
+                rows={4}
+                value={notificationBody}
+                onChange={(event) =>
+                  setNotificationBody(event.target.value)
+                }
+                placeholder="Kullanıcılara gönderilecek mesajı yaz."
+                className="w-full resize-none rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-blue-500"
+              />
+
+              <p className="mt-1 text-right text-xs text-zinc-500">
+                {notificationBody.length}/180
+              </p>
+            </div>
+
+            {notificationTarget === "custom" && (
+              <div className="lg:col-span-2">
+                <label className="mb-2 block text-sm font-medium text-zinc-300">
+                  Özel site içi bağlantı
+                </label>
+
+                <input
+                  type="text"
+                  value={customTargetUrl}
+                  onChange={(event) =>
+                    setCustomTargetUrl(event.target.value)
+                  }
+                  placeholder="/ornek-sayfa"
+                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-blue-500"
+                />
+
+                <p className="mt-2 text-xs text-zinc-500">
+                  Güvenlik için bağlantı / işaretiyle başlamalıdır.
+                </p>
+              </div>
+            )}
+
+            <div className="lg:col-span-2">
+              <button
+                type="submit"
+                disabled={sendingNotification}
+                className="w-full rounded-xl bg-blue-500 px-5 py-3 font-black text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {sendingNotification
+                  ? "Bildirim isteği oluşturuluyor..."
+                  : "Herkese Bildirim Gönder"}
+              </button>
+            </div>
+          </form>
+        </section>
+
         <section className="grid gap-8 lg:grid-cols-[380px_1fr]">
-          <div className="h-fit rounded-3xl border border-yellow-500/30 activeTheme.cardClass p-6">
+          <div className="h-fit rounded-3xl border border-yellow-500/30 bg-zinc-950 p-6">
             <h2 className="text-xl font-black text-yellow-400">
               Yeni Maç Ekle
             </h2>
@@ -581,7 +802,7 @@ export default function AdminPage() {
             </form>
           </div>
 
-          <div className="rounded-3xl border border-zinc-800 activeTheme.cardClass p-6">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
             <div className="mb-6">
               <h2 className="text-xl font-black">
                 Maçlar ve Sonuçlar
@@ -736,7 +957,7 @@ export default function AdminPage() {
                                     savingThisResult ||
                                     deletingThisMatch
                                   }
-                                  className="w-full rounded-xl border border-zinc-700 activeTheme.pageClass px-4 py-3 text-center text-lg font-black outline-none focus:border-yellow-500 disabled:opacity-50"
+                                  className="w-full rounded-xl border border-zinc-700 bg-black px-4 py-3 text-center text-lg font-black outline-none focus:border-yellow-500 disabled:opacity-50"
                                 />
                               </div>
 
@@ -764,7 +985,7 @@ export default function AdminPage() {
                                     savingThisResult ||
                                     deletingThisMatch
                                   }
-                                  className="w-full rounded-xl border border-zinc-700 activeTheme.pageClass px-4 py-3 text-center text-lg font-black outline-none focus:border-yellow-500 disabled:opacity-50"
+                                  className="w-full rounded-xl border border-zinc-700 bg-black px-4 py-3 text-center text-lg font-black outline-none focus:border-yellow-500 disabled:opacity-50"
                                 />
                               </div>
                             </div>
