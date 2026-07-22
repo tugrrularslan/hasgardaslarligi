@@ -3,10 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
+  collection,
   doc,
+  getDocs,
+  limit,
   onSnapshot,
+  query,
   serverTimestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -20,6 +25,8 @@ type ProfileData = {
   totalPoints: number;
   correctPredictions: number;
   weeklyWins: number;
+  usernameChanged: boolean;
+  isAdmin: boolean;
 };
 
 type AvatarCategory = {
@@ -58,6 +65,8 @@ const DEFAULT_PROFILE: ProfileData = {
   totalPoints: 0,
   correctPredictions: 0,
   weeklyWins: 0,
+  usernameChanged: false,
+  isAdmin: false,
 };
 
 export default function ProfilePage() {
@@ -67,9 +76,11 @@ export default function ProfilePage() {
   const [profile, setProfile] =
     useState<ProfileData>(DEFAULT_PROFILE);
   const [selectedAvatar, setSelectedAvatar] = useState("⚽");
+  const [newUsername, setNewUsername] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [savingUsername, setSavingUsername] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] =
     useState<"success" | "error">("success");
@@ -136,10 +147,17 @@ export default function ProfilePage() {
                 typeof data.weeklyWins === "number"
                   ? data.weeklyWins
                   : 0,
+
+              usernameChanged:
+                data.usernameChanged === true,
+
+              isAdmin:
+                data.isAdmin === true,
             };
 
             setProfile(loadedProfile);
             setSelectedAvatar(loadedProfile.avatar);
+            setNewUsername(loadedProfile.username);
             setLoading(false);
           },
           (error) => {
@@ -189,6 +207,95 @@ export default function ProfilePage() {
       );
     } finally {
       setSavingAvatar(false);
+    }
+  }
+
+  async function handleSaveUsername() {
+    if (
+      !currentUser ||
+      (profile.usernameChanged && !profile.isAdmin)
+    ) {
+      return;
+    }
+
+    const trimmedUsername = newUsername.trim();
+    const normalizedUsername =
+      trimmedUsername.toLocaleLowerCase("tr-TR");
+
+    setMessage("");
+
+    if (trimmedUsername.length < 3) {
+      setMessageType("error");
+      setMessage("Kullanıcı adı en az 3 karakter olmalı.");
+      return;
+    }
+
+    if (trimmedUsername.length > 20) {
+      setMessageType("error");
+      setMessage("Kullanıcı adı en fazla 20 karakter olabilir.");
+      return;
+    }
+
+    if (!/^[a-zA-ZçÇğĞıİöÖşŞüÜ0-9 _.-]+$/.test(trimmedUsername)) {
+      setMessageType("error");
+      setMessage(
+        "Yalnızca harf, rakam, boşluk, nokta, tire ve alt çizgi kullanabilirsin."
+      );
+      return;
+    }
+
+    if (
+      normalizedUsername ===
+      profile.username.trim().toLocaleLowerCase("tr-TR")
+    ) {
+      setMessageType("error");
+      setMessage("Yeni kullanıcı adı mevcut kullanıcı adından farklı olmalı.");
+      return;
+    }
+
+    setSavingUsername(true);
+
+    try {
+      const usernameQuery = query(
+        collection(db, "users"),
+        where("usernameLower", "==", normalizedUsername),
+        limit(1)
+      );
+
+      const usernameSnapshot = await getDocs(usernameQuery);
+
+      const isUsernameTaken = usernameSnapshot.docs.some(
+        (userDoc) => userDoc.id !== currentUser.uid
+      );
+
+      if (isUsernameTaken) {
+        setMessageType("error");
+        setMessage("Bu kullanıcı adı başka biri tarafından kullanılıyor.");
+        return;
+      }
+
+      await updateDoc(doc(db, "users", currentUser.uid), {
+        username: trimmedUsername,
+        usernameLower: normalizedUsername,
+        usernameChanged: true,
+        usernameChangedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      setMessageType("success");
+      setMessage(
+        profile.isAdmin
+          ? "Yönetici kullanıcı adın başarıyla değiştirildi."
+          : "Kullanıcı adın başarıyla değiştirildi. Bu hakkını artık tekrar kullanamazsın."
+      );
+    } catch (error) {
+      console.error(error);
+      setMessageType("error");
+      setMessage(
+        "Kullanıcı adı değiştirilemedi. Firestore kurallarını kontrol et."
+      );
+    } finally {
+      setSavingUsername(false);
     }
   }
 
@@ -297,6 +404,86 @@ export default function ProfilePage() {
                 Seçili avatar puan durumu ve diğer oyuncu
                 listelerinde görünür.
               </p>
+            </div>
+
+            <div
+              className={`mt-7 rounded-2xl border p-4 ${activeTheme.secondaryCardClass}`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <h3
+                  className={`font-black ${activeTheme.textClass}`}
+                >
+                  Kullanıcı Adı
+                </h3>
+
+                {profile.isAdmin && (
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-black ${activeTheme.badgeClass}`}
+                  >
+                    YÖNETİCİ
+                  </span>
+                )}
+              </div>
+
+              {profile.usernameChanged && !profile.isAdmin ? (
+                <div className="mt-3">
+                  <p
+                    className={`text-sm ${activeTheme.mutedTextClass}`}
+                  >
+                    Kullanıcı adı değiştirme hakkını kullandın.
+                  </p>
+
+                  <div
+                    className={`mt-3 rounded-xl border px-4 py-3 font-bold opacity-70 ${activeTheme.cardClass}`}
+                  >
+                    {profile.username}
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <p
+                    className={`mb-3 text-sm ${activeTheme.mutedTextClass}`}
+                  >
+                    {profile.isAdmin
+                      ? "Yönetici olduğun için kullanıcı adını istediğin kadar değiştirebilirsin."
+                      : "Kullanıcı adını yalnızca 1 kez değiştirebilirsin."}
+                  </p>
+
+                  <input
+                    type="text"
+                    value={newUsername}
+                    maxLength={20}
+                    onChange={(event) => {
+                      setNewUsername(event.target.value);
+                      setMessage("");
+                    }}
+                    disabled={savingUsername}
+                    placeholder="Yeni kullanıcı adı"
+                    className={`w-full rounded-xl border px-4 py-3 outline-none transition focus:ring-2 disabled:opacity-50 ${activeTheme.cardClass} ${activeTheme.textClass}`}
+                  />
+
+                  <p
+                    className={`mt-2 text-right text-xs ${activeTheme.mutedTextClass}`}
+                  >
+                    {newUsername.trim().length}/20
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveUsername}
+                    disabled={
+                      savingUsername ||
+                      !newUsername.trim() ||
+                      newUsername.trim() === profile.username.trim()
+                    }
+                    className={`mt-3 w-full rounded-xl px-5 py-3 font-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 ${activeTheme.badgeClass}`}
+                  >
+                    {savingUsername
+                      ? "Değiştiriliyor..."
+                      : "Kullanıcı Adını Değiştir"}
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="mt-7 grid grid-cols-3 gap-3">
