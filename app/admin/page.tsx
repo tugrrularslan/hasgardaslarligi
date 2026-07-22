@@ -13,6 +13,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   Timestamp,
   updateDoc,
   where,
@@ -69,6 +70,7 @@ export default function AdminPage() {
   const [scoreInputs, setScoreInputs] = useState<ScoreInputs>({});
 
   const [savingMatch, setSavingMatch] = useState(false);
+  const [publishingWeek, setPublishingWeek] = useState(false);
   const [savingResultId, setSavingResultId] = useState<string | null>(
     null
   );
@@ -328,6 +330,116 @@ export default function AdminPage() {
     }
   }
 
+  async function handlePublishWeek() {
+    setMessage("");
+
+    const weekNumber = Number(week);
+
+    if (!Number.isInteger(weekNumber) || weekNumber < 1) {
+      setMessage("Geçerli bir hafta numarası gir.");
+      return;
+    }
+
+    if (!user) {
+      setMessage("Haftayı yayınlamak için yeniden giriş yap.");
+      return;
+    }
+
+    const weekMatches = matches.filter(
+      (match) => match.week === weekNumber
+    );
+
+    if (weekMatches.length === 0) {
+      setMessage(
+        `${weekNumber}. haftayı yayınlamadan önce en az bir maç eklemelisin.`
+      );
+      return;
+    }
+
+    const publicationReference = doc(
+      db,
+      "publishedWeeks",
+      String(weekNumber)
+    );
+
+    try {
+      const publicationSnapshot = await getDoc(
+        publicationReference
+      );
+
+      if (
+        publicationSnapshot.exists() &&
+        publicationSnapshot.data().published === true
+      ) {
+        setMessage(
+          `${weekNumber}. hafta daha önce yayınlanmış. Yeniden bildirim gönderilmedi.`
+        );
+        return;
+      }
+
+      const confirmed = window.confirm(
+        `${weekNumber}. haftayı ${weekMatches.length} maçla yayınlamak ve herkese bildirim göndermek istiyor musun?`
+      );
+
+      if (!confirmed) return;
+
+      setPublishingWeek(true);
+
+      const idToken = await user.getIdToken();
+
+      const response = await fetch("/api/send-notification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          title: `📅 ${weekNumber}. hafta tahminleri açıldı`,
+          body: `${weekNumber}. haftanın ${weekMatches.length} maçı tahminlere açıldı. Tahminlerini maçlardan 5 dakika öncesine kadar yapabilirsin!`,
+          targetUrl: "/predictions",
+        }),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          responseData.error ||
+            "Hafta bildirimi gönderilemedi."
+        );
+      }
+
+      await setDoc(
+        publicationReference,
+        {
+          week: weekNumber,
+          matchCount: weekMatches.length,
+          published: true,
+          publishedBy: user.uid,
+          publishedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      setMessage(
+        `${weekNumber}. hafta yayınlandı. Bildirim başarılı: ${
+          responseData.successCount ?? 0
+        }, başarısız: ${responseData.failureCount ?? 0}.`
+      );
+    } catch (error) {
+      console.error(error);
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Hafta yayınlanamadı."
+      );
+    } finally {
+      setPublishingWeek(false);
+    }
+  }
+
   function handleScoreChange(
     matchId: string,
     side: "home" | "away",
@@ -408,6 +520,31 @@ export default function AdminPage() {
         updatedAt: serverTimestamp(),
       });
 
+      const idToken = await user?.getIdToken();
+
+if (idToken) {
+  const notificationResponse = await fetch(
+    "/api/send-notification",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        title: "⚽ Maç sonucu açıklandı",
+        body: `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sona erdi. Puanlar güncellendi!`,
+        targetUrl: "/standings",
+      }),
+    }
+  );
+
+  if (!notificationResponse.ok) {
+    console.error(
+      "Maç sonucu bildirimi gönderilemedi."
+    );
+  }
+}
       setMessage(
         `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sonucu kaydedildi. ${checkedPredictionCount} tahmin kontrol edildi ve puanlar otomatik hesaplandı.`
       );
@@ -800,6 +937,28 @@ export default function AdminPage() {
                 {savingMatch ? "Ekleniyor..." : "Maçı Ekle"}
               </button>
             </form>
+
+            <div className="mt-6 border-t border-zinc-800 pt-6">
+              <h3 className="font-black text-blue-400">
+                Haftayı Yayınla
+              </h3>
+
+              <p className="mt-2 text-sm text-zinc-500">
+                Önce haftanın bütün maçlarını ekle. Sonra bu
+                butona bir kez basarak herkese tek bildirim gönder.
+              </p>
+
+              <button
+                type="button"
+                onClick={handlePublishWeek}
+                disabled={publishingWeek || savingMatch}
+                className="mt-4 w-full rounded-xl bg-blue-500 px-4 py-3 font-black text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {publishingWeek
+                  ? `${week}. Hafta Yayınlanıyor...`
+                  : `${week}. Haftayı Yayınla`}
+              </button>
+            </div>
           </div>
 
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
