@@ -12,7 +12,6 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
-import SeasonLabel from "@/components/SeasonLabel";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
 type StandingUser = {
@@ -62,7 +61,9 @@ export default function StandingsPage() {
         doc(db, "users", firebaseUser.uid),
         (snapshot) => {
           if (!snapshot.exists()) {
-            setCurrentUserProfile({ selectedTheme: "klasik" });
+            setCurrentUserProfile({
+              selectedTheme: "klasik",
+            });
             return;
           }
 
@@ -77,7 +78,11 @@ export default function StandingsPage() {
         },
         (error) => {
           console.error(error);
-          setCurrentUserProfile({ selectedTheme: "klasik" });
+
+          setCurrentUserProfile({
+            selectedTheme: "klasik",
+          });
+
           setMessage(
             "Tema bilgisi alınamadı. Klasik tema kullanılıyor."
           );
@@ -106,31 +111,38 @@ export default function StandingsPage() {
 
             return {
               id: userDocument.id,
+
               username:
                 typeof data.username === "string" &&
                 data.username.trim()
                   ? data.username
                   : "İsimsiz Gardaş",
+
               avatar:
                 typeof data.avatar === "string" && data.avatar
                   ? data.avatar
                   : "⚽",
+
               selectedTheme:
                 typeof data.selectedTheme === "string"
                   ? normalizeThemeId(data.selectedTheme)
                   : "klasik",
+
               totalPoints:
                 typeof data.totalPoints === "number"
                   ? data.totalPoints
                   : 0,
+
               correctPredictions:
                 typeof data.correctPredictions === "number"
                   ? data.correctPredictions
                   : 0,
+
               weeklyWins:
                 typeof data.weeklyWins === "number"
                   ? data.weeklyWins
                   : 0,
+
               createdAt:
                 data.createdAt instanceof Timestamp
                   ? data.createdAt
@@ -172,6 +184,7 @@ export default function StandingsPage() {
 
       const aCreatedAt =
         a.createdAt?.toMillis() ?? Number.MAX_SAFE_INTEGER;
+
       const bCreatedAt =
         b.createdAt?.toMillis() ?? Number.MAX_SAFE_INTEGER;
 
@@ -191,7 +204,10 @@ export default function StandingsPage() {
   }, [sortedUsers]);
 
   const highestWeeklyWinCount = useMemo(() => {
-    return Math.max(0, ...sortedUsers.map((user) => user.weeklyWins));
+    return Math.max(
+      0,
+      ...sortedUsers.map((user) => user.weeklyWins)
+    );
   }, [sortedUsers]);
 
   if (loading) {
@@ -204,7 +220,7 @@ export default function StandingsPage() {
 
   return (
     <main
-      className={`min-h-screen px-3 sm:px-5 lg:px-6 py-6 transition-all duration-500 ${activeTheme.pageClass}`}
+      className={`min-h-screen px-3 py-6 transition-all duration-500 sm:px-5 lg:px-6 ${activeTheme.pageClass}`}
     >
       <div className="mx-auto max-w-7xl">
         <header
@@ -218,22 +234,22 @@ export default function StandingsPage() {
                 Has Gardaşlar Ligi
               </p>
 
-              <SeasonLabel className={activeTheme.mutedTextClass} />
-
               <h1
-                className={`mt-1 text-2xl sm:text-3xl lg:text-4xl font-black ${activeTheme.titleClass}`}
+                className={`mt-1 text-2xl font-black sm:text-3xl lg:text-4xl ${activeTheme.titleClass}`}
               >
                 🏆 Puan Durumu
               </h1>
 
-              <p className={`mt-2 ${activeTheme.mutedTextClass}`}>
+              <p
+                className={`mt-2 ${activeTheme.mutedTextClass}`}
+              >
                 Zirveye çıkan gardaşlar burada belli olur.
               </p>
             </div>
 
             <Link
               href="/"
-              className={`w-full lg:w-auto rounded-xl px-5 py-3 text-center font-bold transition ${activeTheme.secondaryButtonClass}`}
+              className={`w-full rounded-xl px-5 py-3 text-center font-bold transition lg:w-auto ${activeTheme.secondaryButtonClass}`}
             >
               Ana Sayfaya Dön
             </Link>
@@ -250,7 +266,7 @@ export default function StandingsPage() {
           <section
             className={`mb-8 overflow-hidden rounded-3xl border ${activeTheme.secondaryCardClass}`}
           >
-            <div className="grid gap-4 p-4 md:p-5 sm:grid-cols-[1fr_auto] sm:items-center">
+            <div className="grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center md:p-5">
               <div className="flex items-center gap-4">
                 <div
                   className={`flex h-14 w-14 items-center justify-center rounded-2xl border text-2xl ${activeTheme.cardClass}`}
@@ -308,7 +324,7 @@ export default function StandingsPage() {
                   </p>
 
                   <h2
-                    className={`mt-1 text-xl sm:text-2xl font-black ${activeTheme.titleClass}`}
+                    className={`mt-1 text-xl font-black sm:text-2xl ${activeTheme.titleClass}`}
                   >
                     Zirvedeki Gardaşlar
                   </h2>
@@ -321,69 +337,32 @@ export default function StandingsPage() {
                 </span>
               </div>
 
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-                {sortedUsers[1] && (
-                  <PodiumCard
-                    user={sortedUsers[1]}
-                    position={2}
-                    isCurrentUser={
-                      sortedUsers[1].id === currentUser?.uid
-                    }
-                    isMostAccurate={
-                      sortedUsers[1].correctPredictions ===
-                        highestCorrectPredictionCount &&
-                      highestCorrectPredictionCount > 0
-                    }
-                    isWeeklyChampion={
-                      sortedUsers[1].weeklyWins ===
-                        highestWeeklyWinCount &&
-                      highestWeeklyWinCount > 0
-                    }
-                    theme={activeTheme}
-                  />
-                )}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {sortedUsers.slice(0, 3).map((standingUser, index) => {
+                  const position = index + 1;
 
-                {sortedUsers[0] && (
-                  <PodiumCard
-                    user={sortedUsers[0]}
-                    position={1}
-                    isCurrentUser={
-                      sortedUsers[0].id === currentUser?.uid
-                    }
-                    isMostAccurate={
-                      sortedUsers[0].correctPredictions ===
-                        highestCorrectPredictionCount &&
-                      highestCorrectPredictionCount > 0
-                    }
-                    isWeeklyChampion={
-                      sortedUsers[0].weeklyWins ===
-                        highestWeeklyWinCount &&
-                      highestWeeklyWinCount > 0
-                    }
-                    theme={activeTheme}
-                  />
-                )}
-
-                {sortedUsers[2] && (
-                  <PodiumCard
-                    user={sortedUsers[2]}
-                    position={3}
-                    isCurrentUser={
-                      sortedUsers[2].id === currentUser?.uid
-                    }
-                    isMostAccurate={
-                      sortedUsers[2].correctPredictions ===
-                        highestCorrectPredictionCount &&
-                      highestCorrectPredictionCount > 0
-                    }
-                    isWeeklyChampion={
-                      sortedUsers[2].weeklyWins ===
-                        highestWeeklyWinCount &&
-                      highestWeeklyWinCount > 0
-                    }
-                    theme={activeTheme}
-                  />
-                )}
+                  return (
+                    <PodiumCard
+                      key={standingUser.id}
+                      user={standingUser}
+                      position={position}
+                      isCurrentUser={
+                        standingUser.id === currentUser?.uid
+                      }
+                      isMostAccurate={
+                        standingUser.correctPredictions ===
+                          highestCorrectPredictionCount &&
+                        highestCorrectPredictionCount > 0
+                      }
+                      isWeeklyChampion={
+                        standingUser.weeklyWins ===
+                          highestWeeklyWinCount &&
+                        highestWeeklyWinCount > 0
+                      }
+                      theme={activeTheme}
+                    />
+                  );
+                })}
               </div>
             </section>
 
@@ -403,9 +382,12 @@ export default function StandingsPage() {
               <div>
                 {sortedUsers.map((standingUser, index) => {
                   const position = index + 1;
+
                   const isCurrentUser =
                     standingUser.id === currentUser?.uid;
-                  const rowStyle = getStandingRowStyle(position);
+
+                  const rowStyle =
+                    getStandingRowStyle(position);
 
                   return (
                     <article
@@ -418,7 +400,7 @@ export default function StandingsPage() {
                     >
                       <div className="grid items-center gap-4 md:grid-cols-[90px_1fr_130px_150px_120px]">
                         <div className="flex items-center gap-3">
-                          <span className="text-xl sm:text-2xl font-black">
+                          <span className="text-xl font-black sm:text-2xl">
                             {getPositionIcon(position)}
                           </span>
 
@@ -497,7 +479,7 @@ export default function StandingsPage() {
                           </p>
 
                           <p
-                            className={`text-xl sm:text-2xl font-black ${activeTheme.titleClass}`}
+                            className={`text-xl font-black sm:text-2xl ${activeTheme.titleClass}`}
                           >
                             {standingUser.totalPoints}
                           </p>
@@ -532,13 +514,24 @@ function PodiumCard({
 }) {
   const podiumStyle = getPodiumStyle(position);
 
+  const desktopOrderClass =
+    position === 1
+      ? "md:order-2"
+      : position === 2
+        ? "md:order-1"
+        : "md:order-3";
+
   return (
     <article
-      className={`relative overflow-hidden rounded-3xl border p-4 md:p-5 transition duration-300 hover:-translate-y-2 ${podiumStyle.cardClass} ${
-        position === 1 ? "md:min-h-[390px]" : "md:min-h-[350px]"
+      className={`relative overflow-hidden rounded-3xl border p-4 transition duration-300 hover:-translate-y-2 md:p-5 ${desktopOrderClass} ${podiumStyle.cardClass} ${
+        position === 1
+          ? "md:min-h-[390px]"
+          : "md:min-h-[350px]"
       }`}
     >
-      <div className={`absolute inset-x-0 top-0 h-1 ${podiumStyle.barClass}`} />
+      <div
+        className={`absolute inset-x-0 top-0 h-1 ${podiumStyle.barClass}`}
+      />
 
       <div className="absolute -right-8 -top-8 text-8xl opacity-10">
         {podiumStyle.medal}
@@ -547,7 +540,9 @@ function PodiumCard({
       <div className="relative">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <span className="text-4xl md:text-5xl">{podiumStyle.medal}</span>
+            <span className="text-4xl md:text-5xl">
+              {podiumStyle.medal}
+            </span>
 
             <p
               className={`mt-2 text-xs font-black uppercase tracking-widest ${podiumStyle.labelClass}`}
@@ -575,20 +570,24 @@ function PodiumCard({
 
         <div className="mt-6 flex justify-center">
           <div
-            className={`relative flex items-center justify-center rounded-full border-2 text-4xl md:text-5xl shadow-2xl ${
-              position === 1 ? "h-20 w-20 md:h-24 md:w-24 md:h-28 md:w-28" : "h-20 w-20 md:h-24 md:w-24"
+            className={`relative flex items-center justify-center rounded-full border-2 text-4xl shadow-2xl md:text-5xl ${
+              position === 1
+                ? "h-20 w-20 md:h-28 md:w-28"
+                : "h-20 w-20 md:h-24 md:w-24"
             } ${podiumStyle.avatarClass}`}
           >
             {user.avatar ?? "⚽"}
 
             {position === 1 && (
-              <span className="absolute -top-6 text-3xl">👑</span>
+              <span className="absolute -top-6 text-3xl">
+                👑
+              </span>
             )}
           </div>
         </div>
 
         <h2
-          className={`mt-5 truncate text-center text-xl sm:text-2xl font-black ${theme.textClass}`}
+          className={`mt-5 truncate text-center text-xl font-black sm:text-2xl ${theme.textClass}`}
         >
           {user.username}
         </h2>
@@ -616,7 +615,9 @@ function PodiumCard({
         <div
           className={`mt-6 rounded-2xl border p-4 text-center ${podiumStyle.scoreClass}`}
         >
-          <p className={`text-4xl font-black ${podiumStyle.scoreTextClass}`}>
+          <p
+            className={`text-4xl font-black ${podiumStyle.scoreTextClass}`}
+          >
             {user.totalPoints}
           </p>
 
@@ -629,6 +630,7 @@ function PodiumCard({
               <p className={`font-black ${theme.textClass}`}>
                 {user.correctPredictions}
               </p>
+
               <p className={`text-xs ${theme.mutedTextClass}`}>
                 doğru
               </p>
@@ -638,6 +640,7 @@ function PodiumCard({
               <p className={`font-black ${theme.textClass}`}>
                 {user.weeklyWins}
               </p>
+
               <p className={`text-xs ${theme.mutedTextClass}`}>
                 zafer
               </p>
@@ -660,11 +663,15 @@ function StatValue({
 }) {
   return (
     <div className="text-left md:text-center">
-      <p className={`text-xs md:hidden ${theme.mutedTextClass}`}>
+      <p
+        className={`text-xs md:hidden ${theme.mutedTextClass}`}
+      >
         {label}
       </p>
 
-      <p className={`font-black ${theme.textClass}`}>{value}</p>
+      <p className={`font-black ${theme.textClass}`}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -705,7 +712,8 @@ function getPodiumStyle(position: number) {
       labelClass: "text-yellow-200",
       avatarClass:
         "border-yellow-300 bg-yellow-400/15 shadow-[0_0_35px_rgba(250,204,21,0.35)]",
-      scoreClass: "border-yellow-300/30 bg-yellow-400/10",
+      scoreClass:
+        "border-yellow-300/30 bg-yellow-400/10",
       scoreTextClass: "text-yellow-200",
     };
   }
@@ -721,7 +729,8 @@ function getPodiumStyle(position: number) {
       labelClass: "text-slate-200",
       avatarClass:
         "border-slate-200 bg-slate-300/10 shadow-[0_0_25px_rgba(203,213,225,0.2)]",
-      scoreClass: "border-slate-300/25 bg-slate-300/10",
+      scoreClass:
+        "border-slate-300/25 bg-slate-300/10",
       scoreTextClass: "text-slate-100",
     };
   }
@@ -736,7 +745,8 @@ function getPodiumStyle(position: number) {
     labelClass: "text-orange-200",
     avatarClass:
       "border-orange-400 bg-orange-500/10 shadow-[0_0_25px_rgba(249,115,22,0.2)]",
-    scoreClass: "border-orange-400/25 bg-orange-500/10",
+    scoreClass:
+      "border-orange-400/25 bg-orange-500/10",
     scoreTextClass: "text-orange-200",
   };
 }
@@ -746,7 +756,8 @@ function normalizeThemeId(selectedTheme: string): string {
 
   if (
     normalizedTheme === "Klasik" ||
-    normalizedTheme.toLocaleLowerCase("tr-TR") === "klasik"
+    normalizedTheme.toLocaleLowerCase("tr-TR") ===
+      "klasik"
   ) {
     return "klasik";
   }
