@@ -233,7 +233,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <StatCard
               title="Toplam Puan"
               value={profile?.totalPoints ?? 0}
@@ -259,35 +259,28 @@ export default function Home() {
             />
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-  <Link
-    href="/predictions"
-    className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.primaryButtonClass}`}
-  >
-    ⚽ Tahmin Yap
-  </Link>
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Link
+              href="/predictions"
+              className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.primaryButtonClass}`}
+            >
+              ⚽ Tahmin Yap
+            </Link>
 
-  <Link
-    href="/standings"
-    className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.secondaryButtonClass}`}
-  >
-    📊 Puan Durumu
-  </Link>
+            <Link
+              href="/standings"
+              className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.secondaryButtonClass}`}
+            >
+              📊 Puan Durumu
+            </Link>
 
-  <Link
-    href="/themes"
-    className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.secondaryButtonClass}`}
-  >
-    🎨 Tema Mağazası
-  </Link>
-
-  <Link
-    href="/profile"
-    className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.secondaryButtonClass}`}
-  >
-    👤 Profilim
-  </Link>
-</div>
+            <Link
+              href="/profile"
+              className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.secondaryButtonClass}`}
+            >
+              👤 Profilim
+            </Link>
+          </div>
           {profile?.isAdmin && (
             <div className="mt-6 space-y-3">
               <div
@@ -340,7 +333,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 rounded-xl bg-black/30 p-1">
+        <div className="mb-6 grid grid-cols-2 gap-3 rounded-xl bg-black/30 p-1">
           <button
             type="button"
             onClick={() => {
