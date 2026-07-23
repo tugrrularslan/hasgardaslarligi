@@ -32,6 +32,26 @@ function getAdminApp() {
   });
 }
 
+type ReminderConfig = {
+  notificationType:
+    | "one-hour-match-reminder"
+    | "fifteen-minute-match-reminder";
+  sentField:
+    | "oneHourReminderSent"
+    | "fifteenMinuteReminderSent";
+  sentAtField:
+    | "oneHourReminderSentAt"
+    | "fifteenMinuteReminderSentAt";
+  successCountField:
+    | "oneHourReminderSuccessCount"
+    | "fifteenMinuteReminderSuccessCount";
+  failureCountField:
+    | "oneHourReminderFailureCount"
+    | "fifteenMinuteReminderFailureCount";
+  title: string;
+  buildBody: (homeTeam: string, awayTeam: string) => string;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const authorization = request.headers.get("authorization");
@@ -51,28 +71,9 @@ export async function GET(request: NextRequest) {
 
     const adminApp = getAdminApp();
     const adminDb = getFirestore(adminApp);
+    const messaging = getMessaging(adminApp);
 
     const now = new Date();
-
-    // GitHub Actions 5 dakikada bir çalıştığı için,
-    // başlama saatine 55–65 dakika kalan maçları arıyoruz.
-    const windowStart = new Date(now.getTime() + 55 * 60 * 1000);
-    const windowEnd = new Date(now.getTime() + 65 * 60 * 1000);
-
-    const matchesSnapshot = await adminDb
-      .collection("matches")
-      .where("kickoff", ">=", Timestamp.fromDate(windowStart))
-      .where("kickoff", "<=", Timestamp.fromDate(windowEnd))
-      .get();
-
-    if (matchesSnapshot.empty) {
-      return NextResponse.json({
-        success: true,
-        message: "Bildirim zamanı gelen maç bulunamadı.",
-        checkedAt: now.toISOString(),
-        matchCount: 0,
-      });
-    }
 
     const tokenSnapshot = await adminDb
       .collection("notificationTokens")
@@ -99,104 +100,151 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let processedMatchCount = 0;
+    const invalidTokens = new Set<string>();
+
+    let totalFoundMatchCount = 0;
+    let totalProcessedMatchCount = 0;
     let totalSuccessCount = 0;
     let totalFailureCount = 0;
 
-    const invalidTokens = new Set<string>();
+    async function processReminderWindow(
+      windowStart: Date,
+      windowEnd: Date,
+      config: ReminderConfig
+    ) {
+      const matchesSnapshot = await adminDb
+        .collection("matches")
+        .where("kickoff", ">=", Timestamp.fromDate(windowStart))
+        .where("kickoff", "<=", Timestamp.fromDate(windowEnd))
+        .get();
 
-    for (const matchDocument of matchesSnapshot.docs) {
-      const matchData = matchDocument.data();
+      totalFoundMatchCount += matchesSnapshot.size;
 
-      // Aynı maç için bir saatlik bildirimin tekrar gitmesini engeller.
-      if (matchData.oneHourReminderSent === true) {
-        continue;
-      }
+      for (const matchDocument of matchesSnapshot.docs) {
+        const matchData = matchDocument.data();
 
-      const homeTeam =
-        typeof matchData.homeTeam === "string"
-          ? matchData.homeTeam
-          : "Ev sahibi";
+        if (matchData[config.sentField] === true) {
+          continue;
+        }
 
-      const awayTeam =
-        typeof matchData.awayTeam === "string"
-          ? matchData.awayTeam
-          : "Deplasman";
+        const homeTeam =
+          typeof matchData.homeTeam === "string"
+            ? matchData.homeTeam
+            : "Ev sahibi";
 
-      const title = "Maç başlamak üzere ⚽";
+        const awayTeam =
+          typeof matchData.awayTeam === "string"
+            ? matchData.awayTeam
+            : "Deplasman";
 
-      const messageBody =
-        `${homeTeam} - ${awayTeam} maçı yaklaşık 1 saat sonra başlayacak. ` +
-        "Tahminini yapmayı unutma!";
+        const messageBody = config.buildBody(homeTeam, awayTeam);
 
-      let matchSuccessCount = 0;
-      let matchFailureCount = 0;
+        let matchSuccessCount = 0;
+        let matchFailureCount = 0;
 
-      for (let index = 0; index < tokens.length; index += 500) {
-        const tokenGroup = tokens.slice(index, index + 500);
+        for (let index = 0; index < tokens.length; index += 500) {
+          const tokenGroup = tokens.slice(index, index + 500);
 
-        const response = await getMessaging(adminApp).sendEachForMulticast({
-          tokens: tokenGroup,
-          notification: {
-            title,
-            body: messageBody,
-          },
-          data: {
-            targetUrl: "/predictions",
-            matchId: matchDocument.id,
-            notificationType: "one-hour-match-reminder",
-          },
-          webpush: {
-            fcmOptions: {
-              link: "/predictions",
+          const response = await messaging.sendEachForMulticast({
+            tokens: tokenGroup,
+            notification: {
+              title: config.title,
+              body: messageBody,
             },
-          },
+            data: {
+              targetUrl: "/predictions",
+              matchId: matchDocument.id,
+              notificationType: config.notificationType,
+            },
+            webpush: {
+              fcmOptions: {
+                link: "/predictions",
+              },
+            },
+          });
+
+          matchSuccessCount += response.successCount;
+          matchFailureCount += response.failureCount;
+
+          response.responses.forEach((result, resultIndex) => {
+            if (result.success) {
+              return;
+            }
+
+            const errorCode = result.error?.code;
+
+            if (
+              errorCode ===
+                "messaging/registration-token-not-registered" ||
+              errorCode === "messaging/invalid-registration-token"
+            ) {
+              invalidTokens.add(tokenGroup[resultIndex]);
+            }
+          });
+        }
+
+        if (matchSuccessCount > 0) {
+          await matchDocument.ref.update({
+            [config.sentField]: true,
+            [config.sentAtField]: FieldValue.serverTimestamp(),
+            [config.successCountField]: matchSuccessCount,
+            [config.failureCountField]: matchFailureCount,
+          });
+        }
+
+        await adminDb.collection("notifications").add({
+          title: config.title,
+          body: messageBody,
+          targetUrl: "/predictions",
+          matchId: matchDocument.id,
+          notificationType: config.notificationType,
+          sentBy: "system-cron",
+          successCount: matchSuccessCount,
+          failureCount: matchFailureCount,
+          createdAt: FieldValue.serverTimestamp(),
         });
 
-        matchSuccessCount += response.successCount;
-        matchFailureCount += response.failureCount;
-
-        response.responses.forEach((result, resultIndex) => {
-          if (result.success) return;
-
-          const errorCode = result.error?.code;
-
-          if (
-            errorCode ===
-              "messaging/registration-token-not-registered" ||
-            errorCode === "messaging/invalid-registration-token"
-          ) {
-            invalidTokens.add(tokenGroup[resultIndex]);
-          }
-        });
+        totalProcessedMatchCount += 1;
+        totalSuccessCount += matchSuccessCount;
+        totalFailureCount += matchFailureCount;
       }
-
-      // En az bir cihaza başarılı gönderim yapıldıysa maçı işaretle.
-      if (matchSuccessCount > 0) {
-        await matchDocument.ref.update({
-          oneHourReminderSent: true,
-          oneHourReminderSentAt: FieldValue.serverTimestamp(),
-          oneHourReminderSuccessCount: matchSuccessCount,
-          oneHourReminderFailureCount: matchFailureCount,
-        });
-      }
-
-      await adminDb.collection("notifications").add({
-        title,
-        body: messageBody,
-        targetUrl: "/predictions",
-        matchId: matchDocument.id,
-        notificationType: "one-hour-match-reminder",
-        sentBy: "system-cron",
-        successCount: matchSuccessCount,
-        failureCount: matchFailureCount,
-        createdAt: FieldValue.serverTimestamp(),
-      });
-
-      processedMatchCount += 1;
-      totalSuccessCount += matchSuccessCount;
-      totalFailureCount += matchFailureCount;
     }
+
+    // GitHub Actions 5 dakikada bir çalışıyor.
+    // Maça yaklaşık 1 saat kalan karşılaşmaları yakalar.
+    await processReminderWindow(
+      new Date(now.getTime() + 55 * 60 * 1000),
+      new Date(now.getTime() + 65 * 60 * 1000),
+      {
+        notificationType: "one-hour-match-reminder",
+        sentField: "oneHourReminderSent",
+        sentAtField: "oneHourReminderSentAt",
+        successCountField: "oneHourReminderSuccessCount",
+        failureCountField: "oneHourReminderFailureCount",
+        title: "Maç başlamak üzere ⚽",
+        buildBody: (homeTeam, awayTeam) =>
+          `${homeTeam} - ${awayTeam} maçı yaklaşık 1 saat sonra başlayacak. ` +
+          "Tahminini yapmayı unutma!",
+      }
+    );
+
+    // Tahminler maçtan 5 dakika önce kapanıyor.
+    // Maça yaklaşık 15 dakika kala gönderildiğinde,
+    // tahminlerin kapanmasına yaklaşık 10 dakika kalmış olur.
+    await processReminderWindow(
+      new Date(now.getTime() + 10 * 60 * 1000),
+      new Date(now.getTime() + 20 * 60 * 1000),
+      {
+        notificationType: "fifteen-minute-match-reminder",
+        sentField: "fifteenMinuteReminderSent",
+        sentAtField: "fifteenMinuteReminderSentAt",
+        successCountField: "fifteenMinuteReminderSuccessCount",
+        failureCountField: "fifteenMinuteReminderFailureCount",
+        title: "Tahminlerin kapanmasına 10 dakika kaldı! ⏳",
+        buildBody: (homeTeam, awayTeam) =>
+          `${homeTeam} - ${awayTeam} maçı için tahminini hemen yap.`,
+      }
+    );
 
     if (invalidTokens.size > 0) {
       const deleteBatch = adminDb.batch();
@@ -217,10 +265,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Maç hatırlatma kontrolü tamamlandı.",
+      message:
+        totalProcessedMatchCount > 0
+          ? "Maç hatırlatma kontrolü tamamlandı."
+          : "Bildirim zamanı gelen maç bulunamadı.",
       checkedAt: now.toISOString(),
-      foundMatchCount: matchesSnapshot.size,
-      processedMatchCount,
+      foundMatchCount: totalFoundMatchCount,
+      processedMatchCount: totalProcessedMatchCount,
       successCount: totalSuccessCount,
       failureCount: totalFailureCount,
     });
