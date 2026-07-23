@@ -275,17 +275,17 @@ export default function Home() {
             </Link>
 
             <Link
-              href="/profile"
-              className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.secondaryButtonClass}`}
-            >
-              👤 Profilim
-            </Link>
-
-            <Link
               href="/statistics"
               className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.secondaryButtonClass}`}
             >
               📈 İstatistiklerim
+            </Link>
+
+            <Link
+              href="/profile"
+              className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.secondaryButtonClass}`}
+            >
+              👤 Profilim
             </Link>
           </div>
           {profile?.isAdmin && (
