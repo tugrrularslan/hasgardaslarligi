@@ -538,227 +538,89 @@ export default function AdminPage() {
       return;
     }
 
-    const weekMatches = matches.filter(
-      (match) => match.week === weekNumber
-    );
-
-    if (weekMatches.length === 0) {
-      setMessage(`${weekNumber}. haftaya ait maç bulunamadı.`);
-      return;
-    }
-
-    const unfinishedMatches = weekMatches.filter(
-      (match) =>
-        match.status !== "finished" ||
-        match.pointsCalculated !== true
-    );
-
-    if (unfinishedMatches.length > 0) {
-      setMessage(
-        `${weekNumber}. haftanın bütün maç sonuçlarını girip puanları hesaplamadan haftalık şampiyon belirlenemez.`
-      );
-      return;
-    }
-
-    const championReference = doc(
-      db,
-      "weeklyChampions",
-      String(weekNumber)
-    );
+    setDeclaringChampion(true);
 
     try {
-      const championSnapshot = await getDoc(championReference);
+      const result = await recalculateWeeklyChampionBonus(
+        weekNumber,
+        true,
+        false
+      );
 
-      if (
-        championSnapshot.exists() &&
-        championSnapshot.data().awarded === true
-      ) {
-        setMessage(
-          `${weekNumber}. haftanın bonusu daha önce verilmiş. İkinci kez +1 puan verilmedi.`
-        );
+      if (result.cancelled) {
         return;
       }
-
-      const correctCounts = new Map<string, number>();
-
-      for (const match of weekMatches) {
-        const predictionsSnapshot = await getDocs(
-          query(
-            collection(db, "predictions"),
-            where("matchId", "==", match.id)
-          )
-        );
-
-        predictionsSnapshot.forEach((predictionDocument) => {
-          const predictionData = predictionDocument.data();
-
-          if (
-            predictionData.isCorrect === true &&
-            predictionData.awardedPoints === 1 &&
-            typeof predictionData.userId === "string"
-          ) {
-            correctCounts.set(
-              predictionData.userId,
-              (correctCounts.get(predictionData.userId) ?? 0) + 1
-            );
-          }
-        });
-      }
-
-      if (correctCounts.size === 0) {
-        setMessage(
-          `${weekNumber}. haftada doğru tahmini bulunan kullanıcı yok. Bonus verilmedi.`
-        );
-        return;
-      }
-
-      const highestCorrectCount = Math.max(
-        ...Array.from(correctCounts.values())
-      );
-
-      const winnerIds = Array.from(correctCounts.entries())
-        .filter(([, correctCount]) => correctCount === highestCorrectCount)
-        .map(([userId]) => userId);
-
-      const winnerProfiles = await Promise.all(
-        winnerIds.map(async (winnerId) => {
-          const winnerSnapshot = await getDoc(
-            doc(db, "users", winnerId)
-          );
-
-          if (!winnerSnapshot.exists()) {
-            throw new Error(
-              `Kazanan kullanıcı profili bulunamadı: ${winnerId}`
-            );
-          }
-
-          const winnerData = winnerSnapshot.data();
-
-          const username =
-            typeof winnerData.username === "string" &&
-            winnerData.username.trim()
-              ? winnerData.username.trim()
-              : typeof winnerData.displayName === "string" &&
-                  winnerData.displayName.trim()
-                ? winnerData.displayName.trim()
-                : typeof winnerData.email === "string" &&
-                    winnerData.email.trim()
-                  ? winnerData.email.trim()
-                  : "İsimsiz kullanıcı";
-
-          const correctPredictions =
-            typeof winnerData.correctPredictions === "number"
-              ? winnerData.correctPredictions
-              : 0;
-
-          const currentWeeklyWins =
-            typeof winnerData.weeklyWins === "number"
-              ? winnerData.weeklyWins
-              : 0;
-
-          return {
-            id: winnerId,
-            username,
-            correctPredictions,
-            newWeeklyWins: currentWeeklyWins + 1,
-          };
-        })
-      );
-
-      const winnerNames = winnerProfiles
-        .map((winner) => winner.username)
-        .join(", ");
-
-      const confirmed = window.confirm(
-        `${weekNumber}. haftanın en yüksek doğru sayısı: ${highestCorrectCount}\n\nKazananlar: ${winnerNames}\n\nHer kazanana +1 bonus puan vermek istiyor musun?`
-      );
-
-      if (!confirmed) return;
-
-      setDeclaringChampion(true);
-
-      const championBatch = writeBatch(db);
-
-      for (const winner of winnerProfiles) {
-        championBatch.update(doc(db, "users", winner.id), {
-          weeklyWins: winner.newWeeklyWins,
-          totalPoints:
-            winner.correctPredictions + winner.newWeeklyWins,
-          updatedAt: serverTimestamp(),
-        });
-      }
-
-      championBatch.set(championReference, {
-        week: weekNumber,
-        seasonId: seasonId.trim() || DEFAULT_SEASON_ID,
-        seasonName: seasonName.trim() || DEFAULT_SEASON_NAME,
-        winnerIds,
-        winnerNames: winnerProfiles.map(
-          (winner) => winner.username
-        ),
-        winnerCount: winnerProfiles.length,
-        highestCorrectCount,
-        bonusPerWinner: 1,
-        awarded: true,
-        awardedBy: user.uid,
-        awardedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      await championBatch.commit();
 
       let notificationMessage = "";
 
-      try {
-        const idToken = await user.getIdToken();
+      if (result.winnerProfiles.length > 0 && result.changed) {
+        try {
+          const idToken = await user.getIdToken();
 
-        const notificationResponse = await fetch(
-          "/api/send-notification",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${idToken}`,
-            },
-            body: JSON.stringify({
-              title:
-                winnerProfiles.length === 1
-                  ? `🏆 ${weekNumber}. haftanın şampiyonu`
-                  : `🏆 ${weekNumber}. haftanın ortak şampiyonları`,
-              body:
-                winnerProfiles.length === 1
-                  ? `${winnerNames}, ${highestCorrectCount} doğru tahminle haftayı kazandı ve +1 bonus puan aldı!`
-                  : `${winnerNames}, ${highestCorrectCount} doğru tahminle haftayı ortak kazandı. Her biri +1 bonus puan aldı!`,
-              targetUrl: "/standings",
-            }),
-          }
-        );
-
-        const notificationData =
-          await notificationResponse.json();
-
-        if (!notificationResponse.ok) {
-          throw new Error(
-            notificationData.error ||
-              "Şampiyon bildirimi gönderilemedi."
+          const notificationResponse = await fetch(
+            "/api/send-notification",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({
+                title:
+                  result.winnerProfiles.length === 1
+                    ? `🏆 ${weekNumber}. haftanın şampiyonu`
+                    : `🏆 ${weekNumber}. haftanın ortak şampiyonları`,
+                body:
+                  result.winnerProfiles.length === 1
+                    ? `${result.winnerNames}, ${result.highestCorrectCount} doğru tahminle haftayı kazandı ve +1 bonus puan aldı!`
+                    : `${result.winnerNames}, ${result.highestCorrectCount} doğru tahminle haftayı ortak kazandı. Her biri +1 bonus puan aldı!`,
+                targetUrl: "/standings",
+              }),
+            }
           );
-        }
 
-        notificationMessage = ` Bildirim başarılı: ${
-          notificationData.successCount ?? 0
-        }, başarısız: ${
-          notificationData.failureCount ?? 0
-        }.`;
-      } catch (notificationError) {
-        console.error(notificationError);
-        notificationMessage =
-          " Bonus puanlar verildi fakat bildirim gönderilemedi.";
+          const notificationData =
+            await notificationResponse.json();
+
+          if (!notificationResponse.ok) {
+            throw new Error(
+              notificationData.error ||
+                "Şampiyon bildirimi gönderilemedi."
+            );
+          }
+
+          notificationMessage = ` Bildirim başarılı: ${
+            notificationData.successCount ?? 0
+          }, başarısız: ${
+            notificationData.failureCount ?? 0
+          }.`;
+        } catch (notificationError) {
+          console.error(notificationError);
+          notificationMessage =
+            " Bonus puanlar güncellendi fakat bildirim gönderilemedi.";
+        }
+      }
+
+      if (result.winnerProfiles.length === 0) {
+        setMessage(
+          `${weekNumber}. haftada doğru tahmini bulunan kullanıcı yok. Önceki bonus varsa geri alındı.`
+        );
+        return;
+      }
+
+      if (!result.changed) {
+        setMessage(
+          `${weekNumber}. haftanın bonusu zaten doğru kişilere verilmiş: ${result.winnerNames}. İkinci kez puan eklenmedi.`
+        );
+        return;
       }
 
       setMessage(
         `${weekNumber}. haftanın ${
-          winnerProfiles.length === 1 ? "şampiyonu" : "ortak şampiyonları"
-        }: ${winnerNames}. Her kazanana +1 bonus puan verildi.${notificationMessage}`
+          result.winnerProfiles.length === 1
+            ? "şampiyonu"
+            : "ortak şampiyonları"
+        }: ${result.winnerNames}. Bonus puanlar güncellendi.${notificationMessage}`
       );
     } catch (error) {
       console.error(error);
@@ -771,6 +633,321 @@ export default function AdminPage() {
     } finally {
       setDeclaringChampion(false);
     }
+  }
+
+  async function recalculateWeeklyChampionBonus(
+    weekNumber: number,
+    askForConfirmation: boolean,
+    onlyIfPreviouslyAwarded: boolean
+  ): Promise<{
+    cancelled: boolean;
+    changed: boolean;
+    highestCorrectCount: number;
+    winnerNames: string;
+    winnerProfiles: Array<{
+      id: string;
+      username: string;
+    }>;
+  }> {
+    if (!user) {
+      throw new Error(
+        "Haftalık şampiyonu hesaplamak için yeniden giriş yap."
+      );
+    }
+
+    const championReference = doc(
+      db,
+      "weeklyChampions",
+      String(weekNumber)
+    );
+
+    const championSnapshot = await getDoc(championReference);
+    const previousChampionData = championSnapshot.exists()
+      ? championSnapshot.data()
+      : null;
+
+    const wasPreviouslyAwarded =
+      previousChampionData?.awarded === true;
+
+    if (onlyIfPreviouslyAwarded && !wasPreviouslyAwarded) {
+      return {
+        cancelled: false,
+        changed: false,
+        highestCorrectCount: 0,
+        winnerNames: "",
+        winnerProfiles: [],
+      };
+    }
+
+    const weekMatchesSnapshot = await getDocs(
+      query(
+        collection(db, "matches"),
+        where("week", "==", weekNumber)
+      )
+    );
+
+    if (weekMatchesSnapshot.empty) {
+      throw new Error(
+        `${weekNumber}. haftaya ait maç bulunamadı.`
+      );
+    }
+
+    const weekMatches = weekMatchesSnapshot.docs.map(
+      (matchDocument) => ({
+        id: matchDocument.id,
+        ...matchDocument.data(),
+      })
+    ) as Match[];
+
+    const unfinishedMatches = weekMatches.filter(
+      (match) =>
+        match.status !== "finished" ||
+        match.pointsCalculated !== true
+    );
+
+    if (unfinishedMatches.length > 0) {
+      throw new Error(
+        `${weekNumber}. haftanın bütün maç sonuçlarını girip puanları hesaplamadan haftalık şampiyon belirlenemez.`
+      );
+    }
+
+    const correctCounts = new Map<string, number>();
+
+    for (const match of weekMatches) {
+      const predictionsSnapshot = await getDocs(
+        query(
+          collection(db, "predictions"),
+          where("matchId", "==", match.id)
+        )
+      );
+
+      predictionsSnapshot.forEach((predictionDocument) => {
+        const predictionData = predictionDocument.data();
+
+        if (
+          predictionData.isCorrect === true &&
+          predictionData.awardedPoints === 1 &&
+          typeof predictionData.userId === "string"
+        ) {
+          correctCounts.set(
+            predictionData.userId,
+            (correctCounts.get(predictionData.userId) ?? 0) + 1
+          );
+        }
+      });
+    }
+
+    const highestCorrectCount =
+      correctCounts.size > 0
+        ? Math.max(...Array.from(correctCounts.values()))
+        : 0;
+
+    const winnerIds =
+      highestCorrectCount > 0
+        ? Array.from(correctCounts.entries())
+            .filter(
+              ([, correctCount]) =>
+                correctCount === highestCorrectCount
+            )
+            .map(([userId]) => userId)
+            .sort()
+        : [];
+
+    const previousWinnerIds =
+      wasPreviouslyAwarded &&
+      Array.isArray(previousChampionData?.winnerIds)
+        ? previousChampionData.winnerIds
+            .filter(
+              (winnerId: unknown): winnerId is string =>
+                typeof winnerId === "string"
+            )
+            .sort()
+        : [];
+
+    const changed =
+      winnerIds.length !== previousWinnerIds.length ||
+      winnerIds.some(
+        (winnerId, index) =>
+          winnerId !== previousWinnerIds[index]
+      );
+
+    const winnerProfiles = await Promise.all(
+      winnerIds.map(async (winnerId) => {
+        const winnerSnapshot = await getDoc(
+          doc(db, "users", winnerId)
+        );
+
+        if (!winnerSnapshot.exists()) {
+          throw new Error(
+            `Kazanan kullanıcı profili bulunamadı: ${winnerId}`
+          );
+        }
+
+        const winnerData = winnerSnapshot.data();
+
+        const username =
+          typeof winnerData.username === "string" &&
+          winnerData.username.trim()
+            ? winnerData.username.trim()
+            : typeof winnerData.displayName === "string" &&
+                winnerData.displayName.trim()
+              ? winnerData.displayName.trim()
+              : typeof winnerData.email === "string" &&
+                  winnerData.email.trim()
+                ? winnerData.email.trim()
+                : "İsimsiz kullanıcı";
+
+        return {
+          id: winnerId,
+          username,
+        };
+      })
+    );
+
+    const winnerNames = winnerProfiles
+      .map((winner) => winner.username)
+      .join(", ");
+
+    if (askForConfirmation && changed) {
+      const previousWinnerNames =
+        Array.isArray(previousChampionData?.winnerNames)
+          ? previousChampionData.winnerNames
+              .filter(
+                (name: unknown): name is string =>
+                  typeof name === "string"
+              )
+              .join(", ")
+          : "";
+
+      const confirmationText =
+        winnerProfiles.length > 0
+          ? `${weekNumber}. haftanın en yüksek doğru sayısı: ${highestCorrectCount}\n\nYeni kazananlar: ${winnerNames}${
+              previousWinnerNames
+                ? `\nÖnceki kazananlar: ${previousWinnerNames}`
+                : ""
+            }\n\nBonusları buna göre güncellemek istiyor musun?`
+          : `${weekNumber}. haftada doğru tahmin bulunamadı.${
+              previousWinnerNames
+                ? `\n\nÖnceki kazananların bonusu geri alınacak: ${previousWinnerNames}`
+                : ""
+            }\n\nDevam etmek istiyor musun?`;
+
+      if (!window.confirm(confirmationText)) {
+        return {
+          cancelled: true,
+          changed,
+          highestCorrectCount,
+          winnerNames,
+          winnerProfiles,
+        };
+      }
+    }
+
+    if (!changed) {
+      return {
+        cancelled: false,
+        changed: false,
+        highestCorrectCount,
+        winnerNames,
+        winnerProfiles,
+      };
+    }
+
+    const affectedUserIds = Array.from(
+      new Set([...previousWinnerIds, ...winnerIds])
+    );
+
+    const affectedUsers = await Promise.all(
+      affectedUserIds.map(async (affectedUserId) => {
+        const affectedUserSnapshot = await getDoc(
+          doc(db, "users", affectedUserId)
+        );
+
+        if (!affectedUserSnapshot.exists()) {
+          throw new Error(
+            `Kullanıcı profili bulunamadı: ${affectedUserId}`
+          );
+        }
+
+        const affectedUserData = affectedUserSnapshot.data();
+
+        const correctPredictions =
+          typeof affectedUserData.correctPredictions === "number"
+            ? affectedUserData.correctPredictions
+            : 0;
+
+        const currentWeeklyWins =
+          typeof affectedUserData.weeklyWins === "number"
+            ? affectedUserData.weeklyWins
+            : 0;
+
+        const hadPreviousBonus =
+          previousWinnerIds.includes(affectedUserId);
+        const receivesNewBonus =
+          winnerIds.includes(affectedUserId);
+
+        const newWeeklyWins = Math.max(
+          0,
+          currentWeeklyWins -
+            (hadPreviousBonus ? 1 : 0) +
+            (receivesNewBonus ? 1 : 0)
+        );
+
+        return {
+          id: affectedUserId,
+          correctPredictions,
+          newWeeklyWins,
+        };
+      })
+    );
+
+    const championBatch = writeBatch(db);
+
+    for (const affectedUser of affectedUsers) {
+      championBatch.update(
+        doc(db, "users", affectedUser.id),
+        {
+          weeklyWins: affectedUser.newWeeklyWins,
+          totalPoints:
+            affectedUser.correctPredictions +
+            affectedUser.newWeeklyWins,
+          updatedAt: serverTimestamp(),
+        }
+      );
+    }
+
+    championBatch.set(
+      championReference,
+      {
+        week: weekNumber,
+        seasonId: seasonId.trim() || DEFAULT_SEASON_ID,
+        seasonName:
+          seasonName.trim() || DEFAULT_SEASON_NAME,
+        winnerIds,
+        winnerNames: winnerProfiles.map(
+          (winner) => winner.username
+        ),
+        winnerCount: winnerProfiles.length,
+        highestCorrectCount,
+        bonusPerWinner: winnerProfiles.length > 0 ? 1 : 0,
+        awarded: winnerProfiles.length > 0,
+        awardedBy: user.uid,
+        awardedAt: serverTimestamp(),
+        recalculatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    await championBatch.commit();
+
+    return {
+      cancelled: false,
+      changed: true,
+      highestCorrectCount,
+      winnerNames,
+      winnerProfiles,
+    };
   }
 
   function handleScoreChange(
@@ -853,33 +1030,58 @@ export default function AdminPage() {
         updatedAt: serverTimestamp(),
       });
 
+      let weeklyBonusMessage = "";
+
+      try {
+        const weeklyBonusResult =
+          await recalculateWeeklyChampionBonus(
+            match.week,
+            false,
+            true
+          );
+
+        if (weeklyBonusResult.changed) {
+          weeklyBonusMessage =
+            " Haftalık şampiyon bonusu da yeni sonuca göre otomatik güncellendi.";
+        }
+      } catch (weeklyBonusError) {
+        console.error(
+          "Haftalık şampiyon bonusu güncellenemedi:",
+          weeklyBonusError
+        );
+
+        weeklyBonusMessage =
+          " Maç puanları hesaplandı ancak haftalık bonus otomatik güncellenemedi.";
+      }
+
       const idToken = await user?.getIdToken();
 
-if (idToken) {
-  const notificationResponse = await fetch(
-    "/api/send-notification",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${idToken}`,
-      },
-      body: JSON.stringify({
-        title: "⚽ Maç sonucu açıklandı",
-        body: `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sona erdi. Puanlar güncellendi!`,
-        targetUrl: "/standings",
-      }),
-    }
-  );
+      if (idToken) {
+        const notificationResponse = await fetch(
+          "/api/send-notification",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({
+              title: "⚽ Maç sonucu açıklandı",
+              body: `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sona erdi. Puanlar güncellendi!`,
+              targetUrl: "/standings",
+            }),
+          }
+        );
 
-  if (!notificationResponse.ok) {
-    console.error(
-      "Maç sonucu bildirimi gönderilemedi."
-    );
-  }
-}
+        if (!notificationResponse.ok) {
+          console.error(
+            "Maç sonucu bildirimi gönderilemedi."
+          );
+        }
+      }
+
       setMessage(
-        `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sonucu kaydedildi. ${checkedPredictionCount} tahmin kontrol edildi ve puanlar otomatik hesaplandı.`
+        `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sonucu kaydedildi. ${checkedPredictionCount} tahmin kontrol edildi ve puanlar otomatik hesaplandı.${weeklyBonusMessage}`
       );
     } catch (error) {
       console.error(error);
