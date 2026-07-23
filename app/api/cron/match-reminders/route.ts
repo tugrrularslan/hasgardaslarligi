@@ -80,15 +80,19 @@ export async function GET(request: NextRequest) {
       .where("enabled", "==", true)
       .get();
 
-    const tokens = tokenSnapshot.docs
-      .map((tokenDocument) => {
-        const tokenData = tokenDocument.data();
+    const tokens = Array.from(
+      new Set(
+        tokenSnapshot.docs
+          .map((tokenDocument) => {
+            const tokenData = tokenDocument.data();
 
-        return typeof tokenData.token === "string"
-          ? tokenData.token
-          : null;
-      })
-      .filter((token): token is string => Boolean(token));
+            return typeof tokenData.token === "string"
+              ? tokenData.token
+              : null;
+          })
+          .filter((token): token is string => Boolean(token))
+      )
+    );
 
     if (tokens.length === 0) {
       return NextResponse.json(
@@ -122,6 +126,10 @@ export async function GET(request: NextRequest) {
 
       for (const matchDocument of matchesSnapshot.docs) {
         const matchData = matchDocument.data();
+
+        if (matchData.status !== "scheduled") {
+          continue;
+        }
 
         if (matchData[config.sentField] === true) {
           continue;
@@ -210,10 +218,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // GitHub Actions 5 dakikada bir çalışıyor.
-    // Maça yaklaşık 1 saat kalan karşılaşmaları yakalar.
+    /*
+      GitHub Actions yaklaşık 5 dakikada bir çalışır ancak bazen gecikebilir.
+
+      Bir saat bildirimi:
+      Maça 45 ile 65 dakika kaldığında ve daha önce gönderilmediyse gönderilir.
+      Böylece cron birkaç dakika gecikse bile bildirim kaçmaz.
+    */
     await processReminderWindow(
-      new Date(now.getTime() + 55 * 60 * 1000),
+      new Date(now.getTime() + 45 * 60 * 1000),
       new Date(now.getTime() + 65 * 60 * 1000),
       {
         notificationType: "one-hour-match-reminder",
@@ -228,11 +241,15 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    // Tahminler maçtan 5 dakika önce kapanıyor.
-    // Maça yaklaşık 15 dakika kala gönderildiğinde,
-    // tahminlerin kapanmasına yaklaşık 10 dakika kalmış olur.
+    /*
+      Tahminler maçtan 5 dakika önce kapanır.
+
+      Son uyarı:
+      Maça 5 ile 20 dakika kaldığında ve daha önce gönderilmediyse gönderilir.
+      Normal şartlarda yaklaşık 15 dakika kala gider.
+    */
     await processReminderWindow(
-      new Date(now.getTime() + 10 * 60 * 1000),
+      new Date(now.getTime() + 5 * 60 * 1000),
       new Date(now.getTime() + 20 * 60 * 1000),
       {
         notificationType: "fifteen-minute-match-reminder",
@@ -240,7 +257,7 @@ export async function GET(request: NextRequest) {
         sentAtField: "fifteenMinuteReminderSentAt",
         successCountField: "fifteenMinuteReminderSuccessCount",
         failureCountField: "fifteenMinuteReminderFailureCount",
-        title: "Tahminlerin kapanmasına 10 dakika kaldı! ⏳",
+        title: "Tahminlerin kapanmasına az kaldı! ⏳",
         buildBody: (homeTeam, awayTeam) =>
           `${homeTeam} - ${awayTeam} maçı için tahminini hemen yap.`,
       }
