@@ -17,9 +17,9 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
-import SeasonLabel from "@/components/SeasonLabel";
-import { useCurrentSeason } from "@/hooks/useCurrentSeason";
 import { getThemeById, type AppTheme } from "@/lib/themes";
+
+const CURRENT_SEASON = "2026–2027 Sezonu";
 
 type PredictionValue = "1" | "X" | "2";
 
@@ -41,7 +41,6 @@ type UserProfile = {
 
 export default function PredictionsPage() {
   const router = useRouter();
-  const currentSeason = useCurrentSeason();
 
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -211,7 +210,6 @@ export default function PredictionsPage() {
         userId: user.uid,
         matchId: match.id,
         week: match.week,
-        seasonId: currentSeason.seasonId,
         prediction,
         updatedAt: serverTimestamp(),
       });
@@ -246,7 +244,7 @@ export default function PredictionsPage() {
 
   return (
     <main
-      className={`min-h-screen px-3 sm:px-5 lg:px-6 py-6 transition-all duration-500 ${activeTheme.pageClass}`}
+      className={`min-h-screen px-3 py-6 transition-all duration-500 sm:px-5 lg:px-6 ${activeTheme.pageClass}`}
     >
       <div className="mx-auto max-w-6xl">
         <header
@@ -260,22 +258,28 @@ export default function PredictionsPage() {
                 Has Gardaşlar Ligi
               </p>
 
-              <SeasonLabel className={activeTheme.mutedTextClass} />
-
               <h1
-                className={`mt-1 text-2xl sm:text-3xl lg:text-4xl font-black ${activeTheme.titleClass}`}
+                className={`mt-1 text-2xl font-black sm:text-3xl lg:text-4xl ${activeTheme.titleClass}`}
               >
                 ⚽ Tahminler
               </h1>
 
-              <p className={`mt-2 ${activeTheme.mutedTextClass}`}>
-                Her maç için 1, X veya 2 seçimini yap.
-              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-black ${activeTheme.badgeClass}`}
+                >
+                  {CURRENT_SEASON}
+                </span>
+
+                <p className={activeTheme.mutedTextClass}>
+                  Her maç için 1, X veya 2 seçimini yap.
+                </p>
+              </div>
             </div>
 
             <Link
               href="/"
-              className={`w-full lg:w-auto rounded-xl px-5 py-3 text-center font-bold transition ${activeTheme.secondaryButtonClass}`}
+              className={`w-full rounded-xl px-5 py-3 text-center font-bold transition lg:w-auto ${activeTheme.secondaryButtonClass}`}
             >
               Ana Sayfaya Dön
             </Link>
@@ -301,17 +305,25 @@ export default function PredictionsPage() {
             {Object.entries(groupedMatches).map(
               ([week, weekMatches]) => (
                 <section key={week}>
-                  <div className="mb-4 flex items-center gap-3">
-                    <h2
-                      className={`text-3xl font-black ${activeTheme.titleClass}`}
-                    >
-                      {week}. Hafta
-                    </h2>
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2
+                        className={`text-3xl font-black ${activeTheme.titleClass}`}
+                      >
+                        {week}. Hafta
+                      </h2>
+
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs ${activeTheme.badgeClass}`}
+                      >
+                        {weekMatches.length} maç
+                      </span>
+                    </div>
 
                     <span
-                      className={`rounded-full px-3 py-1 text-xs ${activeTheme.badgeClass}`}
+                      className={`w-fit rounded-full border px-3 py-1 text-xs font-bold ${activeTheme.secondaryCardClass} ${activeTheme.mutedTextClass}`}
                     >
-                      {weekMatches.length} maç
+                      {CURRENT_SEASON}
                     </span>
                   </div>
 
@@ -327,12 +339,12 @@ export default function PredictionsPage() {
                       return (
                         <article
                           key={match.id}
-                          className={`rounded-3xl border p-4 md:p-6 shadow-xl hover:scale-[1.01] transition-all duration-300 ${activeTheme.cardClass}`}
+                          className={`rounded-3xl border p-4 shadow-xl transition-all duration-300 hover:scale-[1.01] md:p-6 ${activeTheme.cardClass}`}
                         >
                           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                               <div
-                                className={`text-lg sm:text-xl lg:text-2xl font-black text-center md:text-left break-words ${activeTheme.textClass}`}
+                                className={`break-words text-center text-lg font-black sm:text-xl md:text-left lg:text-2xl ${activeTheme.textClass}`}
                               >
                                 {match.homeTeam}
                                 <span
@@ -453,7 +465,7 @@ function PredictionButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`min-h-[90px] sm:min-h-[110px] rounded-2xl border p-3 transition disabled:cursor-not-allowed disabled:opacity-40 ${
+      className={`min-h-[90px] rounded-2xl border p-3 transition disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-[110px] ${
         active
           ? theme.primaryButtonClass
           : `${theme.secondaryCardClass} ${theme.textClass} hover:-translate-y-0.5`
