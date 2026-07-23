@@ -259,7 +259,7 @@ export default function Home() {
             />
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Link
               href="/predictions"
               className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.primaryButtonClass}`}
@@ -279,6 +279,13 @@ export default function Home() {
               className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.secondaryButtonClass}`}
             >
               👤 Profilim
+            </Link>
+
+            <Link
+              href="/statistics"
+              className={`flex min-h-[90px] w-full items-center justify-center rounded-xl px-4 py-3 text-center font-black transition ${activeTheme.secondaryButtonClass}`}
+            >
+              📈 İstatistiklerim
             </Link>
           </div>
           {profile?.isAdmin && (
