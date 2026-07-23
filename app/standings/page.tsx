@@ -9,10 +9,18 @@ import {
   query,
   Timestamp,
 } from "firebase/firestore";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { getThemeById, type AppTheme } from "@/lib/themes";
+import {
+  getActiveTitleBadge,
+  getSelectedBadgeDefinitions,
+  sanitizeBadgeIds,
+  sanitizeSelectedBadges,
+  type BadgeDefinition,
+} from "@/lib/achievements";
 
 type StandingUser = {
   id: string;
@@ -22,6 +30,9 @@ type StandingUser = {
   totalPoints: number;
   correctPredictions: number;
   weeklyWins: number;
+  unlockedBadges: string[];
+  selectedBadges: string[];
+  activeTitle: string;
   createdAt?: Timestamp;
 };
 
@@ -142,6 +153,19 @@ export default function StandingsPage() {
                 typeof data.weeklyWins === "number"
                   ? data.weeklyWins
                   : 0,
+
+              unlockedBadges: sanitizeBadgeIds(data.unlockedBadges),
+
+              selectedBadges: sanitizeSelectedBadges(
+                data.selectedBadges,
+                sanitizeBadgeIds(data.unlockedBadges)
+              ),
+
+              activeTitle:
+                typeof data.activeTitle === "string" &&
+                sanitizeBadgeIds(data.unlockedBadges).includes(data.activeTitle)
+                  ? data.activeTitle
+                  : "",
 
               createdAt:
                 data.createdAt instanceof Timestamp
@@ -451,6 +475,12 @@ export default function StandingsPage() {
                               )}
                             </div>
 
+                            <PlayerBadgeShowcase
+                              user={standingUser}
+                              theme={activeTheme}
+                              compact
+                            />
+
                             <p
                               className={`mt-1 truncate text-xs ${activeTheme.mutedTextClass}`}
                             >
@@ -592,8 +622,14 @@ function PodiumCard({
           {user.username}
         </h2>
 
+        <PlayerBadgeShowcase
+          user={user}
+          theme={theme}
+          centered
+        />
+
         <p
-          className={`mt-1 truncate text-center text-sm ${theme.mutedTextClass}`}
+          className={`mt-2 truncate text-center text-sm ${theme.mutedTextClass}`}
         >
           Tema: {user.selectedTheme ?? "klasik"}
         </p>
@@ -649,6 +685,109 @@ function PodiumCard({
         </div>
       </div>
     </article>
+  );
+}
+
+
+function PlayerBadgeShowcase({
+  user,
+  theme,
+  compact = false,
+  centered = false,
+}: {
+  user: StandingUser;
+  theme: AppTheme;
+  compact?: boolean;
+  centered?: boolean;
+}) {
+  const selectedBadges = getSelectedBadgeDefinitions(
+    user.selectedBadges,
+    user.unlockedBadges
+  );
+
+  const activeTitleBadge = getActiveTitleBadge(
+    user.activeTitle,
+    user.unlockedBadges
+  );
+
+  if (selectedBadges.length === 0 && !activeTitleBadge) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`mt-2 flex flex-col gap-2 ${
+        centered ? "items-center" : "items-start"
+      }`}
+    >
+      {activeTitleBadge && (
+        <div
+          className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-black ${theme.secondaryCardClass}`}
+          title={`Ünvan: ${activeTitleBadge.name}`}
+        >
+          <Image
+            src={activeTitleBadge.image}
+            alt=""
+            width={compact ? 16 : 18}
+            height={compact ? 16 : 18}
+            className="shrink-0"
+          />
+
+          <span className={`truncate ${theme.textClass}`}>
+            {activeTitleBadge.name}
+          </span>
+        </div>
+      )}
+
+      {selectedBadges.length > 0 && (
+        <div
+          className={`flex flex-wrap gap-1.5 ${
+            centered ? "justify-center" : "justify-start"
+          }`}
+          aria-label={`${user.username} rozet vitrini`}
+        >
+          {selectedBadges.map((badge) => (
+            <StandingBadgeIcon
+              key={badge.id}
+              badge={badge}
+              compact={compact}
+              theme={theme}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StandingBadgeIcon({
+  badge,
+  compact,
+  theme,
+}: {
+  badge: BadgeDefinition;
+  compact: boolean;
+  theme: AppTheme;
+}) {
+  const sizeClass = compact ? "h-7 w-7" : "h-9 w-9";
+
+  return (
+    <div
+      className={`group relative flex ${sizeClass} items-center justify-center rounded-full border p-1 shadow-lg ${theme.secondaryCardClass}`}
+      title={badge.name}
+    >
+      <Image
+        src={badge.image}
+        alt={badge.name}
+        width={compact ? 22 : 30}
+        height={compact ? 22 : 30}
+        className="h-full w-full object-contain"
+      />
+
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/90 px-2 py-1 text-[10px] font-bold text-white shadow-xl group-hover:block">
+        {badge.name}
+      </span>
+    </div>
   );
 }
 

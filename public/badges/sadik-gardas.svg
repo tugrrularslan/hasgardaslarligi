@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Sadık Gardaş</title>
+  <desc id="desc">Sadık Gardaş rozeti</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#030712"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="55%" stop-color="#F9FAFB"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000000" flood-opacity=".55"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <circle cx="256" cy="244" r="178" fill="#0B1220" stroke="url(#rim)" stroke-width="18" filter="url(#shadow)"/>
+  <circle cx="256" cy="244" r="146" fill="#111827" stroke="#3B82F6" stroke-width="4" opacity=".98"/>
+  <path d="M256 78 L292 145 L367 157 L313 210 L326 285 L256 250 L186 285 L199 210 L145 157 L220 145 Z"
+        fill="#3B82F6" opacity=".10"/>
+
+  <g filter="url(#glow)">
+    <circle cx="256" cy="222" r="82" fill="#3B82F6" opacity=".16"/>
+    <text x="256" y="252" text-anchor="middle" font-size="104" font-weight="900"
+          font-family="Arial, Helvetica, sans-serif" fill="#F9FAFB">∞</text>
+  </g>
+
+  <rect x="96" y="355" width="320" height="66" rx="24" fill="#030712" stroke="#3B82F6" stroke-width="3"/>
+  <text x="256" y="397" text-anchor="middle" font-size="25" font-weight="800"
+        font-family="Arial, Helvetica, sans-serif" fill="#F9FAFB">Sadık Gardaş</text>
+
+  <path d="M164 435 L220 460 L256 430 L292 460 L348 435" fill="none" stroke="#3B82F6" stroke-width="10" stroke-linecap="round"/>
+</svg>
