@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import CollapsiblePanel from "@/components/CollapsiblePanel";
 import HittiteIcon from "@/components/HittiteIcon";
+import KahinAdminPanel from "@/components/KahinAdminPanel";
 import SeasonLabel from "@/components/SeasonLabel";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 import { getSeasonResetConfirmation } from "@/lib/admin-reset";
@@ -2006,6 +2007,21 @@ export default function AdminPage() {
         </CollapsiblePanel>
 
         <CollapsiblePanel
+          title="Kahin Yönetimi"
+          description="Sezon kehanetlerini, adayları ve sonuç puanlamasını yönet"
+          icon="sun"
+          className="mb-8"
+        >
+          {user && (
+            <KahinAdminPanel
+              user={user}
+              seasonId={seasonId}
+              seasonName={seasonName}
+            />
+          )}
+        </CollapsiblePanel>
+
+        <CollapsiblePanel
           title="Tehlikeli İşlemler"
           description="Aktif sezon verilerini kalıcı olarak sıfırlama alanı"
           icon="shield"
@@ -2023,8 +2039,9 @@ export default function AdminPage() {
               <p className="mt-3 leading-7 text-zinc-300">
                 Aktif sezondaki maçları, tahminleri, puanları,
                 haftalık şampiyonlukları ve bütün kullanıcıların rozet
-                ilerlemelerini temizler. Kullanıcı hesapları, adları,
-                avatarları, temaları ve yönetici yetkileri korunur.
+                ilerlemelerini; ayrıca Kahin tahminlerini ve puanlarını
+                temizler. Kullanıcı hesapları, adları, avatarları, temaları ve
+                yönetici yetkileri korunur.
               </p>
             </div>
 

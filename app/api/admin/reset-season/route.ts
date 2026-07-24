@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
       usersSnapshot,
       automaticEventsSnapshot,
       notificationsSnapshot,
+      kahinSettingsSnapshot,
     ] = await Promise.all([
       adminDb.collection("matches").get(),
       adminDb.collection("predictions").get(),
@@ -109,6 +110,7 @@ export async function POST(request: NextRequest) {
       adminDb.collection("users").get(),
       adminDb.collection("automaticNotificationEvents").get(),
       adminDb.collection("notifications").get(),
+      adminDb.collection("settings").doc("kahin").get(),
     ]);
 
     const seasonMatches = matchesSnapshot.docs.filter(
@@ -221,7 +223,7 @@ export async function POST(request: NextRequest) {
 
       delete existingSeasonStats[activeSeasonId];
 
-      writer.update(userDocument.ref, {
+      const userResetData: Record<string, unknown> = {
         totalPoints: 0,
         correctPredictions: 0,
         weeklyWins: 0,
@@ -234,8 +236,35 @@ export async function POST(request: NextRequest) {
         seasonResetAt: FieldValue.serverTimestamp(),
         seasonResetBy: userId,
         updatedAt: FieldValue.serverTimestamp(),
-      });
+      };
+
+      if (userData.kahinSeasonId === activeSeasonId) {
+        userResetData.kahinSeasonId = FieldValue.delete();
+        userResetData.kahinPrediction = FieldValue.delete();
+        userResetData.kahinScore = FieldValue.delete();
+        userResetData.kahinBreakdown = FieldValue.delete();
+        userResetData.kahinUpdatedAt = FieldValue.delete();
+        userResetData.kahinScoredAt = FieldValue.delete();
+      }
+
+      writer.update(userDocument.ref, userResetData);
     });
+
+    if (
+      kahinSettingsSnapshot.exists &&
+      kahinSettingsSnapshot.data()?.seasonId === activeSeasonId
+    ) {
+      writer.set(
+        kahinSettingsSnapshot.ref,
+        {
+          results: FieldValue.delete(),
+          resultsPublished: false,
+          scoredAt: FieldValue.delete(),
+          scoredBy: FieldValue.delete(),
+        },
+        { merge: true }
+      );
+    }
 
     await writer.close();
 

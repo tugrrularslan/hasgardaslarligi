@@ -64,21 +64,36 @@ export default function GamesPage() {
             </div>
           </Link>
 
-          <div className="rounded-3xl border border-zinc-700 bg-zinc-950/70 p-7 opacity-75">
-            <HittiteIcon name="lock" size="xl" />
+          <Link
+            href="/games/kahin"
+            className="game-card group rounded-3xl border border-amber-400/30 bg-amber-950/40 p-7 shadow-xl transition hover:-translate-y-1 hover:border-amber-300"
+          >
+            <HittiteIcon name="sun" size="xl" />
 
-            <p className="mt-5 text-sm font-bold uppercase tracking-widest text-zinc-400">
-              Yakında
+            <div className="mt-5 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-widest text-amber-300">
+                  Sezonluk oyun
+                </p>
+                <h2 className="mt-1 text-2xl font-black">Kahin</h2>
+              </div>
+              <HittiteIcon
+                name="forward"
+                size="sm"
+                className="transition group-hover:translate-x-1"
+              />
+            </div>
+
+            <p className="mt-4 text-zinc-300">
+              Ligin son sıralamasını, gol ve asist krallarını ve sezonun özel
+              liderlerini tahmin et.
             </p>
 
-            <h2 className="mt-1 text-2xl font-black">
-              Yeni Oyun
-            </h2>
-
-            <p className="mt-4 text-zinc-400">
-              Yeni oyunlar hazırlandığında burada görüntülenecek.
-            </p>
-          </div>
+            <div className="hg-primary hg-icon-label mt-6 rounded-xl px-5 py-3 text-center font-black transition">
+              <HittiteIcon name="sun" size="sm" />
+              Oyunu Aç
+            </div>
+          </Link>
         </section>
       </div>
     </main>

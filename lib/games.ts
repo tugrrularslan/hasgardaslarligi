@@ -25,14 +25,14 @@ export const games: GameDefinition[] = [
   },
   {
     id: "second-game",
-    slug: "second-game",
-    name: "İkinci Oyun",
-    shortName: "Yakında",
+    slug: "kahin",
+    name: "Kahin",
+    shortName: "Sezon Kehaneti",
     description:
-      "Has Gardaşlar'ın sıradaki oyunu için altyapı hazır. Oyun duyurulduğunda burada açılacak.",
-    status: "coming-soon",
+      "Lig sıralamasını, gol ve asist krallarını ve sezonun özel liderlerini tahmin et.",
+    status: "active",
     icon: "☼",
-    href: "/games",
+    href: "/games/kahin",
   },
 ];
 
