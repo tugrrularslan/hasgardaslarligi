@@ -13,8 +13,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import BadgeArtwork from "@/components/BadgeArtwork";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 import SeasonLabel from "@/components/SeasonLabel";
+import { DEFAULT_AVATAR } from "@/lib/avatars";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 import {
   getActiveTitleBadge,
@@ -181,7 +183,7 @@ export default function StandingsPage() {
               avatar:
                 typeof data.avatar === "string" && data.avatar
                   ? data.avatar
-                  : "⚽",
+                  : DEFAULT_AVATAR,
 
               selectedTheme:
                 typeof data.selectedTheme === "string"
@@ -354,7 +356,11 @@ export default function StandingsPage() {
                 <div
                   className={`flex h-14 w-14 items-center justify-center rounded-2xl border text-2xl ${activeTheme.cardClass}`}
                 >
-                  {sortedUsers[currentUserStanding].avatar ?? "⚽"}
+                  <ProfileAvatar
+                    avatar={sortedUsers[currentUserStanding].avatar}
+                    alt={`${sortedUsers[currentUserStanding].username} profil avatarı`}
+                    className="h-full w-full rounded-2xl"
+                  />
                 </div>
 
                 <div>
@@ -498,7 +504,11 @@ export default function StandingsPage() {
                           <div
                             className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border text-2xl ${activeTheme.secondaryCardClass}`}
                           >
-                            {standingUser.avatar ?? "⚽"}
+                            <ProfileAvatar
+                              avatar={standingUser.avatar}
+                              alt={`${standingUser.username} profil avatarı`}
+                              className="h-full w-full rounded-full"
+                            />
 
                             {position <= 3 && (
                               <span className="absolute -right-1 -top-1 text-sm">
@@ -665,7 +675,11 @@ function PodiumCard({
                 : "h-20 w-20 md:h-24 md:w-24"
             } ${podiumStyle.avatarClass}`}
           >
-            {user.avatar ?? "⚽"}
+            <ProfileAvatar
+              avatar={user.avatar}
+              alt={`${user.username} profil avatarı`}
+              className="h-full w-full rounded-full"
+            />
 
             {position === 1 && (
               <span className="absolute -top-6 text-3xl">

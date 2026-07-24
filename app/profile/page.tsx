@@ -19,7 +19,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import BadgeArtwork from "@/components/BadgeArtwork";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import SeasonLabel from "@/components/SeasonLabel";
+import {
+  AVATAR_CATEGORIES,
+  DEFAULT_AVATAR,
+} from "@/lib/avatars";
 import { calculateBadgeProgressFromRecords } from "@/lib/badge-progress";
 import { DEFAULT_SEASON_ID } from "@/lib/season";
 import { getThemeById } from "@/lib/themes";
@@ -59,38 +64,9 @@ type ProfileData = {
   badgeProgress: BadgeProgressData;
 };
 
-type AvatarCategory = {
-  title: string;
-  description: string;
-  avatars: string[];
-};
-
-const AVATAR_CATEGORIES: AvatarCategory[] = [
-  {
-    title: "Futbol",
-    description: "Sahanın yıldızları",
-    avatars: ["⚽", "🥅", "🏆", "🥇", "👟", "🧤", "📣", "🏟️"],
-  },
-  {
-    title: "Karakter",
-    description: "Gardaşını temsil edecek yüzü seç",
-    avatars: ["😎", "🤠", "🥷", "🧔‍♂️", "👑", "🫡", "🥸", "😈"],
-  },
-  {
-    title: "Hayvan",
-    description: "Takım ruhunu ortaya çıkar",
-    avatars: ["🦁", "🐺", "🦅", "🐯", "🦊", "🐻", "🐉", "🦈"],
-  },
-  {
-    title: "Güç ve Eğlence",
-    description: "Daha iddialı ve renkli seçenekler",
-    avatars: ["🔥", "⚡", "🚀", "💣", "🧿", "🗿", "👽", "💪"],
-  },
-];
-
 const DEFAULT_PROFILE: ProfileData = {
   username: "İsimsiz Gardaş",
-  avatar: "⚽",
+  avatar: DEFAULT_AVATAR,
   selectedTheme: "obsidyen",
   totalPoints: 0,
   correctPredictions: 0,
@@ -108,7 +84,7 @@ export default function ProfilePage() {
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
-  const [selectedAvatar, setSelectedAvatar] = useState("⚽");
+  const [selectedAvatar, setSelectedAvatar] = useState(DEFAULT_AVATAR);
   const [newUsername, setNewUsername] = useState("");
 
   const [loading, setLoading] = useState(true);
@@ -241,7 +217,7 @@ export default function ProfilePage() {
             avatar:
               typeof data.avatar === "string" && data.avatar.trim()
                 ? data.avatar
-                : "⚽",
+                : DEFAULT_AVATAR,
             selectedTheme:
               typeof data.selectedTheme === "string"
                 ? normalizeThemeId(data.selectedTheme)
@@ -572,7 +548,12 @@ export default function ProfilePage() {
                 <div
                   className={`relative flex h-36 w-36 items-center justify-center rounded-full border text-7xl shadow-2xl ring-4 ring-white/5 transition-transform duration-300 hover:scale-105 ${activeTheme.secondaryCardClass}`}
                 >
-                  {selectedAvatar}
+                  <ProfileAvatar
+                    avatar={selectedAvatar}
+                    alt="Seçili profil avatarı"
+                    priority
+                    className="h-full w-full rounded-full"
+                  />
                   {avatarChanged && (
                     <span
                       className={`absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full border text-sm font-black ${activeTheme.badgeClass}`}
@@ -931,26 +912,31 @@ export default function ProfilePage() {
                     </div>
 
                     <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">
-                      {category.avatars.map((avatar) => {
-                        const isSelected = selectedAvatar === avatar;
+                      {category.avatars.map((avatarOption) => {
+                        const isSelected =
+                          selectedAvatar === avatarOption.src;
 
                         return (
                           <button
-                            key={`${category.title}-${avatar}`}
+                            key={avatarOption.src}
                             type="button"
                             onClick={() => {
-                              setSelectedAvatar(avatar);
+                              setSelectedAvatar(avatarOption.src);
                               setMessage("");
                             }}
-                            aria-label={`${avatar} avatarını seç`}
+                            aria-label={`${avatarOption.name} avatarını seç`}
                             aria-pressed={isSelected}
-                            className={`relative flex aspect-square items-center justify-center rounded-2xl border text-4xl transition duration-200 hover:-translate-y-1 hover:scale-105 ${
+                            className={`relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl border transition duration-200 hover:-translate-y-1 hover:scale-105 ${
                               isSelected
                                 ? activeTheme.secondaryCardClass
                                 : activeTheme.cardClass
                             }`}
                           >
-                            {avatar}
+                            <ProfileAvatar
+                              avatar={avatarOption.src}
+                              alt=""
+                              className="h-full w-full"
+                            />
                             {isSelected && (
                               <span
                                 className={`absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${activeTheme.badgeClass}`}

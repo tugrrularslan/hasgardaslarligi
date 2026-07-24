@@ -18,7 +18,12 @@ import {
 import Link from "next/link";
 
 import { auth, db } from "@/lib/firebase";
+import ProfileAvatar from "@/components/ProfileAvatar";
 import SeasonLabel from "@/components/SeasonLabel";
+import {
+  DEFAULT_AVATAR,
+  REGISTRATION_AVATARS,
+} from "@/lib/avatars";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
 type PageMode = "login" | "register";
@@ -35,17 +40,6 @@ type UserProfile = {
   isAdmin: boolean;
 };
 
-const avatars = [
-  "⚽",
-  "👑",
-  "🔥",
-  "⚡",
-  "🦁",
-  "🐺",
-  "🛡️",
-  "🎯",
-];
-
 export default function HomePage() {
   const [mode, setMode] = useState<PageMode>("login");
 
@@ -55,7 +49,7 @@ export default function HomePage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [avatar, setAvatar] = useState("⚽");
+  const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
 
   const [authLoading, setAuthLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
@@ -97,7 +91,7 @@ export default function HomePage() {
                   firebaseUser.email?.split("@")[0] ||
                   "İsimsiz Gardaş",
                 email: firebaseUser.email ?? "",
-                avatar: "⚽",
+                avatar: DEFAULT_AVATAR,
                 selectedTheme: "obsidyen",
                 totalPoints: 0,
                 correctPredictions: 0,
@@ -130,7 +124,7 @@ export default function HomePage() {
                 typeof data.avatar === "string" &&
                 data.avatar.trim()
                   ? data.avatar
-                  : "⚽",
+                  : DEFAULT_AVATAR,
 
               selectedTheme:
                 typeof data.selectedTheme === "string"
@@ -338,7 +332,7 @@ export default function HomePage() {
       setEmail("");
       setPassword("");
       setUsername("");
-      setAvatar("⚽");
+      setAvatar(DEFAULT_AVATAR);
 
       setMode("login");
     } catch (error) {
@@ -375,8 +369,13 @@ export default function HomePage() {
           className={`mx-auto max-w-6xl rounded-3xl border p-5 shadow-2xl backdrop-blur-md sm:p-8 ${activeTheme.cardClass}`}
         >
           <header className="text-center">
-            <div className="text-6xl sm:text-7xl">
-              {profile?.avatar ?? "⚽"}
+            <div className="mx-auto h-24 w-24 text-6xl sm:h-28 sm:w-28 sm:text-7xl">
+              <ProfileAvatar
+                avatar={profile?.avatar}
+                alt={`${profile?.username ?? "Kullanıcı"} profil avatarı`}
+                priority
+                className="h-full w-full rounded-full shadow-2xl"
+              />
             </div>
 
             <p
@@ -582,25 +581,29 @@ export default function HomePage() {
                 </p>
 
                 <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
-                  {avatars.map(
-                    (avatarItem) => (
+                  {REGISTRATION_AVATARS.map(
+                    (avatarOption) => (
                       <button
-                        key={avatarItem}
+                        key={avatarOption.src}
                         type="button"
                         onClick={() =>
                           setAvatar(
-                            avatarItem
+                            avatarOption.src
                           )
                         }
-                        className={`rounded-lg border py-2 text-xl transition ${
+                        className={`aspect-square overflow-hidden rounded-xl border p-0.5 transition ${
                           avatar ===
-                          avatarItem
+                          avatarOption.src
                             ? "border-white bg-white/20"
                             : "border-red-300/20 bg-black/20 hover:bg-white/10"
                         }`}
-                        aria-label={`${avatarItem} avatarını seç`}
+                        aria-label={`${avatarOption.name} avatarını seç`}
                       >
-                        {avatarItem}
+                        <ProfileAvatar
+                          avatar={avatarOption.src}
+                          alt=""
+                          className="h-full w-full rounded-[0.6rem]"
+                        />
                       </button>
                     )
                   )}
