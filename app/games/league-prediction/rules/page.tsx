@@ -37,7 +37,7 @@ export default function RulesPage() {
 
         <header className="mb-7 rounded-3xl border border-white/10 bg-black/30 p-6 backdrop-blur-md">
           <p className="text-sm font-bold uppercase tracking-[0.25em] text-red-300">
-            Lig Tahmin Oyunu
+            Gardaş 1X2
           </p>
 
           <h1 className="mt-2 flex items-center gap-3 text-3xl font-black">
@@ -46,7 +46,7 @@ export default function RulesPage() {
           </h1>
 
           <p className="mt-3 text-zinc-300">
-            Lig Tahmin Oyunu için geçerli kurallar aşağıdadır.
+            Gardaş 1X2 için geçerli kurallar aşağıdadır.
           </p>
         </header>
 

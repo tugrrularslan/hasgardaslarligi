@@ -482,6 +482,8 @@ export default function StatisticsPage() {
       className={`min-h-screen px-4 py-8 transition-all duration-500 ${activeTheme.pageClass}`}
     >
       <div className="mx-auto max-w-6xl">
+        <GameNavigation />
+
         <header
           className={`mb-8 rounded-3xl border p-6 shadow-2xl backdrop-blur-md sm:p-8 ${activeTheme.headerClass}`}
         >

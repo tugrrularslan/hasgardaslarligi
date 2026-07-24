@@ -15,7 +15,7 @@ export const games: GameDefinition[] = [
   {
     id: "league-prediction",
     slug: "league-prediction",
-    name: "Lig Tahmin Oyunu",
+    name: "Gardaş 1X2",
     shortName: "Lig Arenası",
     description:
       "Haftalık lig maçlarını tahmin et, puanları topla ve sezonun şampiyonu ol.",

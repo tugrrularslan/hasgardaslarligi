@@ -19,7 +19,7 @@ const gameSections: Array<{
     icon: "trophy",
     title: "Puan Durumu",
     description:
-      "Lig Tahmin Oyunu sezon sıralamasını ve oyuncuların puanlarını görüntüle.",
+      "Gardaş 1X2 sezon sıralamasını ve oyuncuların puanlarını görüntüle.",
   },
   {
     href: "/statistics",
@@ -40,7 +40,7 @@ const gameSections: Array<{
     icon: "rules",
     title: "Kurallar",
     description:
-      "Lig Tahmin Oyunu puanlama ve tahmin kurallarını görüntüle.",
+      "Gardaş 1X2 puanlama ve tahmin kurallarını görüntüle.",
   },
 ];
 
@@ -57,7 +57,7 @@ export default function LeaguePredictionPage() {
 
               <h1 className="mt-2 flex items-center gap-3 text-3xl font-black sm:text-4xl">
                 <HittiteIcon name="ball" size="lg" />
-                Lig Tahmin Oyunu
+                Gardaş 1X2
               </h1>
 
               <p className="mt-3 max-w-2xl text-zinc-300">

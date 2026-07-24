@@ -157,7 +157,7 @@ export default function WeeklyTabletPage() {
               <p
                 className={`text-sm font-bold uppercase tracking-[0.24em] ${activeTheme.mutedTextClass}`}
               >
-                Lig Tahmin Oyunu
+                Gardaş 1X2
               </p>
               <h1
                 className={`mt-2 flex items-center gap-3 text-3xl font-black sm:text-4xl ${activeTheme.titleClass}`}

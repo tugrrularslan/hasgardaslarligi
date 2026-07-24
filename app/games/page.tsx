@@ -42,7 +42,7 @@ export default function GamesPage() {
                 </p>
 
                 <h2 className="mt-1 text-2xl font-black">
-                  Lig Tahmin Oyunu
+                  Gardaş 1X2
                 </h2>
               </div>
 

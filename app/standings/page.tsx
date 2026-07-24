@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import BadgeArtwork from "@/components/BadgeArtwork";
 import HittiteIcon from "@/components/HittiteIcon";
+import GameNavigation from "@/components/GameNavigation";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 import SeasonLabel from "@/components/SeasonLabel";
@@ -307,6 +308,8 @@ export default function StandingsPage() {
       className={`min-h-screen px-3 py-6 transition-all duration-500 sm:px-5 lg:px-6 ${activeTheme.pageClass}`}
     >
       <div className="mx-auto max-w-7xl">
+        <GameNavigation />
+
         <header
           className={`mb-8 rounded-3xl border p-6 backdrop-blur-md ${activeTheme.headerClass}`}
         >
