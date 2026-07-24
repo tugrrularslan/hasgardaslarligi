@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import SeasonLabel from "@/components/SeasonLabel";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
+import { getSeasonResetConfirmation } from "@/lib/admin-reset";
 
 type MatchResult = "1" | "X" | "2";
 
@@ -94,6 +95,14 @@ export default function AdminPage() {
   const [customTargetUrl, setCustomTargetUrl] = useState("");
   const [sendingNotification, setSendingNotification] =
     useState(false);
+  const [showResetConfirmation, setShowResetConfirmation] =
+    useState(false);
+  const [resetConfirmation, setResetConfirmation] = useState("");
+  const [resettingSeason, setResettingSeason] = useState(false);
+
+  const resetConfirmationText = getSeasonResetConfirmation(
+    seasonId.trim() || DEFAULT_SEASON_ID
+  );
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
@@ -335,6 +344,65 @@ export default function AdminPage() {
       );
     } finally {
       setSendingNotification(false);
+    }
+  }
+
+  async function handleResetSeason() {
+    if (!user) {
+      setMessage("Sezonu sıfırlamak için yeniden giriş yap.");
+      return;
+    }
+
+    if (resetConfirmation !== resetConfirmationText) {
+      setMessage("Onay metni eksiksiz olarak eşleşmiyor.");
+      return;
+    }
+
+    setResettingSeason(true);
+    setMessage("");
+
+    try {
+      const idToken = await user.getIdToken();
+
+      const response = await fetch("/api/admin/reset-season", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          confirmation: resetConfirmation,
+        }),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          responseData.error || "Aktif sezon sıfırlanamadı."
+        );
+      }
+
+      const deleted = responseData.deleted ?? {};
+
+      setMessage(
+        `${responseData.message} ` +
+          `${deleted.matches ?? 0} maç, ` +
+          `${deleted.predictions ?? 0} tahmin ve ` +
+          `${deleted.weeklyChampions ?? 0} haftalık şampiyon kaydı temizlendi. ` +
+          `${responseData.resetUsers ?? 0} kullanıcının puan ve rozetleri sıfırlandı.`
+      );
+      setResetConfirmation("");
+      setShowResetConfirmation(false);
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Aktif sezon sıfırlanamadı."
+      );
+    } finally {
+      setResettingSeason(false);
     }
   }
 
@@ -1904,6 +1972,99 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+        </section>
+
+        <section className="mt-8 rounded-3xl border border-red-500/40 bg-red-950/20 p-6 shadow-xl">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-sm font-black uppercase tracking-widest text-red-400">
+                Tehlikeli Bölge
+              </p>
+              <h2 className="mt-2 text-2xl font-black">
+                Aktif Sezon Verilerini Sıfırla
+              </h2>
+              <p className="mt-3 leading-7 text-zinc-300">
+                Aktif sezondaki maçları, tahminleri, puanları,
+                haftalık şampiyonlukları ve bütün kullanıcıların rozet
+                ilerlemelerini temizler. Kullanıcı hesapları, adları,
+                avatarları, temaları ve yönetici yetkileri korunur.
+              </p>
+            </div>
+
+            {!showResetConfirmation && (
+              <button
+                type="button"
+                onClick={() => {
+                  setResetConfirmation("");
+                  setShowResetConfirmation(true);
+                }}
+                className="shrink-0 rounded-xl border border-red-500/50 px-5 py-3 font-black text-red-300 transition hover:bg-red-500/10"
+              >
+                Sıfırlama Ekranını Aç
+              </button>
+            )}
+          </div>
+
+          {showResetConfirmation && (
+            <div className="mt-6 rounded-2xl border border-red-500/35 bg-black/30 p-5">
+              <p className="font-black text-red-200">
+                Bu işlem geri alınamaz.
+              </p>
+              <p className="mt-2 text-sm leading-6 text-zinc-300">
+                Devam etmek için aşağıdaki metni boşlukları ve büyük
+                harfleriyle birlikte aynen yaz:
+              </p>
+              <code className="mt-4 block select-all rounded-xl border border-red-500/30 bg-black/40 px-4 py-3 font-black text-red-200">
+                {resetConfirmationText}
+              </code>
+
+              <label
+                htmlFor="season-reset-confirmation"
+                className="mt-5 block text-sm font-bold text-zinc-200"
+              >
+                Onay metni
+              </label>
+              <input
+                id="season-reset-confirmation"
+                type="text"
+                value={resetConfirmation}
+                onChange={(event) =>
+                  setResetConfirmation(event.target.value)
+                }
+                disabled={resettingSeason}
+                autoComplete="off"
+                spellCheck={false}
+                className="mt-2 w-full rounded-xl border border-red-500/35 bg-black px-4 py-3 font-bold outline-none focus:border-red-400 disabled:opacity-50"
+              />
+
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleResetSeason}
+                  disabled={
+                    resettingSeason ||
+                    resetConfirmation !== resetConfirmationText
+                  }
+                  className="rounded-xl bg-red-600 px-5 py-3 font-black text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {resettingSeason
+                    ? "Veriler Sıfırlanıyor..."
+                    : "Aktif Sezonu Kalıcı Olarak Sıfırla"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetConfirmation("");
+                    setShowResetConfirmation(false);
+                  }}
+                  disabled={resettingSeason}
+                  className="rounded-xl border border-zinc-700 px-5 py-3 font-bold text-zinc-300 transition hover:bg-white/5 disabled:opacity-50"
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </main>
