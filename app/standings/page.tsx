@@ -14,6 +14,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { getThemeById, type AppTheme } from "@/lib/themes";
+import SeasonLabel from "@/components/SeasonLabel";
+import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 import {
   getActiveTitleBadge,
   getSelectedBadgeDefinitions,
@@ -47,6 +49,8 @@ export default function StandingsPage() {
   const [currentUserProfile, setCurrentUserProfile] =
     useState<CurrentUserProfile | null>(null);
   const [users, setUsers] = useState<StandingUser[]>([]);
+  const [activeSeasonId, setActiveSeasonId] = useState(DEFAULT_SEASON_ID);
+  const [activeSeasonName, setActiveSeasonName] = useState(DEFAULT_SEASON_NAME);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -113,12 +117,57 @@ export default function StandingsPage() {
   useEffect(() => {
     if (!currentUser) return;
 
+    const unsubscribeSeason = onSnapshot(
+      doc(db, "settings", "currentSeason"),
+      (snapshot) => {
+        if (!snapshot.exists()) {
+          setActiveSeasonId(DEFAULT_SEASON_ID);
+          setActiveSeasonName(DEFAULT_SEASON_NAME);
+          return;
+        }
+
+        const data = snapshot.data();
+
+        setActiveSeasonId(
+          typeof data.seasonId === "string" && data.seasonId.trim()
+            ? data.seasonId.trim()
+            : DEFAULT_SEASON_ID
+        );
+
+        setActiveSeasonName(
+          typeof data.name === "string" && data.name.trim()
+            ? data.name.trim()
+            : DEFAULT_SEASON_NAME
+        );
+      },
+      (error) => {
+        console.error(error);
+        setMessage("Sezon bilgisi alınamadı.");
+      }
+    );
+
+    return unsubscribeSeason;
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    setLoading(true);
+
     const unsubscribeUsers = onSnapshot(
       query(collection(db, "users")),
       (snapshot) => {
         const loadedUsers: StandingUser[] = snapshot.docs.map(
           (userDocument) => {
             const data = userDocument.data();
+
+            const seasonStats =
+              data.seasonStats && typeof data.seasonStats === "object"
+                ? data.seasonStats[activeSeasonId]
+                : null;
+
+            const useLegacyValues =
+              !seasonStats && activeSeasonId === DEFAULT_SEASON_ID;
 
             return {
               id: userDocument.id,
@@ -140,19 +189,27 @@ export default function StandingsPage() {
                   : "klasik",
 
               totalPoints:
-                typeof data.totalPoints === "number"
-                  ? data.totalPoints
-                  : 0,
+                seasonStats && typeof seasonStats.totalPoints === "number"
+                  ? seasonStats.totalPoints
+                  : useLegacyValues && typeof data.totalPoints === "number"
+                    ? data.totalPoints
+                    : 0,
 
               correctPredictions:
-                typeof data.correctPredictions === "number"
-                  ? data.correctPredictions
-                  : 0,
+                seasonStats &&
+                typeof seasonStats.correctPredictions === "number"
+                  ? seasonStats.correctPredictions
+                  : useLegacyValues &&
+                      typeof data.correctPredictions === "number"
+                    ? data.correctPredictions
+                    : 0,
 
               weeklyWins:
-                typeof data.weeklyWins === "number"
-                  ? data.weeklyWins
-                  : 0,
+                seasonStats && typeof seasonStats.weeklyWins === "number"
+                  ? seasonStats.weeklyWins
+                  : useLegacyValues && typeof data.weeklyWins === "number"
+                    ? data.weeklyWins
+                    : 0,
 
               unlockedBadges: sanitizeBadgeIds(data.unlockedBadges),
 
@@ -186,7 +243,7 @@ export default function StandingsPage() {
     );
 
     return unsubscribeUsers;
-  }, [currentUser]);
+  }, [currentUser, activeSeasonId]);
 
   const activeTheme = useMemo(() => {
     return getThemeById(currentUserProfile?.selectedTheme);
@@ -258,6 +315,8 @@ export default function StandingsPage() {
                 Has Gardaşlar Ligi
               </p>
 
+              <SeasonLabel className={activeTheme.mutedTextClass} />
+
               <h1
                 className={`mt-1 text-2xl font-black sm:text-3xl lg:text-4xl ${activeTheme.titleClass}`}
               >
@@ -267,7 +326,7 @@ export default function StandingsPage() {
               <p
                 className={`mt-2 ${activeTheme.mutedTextClass}`}
               >
-                Zirveye çıkan gardaşlar burada belli olur.
+                {activeSeasonName} puanları gösteriliyor.
               </p>
             </div>
 

@@ -1,43 +1,70 @@
+"use client";
+
 import Link from "next/link";
-import { getGameBySlug } from "@/lib/games";
+import { usePathname } from "next/navigation";
 
-type GameNavigationProps = {
-  gameSlug?: string;
-  active?: "home" | "predictions" | "standings" | "statistics" | "rules";
-};
+const links = [
+  {
+    href: "/games/league-prediction",
+    label: "Oyun",
+    icon: "🎮",
+  },
+  {
+    href: "/predictions",
+    label: "Tahminler",
+    icon: "⚽",
+  },
+  {
+    href: "/standings",
+    label: "Puan Durumu",
+    icon: "🏆",
+  },
+  {
+    href: "/statistics",
+    label: "İstatistikler",
+    icon: "📈",
+  },
+  {
+    href: "/games/league-prediction/rules",
+    label: "Kurallar",
+    icon: "📜",
+  },
+];
 
-export default function GameNavigation({
-  gameSlug = "league-prediction",
-  active,
-}: GameNavigationProps) {
-  const game = getGameBySlug(gameSlug);
-  const basePath = game?.href ?? `/games/${gameSlug}`;
-
-  const items = [
-    { id: "home", label: "Oyun", href: basePath },
-    { id: "predictions", label: "Tahminler", href: `${basePath}/predictions` },
-    { id: "standings", label: "Puan Durumu", href: `${basePath}/standings` },
-    { id: "statistics", label: "İstatistikler", href: `${basePath}/statistics` },
-    { id: "rules", label: "Kurallar", href: `${basePath}/rules` },
-  ] as const;
+export default function GameNavigation() {
+  const pathname = usePathname();
 
   return (
-    <nav aria-label={`${game?.name ?? "Oyun"} menüsü`} className="overflow-x-auto">
-      <div className="flex min-w-max gap-2 rounded-2xl border border-amber-200/15 bg-black/25 p-2">
-        {items.map((item) => (
-          <Link
-            key={item.id}
-            href={item.href}
-            aria-current={active === item.id ? "page" : undefined}
-            className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
-              active === item.id
-                ? "bg-amber-300 text-stone-950"
-                : "text-stone-200 hover:bg-white/10 hover:text-white"
-            }`}
-          >
-            {item.label}
-          </Link>
-        ))}
+    <nav className="mb-6 rounded-2xl border border-white/10 bg-black/30 p-3 shadow-lg backdrop-blur-md">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {links.map((link) => {
+          const active =
+            pathname === link.href ||
+            (link.href === "/predictions" &&
+              pathname.startsWith("/predictions")) ||
+            (link.href === "/standings" &&
+              pathname.startsWith("/standings")) ||
+            (link.href === "/statistics" &&
+              pathname.startsWith("/statistics"));
+
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`rounded-xl px-3 py-3 text-center text-sm font-bold transition ${
+                active
+                  ? "bg-white text-red-800"
+                  : "bg-white/5 text-white hover:bg-white/10"
+              }`}
+            >
+              <span className="mr-1">
+                {link.icon}
+              </span>
+
+              {link.label}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

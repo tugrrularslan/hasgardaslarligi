@@ -1,5 +1,6 @@
 "use client";
 
+import GameNavigation from "@/components/GameNavigation";
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {

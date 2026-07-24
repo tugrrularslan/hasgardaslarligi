@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Has Gardaşlar",
-  description: "Has Gardaşlar oyun platformu",
+  title: "Has Gardaşlar Ligi",
+  description: "Has Gardaşlar Ligi Futbol Tahmin Oyunu",
 };
 
 export default function RootLayout({

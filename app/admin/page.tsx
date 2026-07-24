@@ -36,6 +36,7 @@ type NotificationTarget =
 type Match = {
   id: string;
   week: number;
+  seasonId?: string;
   homeTeam: string;
   awayTeam: string;
   kickoff: Timestamp;
@@ -437,8 +438,13 @@ export default function AdminPage() {
       return;
     }
 
+    const activeSeasonId = seasonId.trim() || DEFAULT_SEASON_ID;
+
     const weekMatches = matches.filter(
-      (match) => match.week === weekNumber
+      (match) =>
+        match.week === weekNumber &&
+        (match.seasonId === activeSeasonId ||
+          (!match.seasonId && activeSeasonId === DEFAULT_SEASON_ID))
     );
 
     if (weekMatches.length === 0) {
@@ -451,7 +457,7 @@ export default function AdminPage() {
     const publicationReference = doc(
       db,
       "publishedWeeks",
-      String(weekNumber)
+      `${activeSeasonId}_${weekNumber}`
     );
 
     try {
@@ -667,10 +673,12 @@ export default function AdminPage() {
       );
     }
 
+    const activeSeasonId = seasonId.trim() || DEFAULT_SEASON_ID;
+
     const championReference = doc(
       db,
       "weeklyChampions",
-      String(weekNumber)
+      `${activeSeasonId}_${weekNumber}`
     );
 
     const championSnapshot = await getDoc(championReference);
@@ -704,12 +712,22 @@ export default function AdminPage() {
       );
     }
 
-    const weekMatches = weekMatchesSnapshot.docs.map(
-      (matchDocument) => ({
+    const weekMatches = weekMatchesSnapshot.docs
+      .map((matchDocument) => ({
         id: matchDocument.id,
         ...matchDocument.data(),
-      })
-    ) as Match[];
+      }))
+      .filter(
+        (match) =>
+          match.seasonId === activeSeasonId ||
+          (!match.seasonId && activeSeasonId === DEFAULT_SEASON_ID)
+      ) as Match[];
+
+    if (weekMatches.length === 0) {
+      throw new Error(
+        `${activeSeasonId} sezonunun ${weekNumber}. haftasına ait maç bulunamadı.`
+      );
+    }
 
     const unfinishedMatches = weekMatches.filter(
       (match) =>
@@ -883,15 +901,33 @@ export default function AdminPage() {
 
         const affectedUserData = affectedUserSnapshot.data();
 
+        const existingSeasonStats =
+          affectedUserData.seasonStats &&
+          typeof affectedUserData.seasonStats === "object"
+            ? affectedUserData.seasonStats
+            : {};
+
+        const currentSeasonStats =
+          existingSeasonStats[activeSeasonId] &&
+          typeof existingSeasonStats[activeSeasonId] === "object"
+            ? existingSeasonStats[activeSeasonId]
+            : {};
+
         const correctPredictions =
-          typeof affectedUserData.correctPredictions === "number"
-            ? affectedUserData.correctPredictions
-            : 0;
+          typeof currentSeasonStats.correctPredictions === "number"
+            ? currentSeasonStats.correctPredictions
+            : activeSeasonId === DEFAULT_SEASON_ID &&
+                typeof affectedUserData.correctPredictions === "number"
+              ? affectedUserData.correctPredictions
+              : 0;
 
         const currentWeeklyWins =
-          typeof affectedUserData.weeklyWins === "number"
-            ? affectedUserData.weeklyWins
-            : 0;
+          typeof currentSeasonStats.weeklyWins === "number"
+            ? currentSeasonStats.weeklyWins
+            : activeSeasonId === DEFAULT_SEASON_ID &&
+                typeof affectedUserData.weeklyWins === "number"
+              ? affectedUserData.weeklyWins
+              : 0;
 
         const hadPreviousBonus =
           previousWinnerIds.includes(affectedUserId);
@@ -909,6 +945,8 @@ export default function AdminPage() {
           id: affectedUserId,
           correctPredictions,
           newWeeklyWins,
+          existingSeasonStats,
+          currentSeasonStats,
         };
       })
     );
@@ -916,13 +954,24 @@ export default function AdminPage() {
     const championBatch = writeBatch(db);
 
     for (const affectedUser of affectedUsers) {
+      const totalPoints =
+        affectedUser.correctPredictions + affectedUser.newWeeklyWins;
+
       championBatch.update(
         doc(db, "users", affectedUser.id),
         {
           weeklyWins: affectedUser.newWeeklyWins,
-          totalPoints:
-            affectedUser.correctPredictions +
-            affectedUser.newWeeklyWins,
+          correctPredictions: affectedUser.correctPredictions,
+          totalPoints,
+          seasonStats: {
+            ...affectedUser.existingSeasonStats,
+            [activeSeasonId]: {
+              ...affectedUser.currentSeasonStats,
+              correctPredictions: affectedUser.correctPredictions,
+              weeklyWins: affectedUser.newWeeklyWins,
+              totalPoints,
+            },
+          },
           updatedAt: serverTimestamp(),
         }
       );
@@ -1143,7 +1192,26 @@ export default function AdminPage() {
   }
 
   async function recalculateAllUserPoints() {
-    const usersSnapshot = await getDocs(collection(db, "users"));
+    const activeSeasonId = seasonId.trim() || DEFAULT_SEASON_ID;
+
+    const [usersSnapshot, matchesSnapshot] = await Promise.all([
+      getDocs(collection(db, "users")),
+      getDocs(collection(db, "matches")),
+    ]);
+
+    const activeSeasonMatchIds = new Set(
+      matchesSnapshot.docs
+        .filter((matchDocument) => {
+          const matchData = matchDocument.data();
+
+          return (
+            matchData.seasonId === activeSeasonId ||
+            (!matchData.seasonId &&
+              activeSeasonId === DEFAULT_SEASON_ID)
+          );
+        })
+        .map((matchDocument) => matchDocument.id)
+    );
 
     for (const userDocument of usersSnapshot.docs) {
       const userPredictionsQuery = query(
@@ -1161,6 +1229,8 @@ export default function AdminPage() {
         const predictionData = predictionDocument.data();
 
         if (
+          typeof predictionData.matchId === "string" &&
+          activeSeasonMatchIds.has(predictionData.matchId) &&
           predictionData.isCorrect === true &&
           predictionData.awardedPoints === 1
         ) {
@@ -1169,15 +1239,40 @@ export default function AdminPage() {
       });
 
       const userData = userDocument.data();
+      const existingSeasonStats =
+        userData.seasonStats && typeof userData.seasonStats === "object"
+          ? userData.seasonStats
+          : {};
+
+      const currentSeasonStats =
+        existingSeasonStats[activeSeasonId] &&
+        typeof existingSeasonStats[activeSeasonId] === "object"
+          ? existingSeasonStats[activeSeasonId]
+          : {};
 
       const weeklyWins =
-        typeof userData.weeklyWins === "number"
-          ? userData.weeklyWins
-          : 0;
+        typeof currentSeasonStats.weeklyWins === "number"
+          ? currentSeasonStats.weeklyWins
+          : activeSeasonId === DEFAULT_SEASON_ID &&
+              typeof userData.weeklyWins === "number"
+            ? userData.weeklyWins
+            : 0;
+
+      const totalPoints = correctPredictions + weeklyWins;
 
       await updateDoc(doc(db, "users", userDocument.id), {
         correctPredictions,
-        totalPoints: correctPredictions + weeklyWins,
+        weeklyWins,
+        totalPoints,
+        seasonStats: {
+          ...existingSeasonStats,
+          [activeSeasonId]: {
+            ...currentSeasonStats,
+            correctPredictions,
+            weeklyWins,
+            totalPoints,
+          },
+        },
         updatedAt: serverTimestamp(),
       });
     }

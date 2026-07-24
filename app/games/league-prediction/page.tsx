@@ -1,61 +1,108 @@
 import Link from "next/link";
-import GameNavigation from "@/components/GameNavigation";
 
-const rules = [
+const gameSections = [
   {
-    title: "Tahminlerin kapanması",
-    text: "Her maçın tahmini, maçın başlama saatinden 5 dakika önce kapanır. Kapanan tahmin değiştirilemez.",
+    href: "/predictions",
+    icon: "⚽",
+    title: "Tahminler",
+    description:
+      "Haftanın maçlarını görüntüle ve maçlar kapanmadan tahminlerini kaydet.",
   },
   {
-    title: "Doğru tahmin puanı",
-    text: "Maç sonucunu doğru tahmin eden oyuncu 1 puan kazanır. Ev sahibi, beraberlik ve deplasman sonucu esas alınır.",
+    href: "/standings",
+    icon: "🏆",
+    title: "Puan Durumu",
+    description:
+      "Lig Tahmin Oyunu sezon sıralamasını ve oyuncuların puanlarını görüntüle.",
   },
   {
-    title: "Hafta şampiyonu bonusu",
-    text: "Haftanın en yüksek puanını alan oyuncu toplam puanına +1 bonus kazanır.",
+    href: "/statistics",
+    icon: "📈",
+    title: "İstatistikler",
+    description:
+      "Doğru tahminleri, başarı oranlarını ve oyuncu istatistiklerini incele.",
   },
   {
-    title: "Haftalık eşitlik",
-    text: "Birden fazla oyuncu haftanın en yüksek puanında eşitse, eşit durumdaki oyuncuların tamamı +1 bonus kazanır.",
-  },
-  {
-    title: "Sezon sistemi",
-    text: "Puan durumu ve istatistikler sezon bazında tutulur. Geçmiş sezonlar arşivden ayrıca görüntülenebilir.",
-  },
-  {
-    title: "Kural güncellemeleri",
-    text: "Zorunlu bir kural değişikliği yapılırsa yönetim bunu uygulama içinden duyurur. Değişiklikler geriye dönük haksız puan kaybı oluşturmayacak şekilde uygulanır.",
+    href: "/games/league-prediction/rules",
+    icon: "📜",
+    title: "Kurallar",
+    description:
+      "Lig Tahmin Oyunu puanlama ve tahmin kurallarını görüntüle.",
   },
 ];
 
-export default function RulesPage() {
+export default function LeaguePredictionPage() {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#4a321f_0%,#1c1712_42%,#090807_100%)] px-4 py-8 text-stone-100 sm:px-6 sm:py-12">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <Link href="/games/league-prediction" className="font-bold text-amber-200 hover:text-amber-100">← Oyuna Dön</Link>
-          <span className="text-sm font-bold text-stone-400">Son güncelleme: Temmuz 2026</span>
-        </div>
+    <main className="min-h-screen bg-gradient-to-br from-zinc-950 via-red-950 to-black px-4 py-10 text-white">
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-8 rounded-3xl border border-white/10 bg-black/30 p-6 shadow-xl backdrop-blur-md sm:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-[0.25em] text-red-300">
+                Has Gardaşlar
+              </p>
 
-        <GameNavigation active="rules" />
+              <h1 className="mt-2 text-3xl font-black sm:text-4xl">
+                ⚽ Lig Tahmin Oyunu
+              </h1>
 
-        <header className="rounded-3xl border border-amber-200/15 bg-stone-950/70 p-6 backdrop-blur sm:p-9">
-          <p className="text-sm font-black uppercase tracking-[0.3em] text-amber-300/80">Lig Tahmin Oyunu</p>
-          <h1 className="mt-3 text-3xl font-black text-amber-100 sm:text-5xl">Kurallar</h1>
-          <p className="mt-4 text-stone-300">Oyuna katılan her kullanıcı aşağıdaki kuralları kabul etmiş sayılır.</p>
+              <p className="mt-3 max-w-2xl text-zinc-300">
+                Tahminlerini yap, puan durumunu takip et ve istatistiklerini
+                incele.
+              </p>
+            </div>
+
+            <div className="text-7xl">
+              ⚽
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link
+              href="/games"
+              className="rounded-xl border border-white/20 px-5 py-3 font-bold transition hover:bg-white/10"
+            >
+              ← Oyunlara Dön
+            </Link>
+
+            <Link
+              href="/"
+              className="rounded-xl border border-white/20 px-5 py-3 font-bold transition hover:bg-white/10"
+            >
+              Ana Sayfa
+            </Link>
+          </div>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-2">
-          {rules.map((rule, index) => (
-            <article key={rule.title} className="rounded-2xl border border-stone-700/80 bg-black/30 p-5">
-              <div className="flex items-start gap-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-300 font-black text-stone-950">{index + 1}</span>
-                <div>
-                  <h2 className="text-lg font-black text-amber-100">{rule.title}</h2>
-                  <p className="mt-2 leading-7 text-stone-300">{rule.text}</p>
+        <section className="grid gap-5 sm:grid-cols-2">
+          {gameSections.map((section) => (
+            <Link
+              key={section.href}
+              href={section.href}
+              className="group rounded-3xl border border-white/10 bg-black/30 p-6 shadow-xl transition hover:-translate-y-1 hover:border-red-300/60 hover:bg-red-950/50"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="text-5xl">
+                  {section.icon}
                 </div>
+
+                <span className="text-2xl text-zinc-400 transition group-hover:translate-x-1 group-hover:text-white">
+                  →
+                </span>
               </div>
-            </article>
+
+              <h2 className="mt-5 text-2xl font-black">
+                {section.title}
+              </h2>
+
+              <p className="mt-3 text-zinc-300">
+                {section.description}
+              </p>
+
+              <div className="mt-6 rounded-xl bg-white/10 px-4 py-3 text-center font-black transition group-hover:bg-white group-hover:text-red-800">
+                Aç
+              </div>
+            </Link>
           ))}
         </section>
       </div>
