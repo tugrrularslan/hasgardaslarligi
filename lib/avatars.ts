@@ -24,7 +24,7 @@ export const AVATAR_CATEGORIES: AvatarCategory[] = [
     description: "Krallar, savaşçılar ve güneş kursu muhafızları",
     avatars: [
       avatar("01-kral", "Büyük Hitit Kralı"),
-      avatar("02-kralice", "Hitit Kraliçesi"),
+      avatar("02-kralice", "Hitit Başrahibi"),
       avatar("03-mizrakli", "Mızraklı Muhafız"),
       avatar("04-muhafiz", "Kraliyet Muhafızı"),
       avatar("05-komutan", "Savaş Arabası Komutanı"),
