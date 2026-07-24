@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
-  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -370,40 +369,53 @@ export default function AdminPage() {
       return;
     }
 
+    if (!user) {
+      setMessage("Maç eklemek için yeniden giriş yap.");
+      return;
+    }
+
     setSavingMatch(true);
 
     try {
-      await addDoc(collection(db, "matches"), {
-        week: weekNumber,
-        seasonId: seasonId.trim() || DEFAULT_SEASON_ID,
-        homeTeam: homeTeam.trim(),
-        awayTeam: awayTeam.trim(),
-        kickoff: Timestamp.fromDate(kickoffDate),
+      const idToken = await user.getIdToken();
 
-        predictionDeadline: Timestamp.fromDate(
-          new Date(kickoffDate.getTime() - 5 * 60 * 1000)
-        ),
-
-        status: "scheduled",
-        homeScore: null,
-        awayScore: null,
-        result: null,
-        pointsCalculated: false,
-
-        createdBy: user?.uid ?? null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+      const response = await fetch("/api/admin/create-match", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          week: weekNumber,
+          seasonId: seasonId.trim() || DEFAULT_SEASON_ID,
+          homeTeam: homeTeam.trim(),
+          awayTeam: awayTeam.trim(),
+          kickoff: kickoffDate.toISOString(),
+        }),
       });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          responseData.error || "Maç eklenemedi."
+        );
+      }
 
       setHomeTeam("");
       setAwayTeam("");
       setKickoff("");
 
-      setMessage("Maç başarıyla eklendi.");
+      setMessage(
+        "Maç eklendi ve iki otomatik bildirim görevi oluşturuldu."
+      );
     } catch (error) {
       console.error(error);
+
       setMessage(
-        "Maç eklenemedi. Firestore kurallarını kontrol et."
+        error instanceof Error
+          ? error.message
+          : "Maç eklenemedi."
       );
     } finally {
       setSavingMatch(false);
@@ -1829,4 +1841,4 @@ function getResultDescription(
   }
 
   return "X — Beraberlik";
-}
+  }
