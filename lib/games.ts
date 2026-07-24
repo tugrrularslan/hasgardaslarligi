@@ -20,7 +20,7 @@ export const games: GameDefinition[] = [
     description:
       "Haftalık lig maçlarını tahmin et, puanları topla ve sezonun şampiyonu ol.",
     status: "active",
-    icon: "⚽",
+    icon: "✥",
     href: "/games/league-prediction",
   },
   {
@@ -31,7 +31,7 @@ export const games: GameDefinition[] = [
     description:
       "Has Gardaşlar'ın sıradaki oyunu için altyapı hazır. Oyun duyurulduğunda burada açılacak.",
     status: "coming-soon",
-    icon: "🏛️",
+    icon: "☼",
     href: "/games",
   },
 ];

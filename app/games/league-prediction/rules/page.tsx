@@ -1,5 +1,6 @@
 import Link from "next/link";
 import GameNavigation from "@/components/GameNavigation";
+import HittiteIcon from "@/components/HittiteIcon";
 
 const rules = [
   {
@@ -39,8 +40,9 @@ export default function RulesPage() {
             Lig Tahmin Oyunu
           </p>
 
-          <h1 className="mt-2 text-3xl font-black">
-            📜 Oyun Kuralları
+          <h1 className="mt-2 flex items-center gap-3 text-3xl font-black">
+            <HittiteIcon name="rules" size="lg" />
+            Oyun Kuralları
           </h1>
 
           <p className="mt-3 text-zinc-300">
@@ -76,16 +78,18 @@ export default function RulesPage() {
         <div className="mt-7 grid gap-3 sm:grid-cols-2">
           <Link
             href="/predictions"
-            className="hg-primary rounded-xl px-5 py-4 text-center font-black"
+            className="hg-primary hg-icon-label rounded-xl px-5 py-4 text-center font-black"
           >
-            ⚽ Tahminlere Git
+            <HittiteIcon name="ball" size="sm" />
+            Tahminlere Git
           </Link>
 
           <Link
             href="/games"
-            className="rounded-xl border border-white/20 px-5 py-4 text-center font-black transition hover:bg-white/10"
+            className="hg-icon-label rounded-xl border border-white/20 px-5 py-4 text-center font-black transition hover:bg-white/10"
           >
-            🎮 Oyunlara Dön
+            <HittiteIcon name="game" size="sm" />
+            Oyunlara Dön
           </Link>
         </div>
       </div>

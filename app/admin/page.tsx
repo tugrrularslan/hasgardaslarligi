@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
+import HittiteIcon from "@/components/HittiteIcon";
 import SeasonLabel from "@/components/SeasonLabel";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 import { getSeasonResetConfirmation } from "@/lib/admin-reset";
@@ -1423,8 +1424,9 @@ export default function AdminPage() {
 
             <SeasonLabel className="text-yellow-300" />
 
-            <h1 className="mt-1 text-3xl font-black">
-              👑 Admin Paneli
+            <h1 className="mt-1 flex items-center gap-3 text-3xl font-black">
+              <HittiteIcon name="crown" size="lg" />
+              Admin Paneli
             </h1>
 
             <p className="mt-2 text-zinc-400">
@@ -1435,8 +1437,9 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="rounded-xl border border-zinc-700 px-5 py-3 font-bold text-zinc-300 transition hover:border-yellow-500 hover:text-yellow-400"
+            className="hg-icon-label rounded-xl border border-zinc-700 px-5 py-3 font-bold text-zinc-300 transition hover:border-yellow-500 hover:text-yellow-400"
           >
+            <HittiteIcon name="home" size="sm" />
             Ana Sayfaya Dön
           </button>
         </header>

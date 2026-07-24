@@ -20,6 +20,7 @@ import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import SeasonLabel from "@/components/SeasonLabel";
+import HittiteIcon from "@/components/HittiteIcon";
 import {
   DEFAULT_AVATAR,
   REGISTRATION_AVATARS,
@@ -348,9 +349,7 @@ export default function HomePage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black px-4 text-white">
         <div className="text-center">
-          <div className="text-6xl">
-            ⚽
-          </div>
+          <HittiteIcon name="sun" size="xl" />
 
           <p className="mt-4 font-bold">
             Has Gardaşlar yükleniyor...
@@ -443,16 +442,18 @@ export default function HomePage() {
           <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Link
               href="/games"
-              className={`flex min-h-[120px] items-center justify-center rounded-2xl px-6 py-5 text-center text-xl font-black transition hover:-translate-y-1 ${activeTheme.primaryButtonClass}`}
+              className={`hg-icon-label min-h-[120px] rounded-2xl px-6 py-5 text-center text-xl font-black transition hover:-translate-y-1 ${activeTheme.primaryButtonClass}`}
             >
-              🎮 Oyunlar
+              <HittiteIcon name="game" size="lg" />
+              Oyunlar
             </Link>
 
             <Link
               href="/profile"
-              className={`flex min-h-[120px] items-center justify-center rounded-2xl px-6 py-5 text-center text-xl font-black transition hover:-translate-y-1 ${activeTheme.secondaryButtonClass}`}
+              className={`hg-icon-label min-h-[120px] rounded-2xl px-6 py-5 text-center text-xl font-black transition hover:-translate-y-1 ${activeTheme.secondaryButtonClass}`}
             >
-              👤 Profilim
+              <HittiteIcon name="user" size="lg" />
+              Profilim
             </Link>
           </section>
 
@@ -461,15 +462,18 @@ export default function HomePage() {
               <div
                 className={`rounded-2xl border p-4 text-center font-bold ${activeTheme.secondaryCardClass} ${activeTheme.textClass}`}
               >
-                👑 Yönetici hesabıyla
-                giriş yaptın
+                <span className="hg-icon-label">
+                  <HittiteIcon name="crown" size="sm" />
+                  Yönetici hesabıyla giriş yaptın
+                </span>
               </div>
 
               <Link
                 href="/admin"
-                className={`block w-full rounded-2xl px-6 py-4 text-center text-lg font-black transition hover:-translate-y-1 ${activeTheme.primaryButtonClass}`}
+                className={`hg-icon-label w-full rounded-2xl px-6 py-4 text-center text-lg font-black transition hover:-translate-y-1 ${activeTheme.primaryButtonClass}`}
               >
-                👑 Admin Paneline Git
+                <HittiteIcon name="crown" size="sm" />
+                Admin Paneline Git
               </Link>
             </section>
           )}
@@ -485,9 +489,10 @@ export default function HomePage() {
           <button
             type="button"
             onClick={handleLogout}
-            className={`mt-8 w-full rounded-2xl px-6 py-4 text-lg font-black transition hover:-translate-y-1 ${activeTheme.secondaryButtonClass}`}
+            className={`hg-icon-label mt-8 w-full rounded-2xl px-6 py-4 text-lg font-black transition hover:-translate-y-1 ${activeTheme.secondaryButtonClass}`}
           >
-            🚪 Çıkış Yap
+            <HittiteIcon name="exit" size="sm" />
+            Çıkış Yap
           </button>
         </div>
       </main>
@@ -498,9 +503,7 @@ export default function HomePage() {
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-950 via-red-900 to-black px-4 py-10 text-white">
       <div className="w-full max-w-lg rounded-3xl border border-red-400/40 bg-red-950/80 p-6 shadow-2xl backdrop-blur-md sm:p-8">
         <header className="mb-8 text-center">
-          <div className="text-6xl">
-            ⚽
-          </div>
+          <HittiteIcon name="sun" size="xl" />
 
           <h1 className="mt-4 text-2xl font-black tracking-wide sm:text-3xl">
             HAS GARDAŞLAR

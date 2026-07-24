@@ -1,6 +1,7 @@
 "use client";
 
 import GameNavigation from "@/components/GameNavigation";
+import HittiteIcon, { type HittiteIconName } from "@/components/HittiteIcon";
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
@@ -465,7 +466,7 @@ export default function StatisticsPage() {
         className={`flex min-h-screen items-center justify-center px-4 ${activeTheme.pageClass}`}
       >
         <div className="text-center">
-          <div className="text-4xl">📊</div>
+          <HittiteIcon name="chart" size="lg" />
           <p className={`mt-4 font-bold ${activeTheme.textClass}`}>
             {checkingAccess
               ? "Kullanıcı yetkisi kontrol ediliyor..."
@@ -492,8 +493,9 @@ export default function StatisticsPage() {
 
             <SeasonLabel className={activeTheme.mutedTextClass} />
 
-            <h1 className={`mt-1 text-3xl font-black ${activeTheme.titleClass}`}>
-              📊 İstatistikler
+            <h1 className={`mt-1 flex items-center gap-3 text-3xl font-black ${activeTheme.titleClass}`}>
+              <HittiteIcon name="chart" size="lg" />
+              İstatistikler
             </h1>
 
             <p className={`mt-2 ${activeTheme.mutedTextClass}`}>
@@ -506,8 +508,9 @@ export default function StatisticsPage() {
           <button
             type="button"
             onClick={() => router.push("/")}
-            className={`rounded-xl px-5 py-3 font-bold transition ${activeTheme.secondaryButtonClass}`}
+            className={`hg-icon-label rounded-xl px-5 py-3 font-bold transition ${activeTheme.secondaryButtonClass}`}
           >
+            <HittiteIcon name="home" size="sm" />
             Ana Sayfaya Dön
           </button>
           </div>
@@ -524,31 +527,31 @@ export default function StatisticsPage() {
           <SummaryCard
             label="Oyuncu"
             value={leagueSummary.participantCount}
-            icon="👥"
+            icon="group"
             theme={activeTheme}
           />
           <SummaryCard
             label="Biten maç"
             value={leagueSummary.finishedMatchCount}
-            icon="⚽"
+            icon="ball"
             theme={activeTheme}
           />
           <SummaryCard
             label="Kontrol edilen tahmin"
             value={leagueSummary.totalPredictions}
-            icon="🧾"
+            icon="record"
             theme={activeTheme}
           />
           <SummaryCard
             label="Lig başarı oranı"
             value={`%${leagueSummary.averageSuccessRate}`}
-            icon="🎯"
+            icon="target"
             theme={activeTheme}
           />
           <SummaryCard
             label="En yüksek oran"
             value={`%${leagueSummary.bestSuccessRate}`}
-            icon="👑"
+            icon="crown"
             theme={activeTheme}
           />
           </section>
@@ -556,7 +559,7 @@ export default function StatisticsPage() {
 
         {statistics.length === 0 ? (
           <div className={`rounded-3xl border border-dashed p-12 text-center ${activeTheme.cardClass}`}>
-            <p className="text-4xl">📭</p>
+            <HittiteIcon name="record" size="lg" />
             <p className={`mt-4 font-bold ${activeTheme.textClass}`}>
               Henüz istatistiği gösterilecek kullanıcı yok.
             </p>
@@ -631,49 +634,49 @@ export default function StatisticsPage() {
                   <StatCard
                     label="Toplam puan"
                     value={selectedUser.totalPoints}
-                    icon="⭐"
+                    icon="sun"
                     theme={activeTheme}
                   />
                   <StatCard
                     label="Doğru tahmin"
                     value={selectedUser.correctCount}
-                    icon="✅"
+                    icon="check"
                     theme={activeTheme}
                   />
                   <StatCard
                     label="Yanlış tahmin"
                     value={selectedUser.wrongCount}
-                    icon="❌"
+                    icon="close"
                     theme={activeTheme}
                   />
                   <StatCard
                     label="Bekleyen tahmin"
                     value={selectedUser.pendingCount}
-                    icon="⏳"
+                    icon="clock"
                     theme={activeTheme}
                   />
                   <StatCard
                     label="Hafta şampiyonluğu"
                     value={selectedUser.weeklyWins}
-                    icon="🏆"
+                    icon="trophy"
                     theme={activeTheme}
                   />
                   <StatCard
                     label="En uzun doğru seri"
                     value={selectedUser.longestCorrectStreak}
-                    icon="🔥"
+                    icon="fire"
                     theme={activeTheme}
                   />
                   <StatCard
                     label="En uzun yanlış seri"
                     value={selectedUser.longestWrongStreak}
-                    icon="🥶"
+                    icon="shield"
                     theme={activeTheme}
                   />
                   <StatCard
                     label="Sonuçlanan tahmin"
                     value={selectedUser.predictionCount}
-                    icon="📋"
+                    icon="record"
                     theme={activeTheme}
                   />
                 </div>
@@ -765,10 +768,16 @@ export default function StatisticsPage() {
                           %{user.successRate}
                         </td>
                         <td className="px-3 py-4 text-center">
-                          🔥 {user.longestCorrectStreak}
+                          <span className="hg-icon-label">
+                            <HittiteIcon name="fire" size="xs" />
+                            {user.longestCorrectStreak}
+                          </span>
                         </td>
                         <td className="px-3 py-4 text-center">
-                          🏆 {user.weeklyWins}
+                          <span className="hg-icon-label">
+                            <HittiteIcon name="trophy" size="xs" />
+                            {user.weeklyWins}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -792,12 +801,12 @@ function SummaryCard({
 }: {
   label: string;
   value: number | string;
-  icon: string;
+  icon: HittiteIconName;
   theme: AppTheme;
 }) {
   return (
     <div className={`rounded-2xl border p-5 ${theme.cardClass}`}>
-      <div className="text-2xl">{icon}</div>
+      <HittiteIcon name={icon} size="md" />
       <p className={`mt-3 text-2xl font-black ${theme.titleClass}`}>{value}</p>
       <p className={`mt-1 text-xs font-bold uppercase tracking-widest ${theme.mutedTextClass}`}>
         {label}
@@ -814,13 +823,13 @@ function StatCard({
 }: {
   label: string;
   value: number | string;
-  icon: string;
+  icon: HittiteIconName;
   theme: AppTheme;
 }) {
   return (
     <div className={`rounded-2xl border p-5 ${theme.secondaryCardClass}`}>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-2xl">{icon}</span>
+        <HittiteIcon name={icon} size="md" />
         <span className={`text-2xl font-black ${theme.titleClass}`}>{value}</span>
       </div>
       <p className={`mt-4 text-sm font-bold ${theme.mutedTextClass}`}>

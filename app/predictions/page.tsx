@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
+import HittiteIcon from "@/components/HittiteIcon";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
 const CURRENT_SEASON = "2026–2027 Sezonu";
@@ -259,9 +260,10 @@ export default function PredictionsPage() {
               </p>
 
               <h1
-                className={`mt-1 text-2xl font-black sm:text-3xl lg:text-4xl ${activeTheme.titleClass}`}
+                className={`mt-1 flex items-center gap-3 text-2xl font-black sm:text-3xl lg:text-4xl ${activeTheme.titleClass}`}
               >
-                ⚽ Tahminler
+                <HittiteIcon name="ball" size="lg" />
+                Tahminler
               </h1>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -279,8 +281,9 @@ export default function PredictionsPage() {
 
             <Link
               href="/"
-              className={`w-full rounded-xl px-5 py-3 text-center font-bold transition lg:w-auto ${activeTheme.secondaryButtonClass}`}
+              className={`hg-icon-label w-full rounded-xl px-5 py-3 text-center font-bold transition lg:w-auto ${activeTheme.secondaryButtonClass}`}
             >
+              <HittiteIcon name="home" size="sm" />
               Ana Sayfaya Dön
             </Link>
           </div>

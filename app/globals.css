@@ -206,6 +206,72 @@ body.global-theme-bazalt {
 }
 .hg-primary:hover, .hg-secondary:hover, .hg-nav-item:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
+/* Has Gardaşlar icon language: small Hitit-inspired stone medallions. */
+.hg-hittite-icon {
+  --hg-icon-size: 2rem;
+  position: relative;
+  display: inline-grid;
+  width: var(--hg-icon-size);
+  height: var(--hg-icon-size);
+  flex: 0 0 var(--hg-icon-size);
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, currentColor 46%, var(--hg-border));
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 36% 28%, rgba(255,255,255,.22), transparent 24%),
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--hg-accent) 30%, var(--hg-panel-soft)),
+      color-mix(in srgb, var(--hg-bg-deep) 76%, var(--hg-accent)));
+  color: inherit;
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--hg-bg-deep) 68%, transparent),
+    inset 0 0 0 4px color-mix(in srgb, currentColor 16%, transparent),
+    0 4px 12px color-mix(in srgb, var(--hg-bg-deep) 34%, transparent);
+  vertical-align: middle;
+}
+.hg-hittite-icon::before {
+  content: "";
+  position: absolute;
+  inset: 16%;
+  border: 1px dotted color-mix(in srgb, currentColor 48%, transparent);
+  border-radius: inherit;
+  opacity: .8;
+}
+.hg-hittite-icon::after {
+  content: "";
+  position: absolute;
+  inset: 7%;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: inherit;
+}
+.hg-hittite-icon__glyph {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: calc(var(--hg-icon-size) * .48);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--hg-bg-deep) 70%, transparent);
+}
+.hg-hittite-icon--xs { --hg-icon-size: 1.35rem; }
+.hg-hittite-icon--sm { --hg-icon-size: 1.65rem; }
+.hg-hittite-icon--md { --hg-icon-size: 2rem; }
+.hg-hittite-icon--lg { --hg-icon-size: 3rem; }
+.hg-hittite-icon--xl { --hg-icon-size: 4.75rem; }
+.hg-hittite-icon[data-icon="sun"] .hg-hittite-icon__glyph,
+.hg-hittite-icon[data-icon="game"] .hg-hittite-icon__glyph {
+  font-size: calc(var(--hg-icon-size) * .58);
+}
+.hg-icon-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+}
+
 /* Inputs and controls across every screen */
 body[class*="global-theme-"] :is(input, textarea, select) {
   border: 1px solid var(--hg-border) !important;

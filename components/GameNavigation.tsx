@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import HittiteIcon, { type HittiteIconName } from "@/components/HittiteIcon";
 
-const links = [
-  { href: "/games/league-prediction", label: "Oyun", icon: "🎮" },
-  { href: "/predictions", label: "Tahminler", icon: "⚽" },
-  { href: "/standings", label: "Puan Durumu", icon: "🏆" },
-  { href: "/statistics", label: "İstatistikler", icon: "📈" },
-  { href: "/games/league-prediction/rules", label: "Kurallar", icon: "📜" },
+const links: Array<{
+  href: string;
+  label: string;
+  icon: HittiteIconName;
+}> = [
+  { href: "/games/league-prediction", label: "Oyun", icon: "game" },
+  { href: "/predictions", label: "Tahminler", icon: "ball" },
+  { href: "/standings", label: "Puan Durumu", icon: "trophy" },
+  { href: "/statistics", label: "İstatistikler", icon: "chart" },
+  { href: "/games/league-prediction/rules", label: "Kurallar", icon: "rules" },
 ];
 
 export default function GameNavigation() {
@@ -29,11 +34,11 @@ export default function GameNavigation() {
               key={link.href}
               href={link.href}
               aria-current={active ? "page" : undefined}
-              className={`rounded-xl px-3 py-3 text-center text-sm font-bold transition ${
+              className={`hg-icon-label rounded-xl px-3 py-3 text-center text-sm font-bold transition ${
                 active ? "hg-nav-active" : "hg-nav-item"
               }`}
             >
-              <span className="mr-1" aria-hidden="true">{link.icon}</span>
+              <HittiteIcon name={link.icon} size="sm" />
               {link.label}
             </Link>
           );

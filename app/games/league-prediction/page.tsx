@@ -1,30 +1,36 @@
 import Link from "next/link";
+import HittiteIcon, { type HittiteIconName } from "@/components/HittiteIcon";
 
-const gameSections = [
+const gameSections: Array<{
+  href: string;
+  icon: HittiteIconName;
+  title: string;
+  description: string;
+}> = [
   {
     href: "/predictions",
-    icon: "⚽",
+    icon: "ball",
     title: "Tahminler",
     description:
       "Haftanın maçlarını görüntüle ve maçlar kapanmadan tahminlerini kaydet.",
   },
   {
     href: "/standings",
-    icon: "🏆",
+    icon: "trophy",
     title: "Puan Durumu",
     description:
       "Lig Tahmin Oyunu sezon sıralamasını ve oyuncuların puanlarını görüntüle.",
   },
   {
     href: "/statistics",
-    icon: "📈",
+    icon: "chart",
     title: "İstatistikler",
     description:
       "Doğru tahminleri, başarı oranlarını ve oyuncu istatistiklerini incele.",
   },
   {
     href: "/games/league-prediction/rules",
-    icon: "📜",
+    icon: "rules",
     title: "Kurallar",
     description:
       "Lig Tahmin Oyunu puanlama ve tahmin kurallarını görüntüle.",
@@ -42,8 +48,9 @@ export default function LeaguePredictionPage() {
                 Has Gardaşlar
               </p>
 
-              <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-                ⚽ Lig Tahmin Oyunu
+              <h1 className="mt-2 flex items-center gap-3 text-3xl font-black sm:text-4xl">
+                <HittiteIcon name="ball" size="lg" />
+                Lig Tahmin Oyunu
               </h1>
 
               <p className="mt-3 max-w-2xl text-zinc-300">
@@ -52,23 +59,23 @@ export default function LeaguePredictionPage() {
               </p>
             </div>
 
-            <div className="text-7xl">
-              ⚽
-            </div>
+            <HittiteIcon name="sun" size="xl" />
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href="/games"
-              className="rounded-xl border border-white/20 px-5 py-3 font-bold transition hover:bg-white/10"
+              className="hg-icon-label rounded-xl border border-white/20 px-5 py-3 font-bold transition hover:bg-white/10"
             >
-              ← Oyunlara Dön
+              <HittiteIcon name="back" size="sm" />
+              Oyunlara Dön
             </Link>
 
             <Link
               href="/"
-              className="rounded-xl border border-white/20 px-5 py-3 font-bold transition hover:bg-white/10"
+              className="hg-icon-label rounded-xl border border-white/20 px-5 py-3 font-bold transition hover:bg-white/10"
             >
+              <HittiteIcon name="home" size="sm" />
               Ana Sayfa
             </Link>
           </div>
@@ -82,13 +89,13 @@ export default function LeaguePredictionPage() {
               className="group rounded-3xl border border-white/10 bg-black/30 p-6 shadow-xl transition hover:-translate-y-1 hover:border-red-300/60 hover:bg-red-950/50"
             >
               <div className="flex items-start justify-between gap-4">
-                <div className="text-5xl">
-                  {section.icon}
-                </div>
+                <HittiteIcon name={section.icon} size="lg" />
 
-                <span className="text-2xl text-zinc-400 transition group-hover:translate-x-1 group-hover:text-white">
-                  →
-                </span>
+                <HittiteIcon
+                  name="forward"
+                  size="sm"
+                  className="text-zinc-400 transition group-hover:translate-x-1 group-hover:text-white"
+                />
               </div>
 
               <h2 className="mt-5 text-2xl font-black">
@@ -99,7 +106,8 @@ export default function LeaguePredictionPage() {
                 {section.description}
               </p>
 
-              <div className="hg-primary mt-6 rounded-xl px-4 py-3 text-center font-black transition">
+              <div className="hg-primary hg-icon-label mt-6 rounded-xl px-4 py-3 text-center font-black transition">
+                <HittiteIcon name={section.icon} size="sm" />
                 Aç
               </div>
             </Link>

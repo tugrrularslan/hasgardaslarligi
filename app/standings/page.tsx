@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import BadgeArtwork from "@/components/BadgeArtwork";
+import HittiteIcon from "@/components/HittiteIcon";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 import SeasonLabel from "@/components/SeasonLabel";
@@ -320,9 +321,10 @@ export default function StandingsPage() {
               <SeasonLabel className={activeTheme.mutedTextClass} />
 
               <h1
-                className={`mt-1 text-2xl font-black sm:text-3xl lg:text-4xl ${activeTheme.titleClass}`}
+                className={`mt-1 flex items-center gap-3 text-2xl font-black sm:text-3xl lg:text-4xl ${activeTheme.titleClass}`}
               >
-                🏆 Puan Durumu
+                <HittiteIcon name="trophy" size="lg" />
+                Puan Durumu
               </h1>
 
               <p
@@ -334,8 +336,9 @@ export default function StandingsPage() {
 
             <Link
               href="/"
-              className={`w-full rounded-xl px-5 py-3 text-center font-bold transition lg:w-auto ${activeTheme.secondaryButtonClass}`}
+              className={`hg-icon-label w-full rounded-xl px-5 py-3 text-center font-bold transition lg:w-auto ${activeTheme.secondaryButtonClass}`}
             >
+              <HittiteIcon name="home" size="sm" />
               Ana Sayfaya Dön
             </Link>
           </div>
@@ -511,13 +514,11 @@ export default function StandingsPage() {
                             />
 
                             {position <= 3 && (
-                              <span className="absolute -right-1 -top-1 text-sm">
-                                {position === 1
-                                  ? "👑"
-                                  : position === 2
-                                    ? "✨"
-                                    : "⭐"}
-                              </span>
+                              <HittiteIcon
+                                name={position === 1 ? "crown" : "sun"}
+                                size="xs"
+                                className="absolute -right-1 -top-1"
+                              />
                             )}
                           </div>
 
@@ -639,9 +640,7 @@ function PodiumCard({
       <div className="relative">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <span className="text-4xl md:text-5xl">
-              {podiumStyle.medal}
-            </span>
+            <HittiteIcon name={podiumStyle.medal} size="lg" />
 
             <p
               className={`mt-2 text-xs font-black uppercase tracking-widest ${podiumStyle.labelClass}`}
@@ -652,8 +651,9 @@ function PodiumCard({
 
           <div className="flex flex-col items-end gap-2">
             {position === 1 && (
-              <span className="rounded-full border border-yellow-300/40 bg-yellow-400/15 px-3 py-1 text-xs font-black text-yellow-200">
-                👑 Lider
+              <span className="hg-icon-label rounded-full border border-yellow-300/40 bg-yellow-400/15 px-3 py-1 text-xs font-black text-yellow-200">
+                <HittiteIcon name="crown" size="xs" />
+                Lider
               </span>
             )}
 
@@ -682,9 +682,11 @@ function PodiumCard({
             />
 
             {position === 1 && (
-              <span className="absolute -top-6 text-3xl">
-                👑
-              </span>
+              <HittiteIcon
+                name="crown"
+                size="md"
+                className="absolute -top-6"
+              />
             )}
           </div>
         </div>
@@ -709,14 +711,16 @@ function PodiumCard({
 
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           {isMostAccurate && (
-            <span className="rounded-full border border-orange-300/30 bg-orange-400/10 px-3 py-1 text-xs font-black text-orange-200">
-              🎯 En İsabetli
+            <span className="hg-icon-label rounded-full border border-orange-300/30 bg-orange-400/10 px-3 py-1 text-xs font-black text-orange-200">
+              <HittiteIcon name="target" size="xs" />
+              En İsabetli
             </span>
           )}
 
           {isWeeklyChampion && (
-            <span className="rounded-full border border-fuchsia-300/30 bg-fuchsia-400/10 px-3 py-1 text-xs font-black text-fuchsia-200">
-              🔥 Hafta Canavarı
+            <span className="hg-icon-label rounded-full border border-fuchsia-300/30 bg-fuchsia-400/10 px-3 py-1 text-xs font-black text-fuchsia-200">
+              <HittiteIcon name="fire" size="xs" />
+              Hafta Canavarı
             </span>
           )}
         </div>
@@ -875,9 +879,9 @@ function StatValue({
 }
 
 function getPositionIcon(position: number): string {
-  if (position === 1) return "🥇";
-  if (position === 2) return "🥈";
-  if (position === 3) return "🥉";
+  if (position === 1) return "♛";
+  if (position === 2) return "◆";
+  if (position === 3) return "◇";
 
   return `${position}.`;
 }
@@ -901,7 +905,7 @@ function getStandingRowStyle(position: number): string {
 function getPodiumStyle(position: number) {
   if (position === 1) {
     return {
-      medal: "🥇",
+      medal: "crown" as const,
       title: "Şampiyon",
       cardClass:
         "border-yellow-300/50 bg-gradient-to-b from-yellow-400/20 via-yellow-950/20 to-black/30 shadow-[0_0_45px_rgba(250,204,21,0.18)] md:scale-105",
@@ -918,7 +922,7 @@ function getPodiumStyle(position: number) {
 
   if (position === 2) {
     return {
-      medal: "🥈",
+      medal: "sun" as const,
       title: "İkinci",
       cardClass:
         "border-slate-300/40 bg-gradient-to-b from-slate-300/15 via-slate-900/20 to-black/30 shadow-[0_0_35px_rgba(203,213,225,0.12)]",
@@ -934,7 +938,7 @@ function getPodiumStyle(position: number) {
   }
 
   return {
-    medal: "🥉",
+    medal: "shield" as const,
     title: "Üçüncü",
     cardClass:
       "border-orange-400/40 bg-gradient-to-b from-orange-500/15 via-orange-950/20 to-black/30 shadow-[0_0_35px_rgba(249,115,22,0.12)]",

@@ -1,14 +1,20 @@
 import Link from "next/link";
+import HittiteIcon, { type HittiteIconName } from "@/components/HittiteIcon";
 
 type PlatformNavigationProps = {
   active?: "home" | "games" | "rankings" | "profile";
 };
 
-const items = [
-  { id: "home", label: "Ana Sayfa", href: "/" },
-  { id: "games", label: "Oyunlar", href: "/games" },
-  { id: "rankings", label: "Sıralamalar", href: "/rankings" },
-  { id: "profile", label: "Profil", href: "/profile" },
+const items: ReadonlyArray<{
+  id: NonNullable<PlatformNavigationProps["active"]>;
+  label: string;
+  href: string;
+  icon: HittiteIconName;
+}> = [
+  { id: "home", label: "Ana Sayfa", href: "/", icon: "home" },
+  { id: "games", label: "Oyunlar", href: "/games", icon: "game" },
+  { id: "rankings", label: "Sıralamalar", href: "/rankings", icon: "trophy" },
+  { id: "profile", label: "Profil", href: "/profile", icon: "user" },
 ] as const;
 
 export default function PlatformNavigation({ active }: PlatformNavigationProps) {
@@ -20,10 +26,11 @@ export default function PlatformNavigation({ active }: PlatformNavigationProps) 
             key={item.id}
             href={item.href}
             aria-current={active === item.id ? "page" : undefined}
-            className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
+            className={`hg-icon-label rounded-xl px-4 py-2 text-sm font-bold transition ${
               active === item.id ? "hg-nav-active" : "hg-nav-item"
             }`}
           >
+            <HittiteIcon name={item.icon} size="sm" />
             {item.label}
           </Link>
         ))}

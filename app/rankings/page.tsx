@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HittiteIcon from "@/components/HittiteIcon";
 import PlatformNavigation from "@/components/PlatformNavigation";
 import { games } from "@/lib/games";
 
@@ -29,7 +30,10 @@ export default function RankingsPage() {
               href={`${game.href}/standings`}
               className="rounded-2xl border border-stone-700/80 bg-black/30 p-5 transition hover:border-amber-300/40 hover:bg-black/45"
             >
-              <div className="text-3xl" aria-hidden="true">{game.icon}</div>
+              <HittiteIcon
+                name={game.id === "league-prediction" ? "ball" : "sun"}
+                size="lg"
+              />
               <h2 className="mt-4 text-xl font-black text-amber-100">{game.name}</h2>
               <p className="mt-2 text-stone-400">Güncel sezon puan durumunu görüntüle.</p>
             </Link>

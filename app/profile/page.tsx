@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import BadgeArtwork from "@/components/BadgeArtwork";
+import HittiteIcon from "@/components/HittiteIcon";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import SeasonLabel from "@/components/SeasonLabel";
 import {
@@ -519,8 +520,9 @@ export default function ProfilePage() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/"
-                className={`rounded-2xl px-6 py-3 text-center font-bold transition ${activeTheme.secondaryButtonClass}`}
+                className={`hg-icon-label rounded-2xl px-6 py-3 text-center font-bold transition ${activeTheme.secondaryButtonClass}`}
               >
+                <HittiteIcon name="home" size="sm" />
                 Ana Sayfa
               </Link>
             </div>
@@ -555,11 +557,11 @@ export default function ProfilePage() {
                     className="h-full w-full rounded-full"
                   />
                   {avatarChanged && (
-                    <span
-                      className={`absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full border text-sm font-black ${activeTheme.badgeClass}`}
-                    >
-                      ✓
-                    </span>
+                    <HittiteIcon
+                      name="check"
+                      size="md"
+                      className={`absolute -bottom-1 -right-1 ${activeTheme.badgeClass}`}
+                    />
                   )}
                 </div>
 
@@ -938,11 +940,11 @@ export default function ProfilePage() {
                               className="h-full w-full"
                             />
                             {isSelected && (
-                              <span
-                                className={`absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-black ${activeTheme.badgeClass}`}
-                              >
-                                ✓
-                              </span>
+                              <HittiteIcon
+                                name="check"
+                                size="xs"
+                                className={`absolute -right-1 -top-1 ${activeTheme.badgeClass}`}
+                              />
                             )}
                           </button>
                         );
@@ -957,8 +959,9 @@ export default function ProfilePage() {
                   type="button"
                   onClick={handleSaveAvatar}
                   disabled={!avatarChanged || savingAvatar}
-                  className={`w-full rounded-xl px-5 py-3 font-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 ${activeTheme.primaryButtonClass}`}
+                  className={`hg-icon-label w-full rounded-xl px-5 py-3 font-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 ${activeTheme.primaryButtonClass}`}
                 >
+                  <HittiteIcon name="record" size="sm" />
                   {savingAvatar
                     ? "Kaydediliyor..."
                     : avatarChanged
@@ -970,8 +973,9 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => setSelectedAvatar(profile.avatar)}
                   disabled={!avatarChanged || savingAvatar}
-                  className={`w-full rounded-xl px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${activeTheme.secondaryButtonClass}`}
+                  className={`hg-icon-label w-full rounded-xl px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${activeTheme.secondaryButtonClass}`}
                 >
+                  <HittiteIcon name="close" size="sm" />
                   Değişikliği İptal Et
                 </button>
               </div>
@@ -1062,9 +1066,11 @@ function LockedBadgeCard({
     <article
       className={`relative overflow-hidden rounded-2xl border p-4 ${theme.secondaryCardClass}`}
     >
-      <div className="absolute right-3 top-3 rounded-full bg-black/40 px-2 py-1 text-xs text-white">
-        🔒
-      </div>
+      <HittiteIcon
+        name="lock"
+        size="sm"
+        className="absolute right-3 top-3 text-white"
+      />
 
       <div className="flex items-start gap-3">
         <BadgeArtwork badge={badge} size="lg" locked />

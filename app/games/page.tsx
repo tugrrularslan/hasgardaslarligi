@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HittiteIcon from "@/components/HittiteIcon";
 
 export default function GamesPage() {
   return (
@@ -9,8 +10,9 @@ export default function GamesPage() {
             Has Gardaşlar
           </p>
 
-          <h1 className="mt-2 text-3xl font-black sm:text-4xl">
-            🎮 Oyunlar
+          <h1 className="mt-2 flex items-center gap-3 text-3xl font-black sm:text-4xl">
+            <HittiteIcon name="game" size="lg" />
+            Oyunlar
           </h1>
 
           <p className="mt-3 max-w-2xl text-zinc-300">
@@ -19,9 +21,10 @@ export default function GamesPage() {
 
           <Link
             href="/"
-            className="mt-6 inline-block rounded-xl border border-white/20 px-5 py-3 font-bold transition hover:bg-white/10"
+            className="hg-icon-label mt-6 rounded-xl border border-white/20 px-5 py-3 font-bold transition hover:bg-white/10"
           >
-            ← Ana Sayfaya Dön
+            <HittiteIcon name="back" size="sm" />
+            Ana Sayfaya Dön
           </Link>
         </header>
 
@@ -30,7 +33,7 @@ export default function GamesPage() {
             href="/games/league-prediction"
             className="game-card group rounded-3xl border border-red-400/30 bg-red-950/60 p-7 shadow-xl transition hover:-translate-y-1 hover:border-red-300 hover:bg-red-900/60"
           >
-            <div className="text-6xl">⚽</div>
+            <HittiteIcon name="ball" size="xl" />
 
             <div className="mt-5 flex items-center justify-between gap-4">
               <div>
@@ -43,9 +46,11 @@ export default function GamesPage() {
                 </h2>
               </div>
 
-              <span className="text-3xl transition group-hover:translate-x-1">
-                →
-              </span>
+              <HittiteIcon
+                name="forward"
+                size="sm"
+                className="transition group-hover:translate-x-1"
+              />
             </div>
 
             <p className="mt-4 text-zinc-300">
@@ -53,13 +58,14 @@ export default function GamesPage() {
               zirveye çık.
             </p>
 
-            <div className="hg-primary mt-6 rounded-xl px-5 py-3 text-center font-black transition">
+            <div className="hg-primary hg-icon-label mt-6 rounded-xl px-5 py-3 text-center font-black transition">
+              <HittiteIcon name="game" size="sm" />
               Oyunu Aç
             </div>
           </Link>
 
           <div className="rounded-3xl border border-zinc-700 bg-zinc-950/70 p-7 opacity-75">
-            <div className="text-6xl">🔒</div>
+            <HittiteIcon name="lock" size="xl" />
 
             <p className="mt-5 text-sm font-bold uppercase tracking-widest text-zinc-400">
               Yakında
