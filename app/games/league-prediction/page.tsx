@@ -29,6 +29,13 @@ const gameSections: Array<{
       "Doğru tahminleri, başarı oranlarını ve oyuncu istatistiklerini incele.",
   },
   {
+    href: "/games/league-prediction/tablet",
+    icon: "record",
+    title: "Haftanın Tableti",
+    description:
+      "Haftanın şampiyonunu, en zor maçı, en büyük yükselişi ve kişisel özetini gör.",
+  },
+  {
     href: "/games/league-prediction/rules",
     icon: "rules",
     title: "Kurallar",

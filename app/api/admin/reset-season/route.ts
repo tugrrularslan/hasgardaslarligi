@@ -102,6 +102,8 @@ export async function POST(request: NextRequest) {
       usersSnapshot,
       automaticEventsSnapshot,
       notificationsSnapshot,
+      matchMessagesSnapshot,
+      matchChatRateLimitsSnapshot,
       kahinSettingsSnapshot,
     ] = await Promise.all([
       adminDb.collection("matches").get(),
@@ -110,6 +112,8 @@ export async function POST(request: NextRequest) {
       adminDb.collection("users").get(),
       adminDb.collection("automaticNotificationEvents").get(),
       adminDb.collection("notifications").get(),
+      adminDb.collection("matchMessages").get(),
+      adminDb.collection("matchChatRateLimits").get(),
       adminDb.collection("settings").doc("kahin").get(),
     ]);
 
@@ -166,6 +170,27 @@ export async function POST(request: NextRequest) {
         );
       });
 
+    const seasonMatchMessages = matchMessagesSnapshot.docs.filter(
+      (messageDocument) => {
+        const messageData = messageDocument.data();
+
+        return (
+          typeof messageData.matchId === "string" &&
+          matchIds.has(messageData.matchId)
+        );
+      }
+    );
+
+    const seasonChatRateLimits =
+      matchChatRateLimitsSnapshot.docs.filter((rateLimitDocument) => {
+        const rateLimitData = rateLimitDocument.data();
+
+        return (
+          typeof rateLimitData.matchId === "string" &&
+          matchIds.has(rateLimitData.matchId)
+        );
+      });
+
     const taskCleanupResults = await Promise.allSettled(
       seasonMatches.map((matchDocument) => {
         const matchData = matchDocument.data();
@@ -207,6 +232,12 @@ export async function POST(request: NextRequest) {
       writer.delete(document.ref)
     );
     seasonNotifications.forEach((document) =>
+      writer.delete(document.ref)
+    );
+    seasonMatchMessages.forEach((document) =>
+      writer.delete(document.ref)
+    );
+    seasonChatRateLimits.forEach((document) =>
       writer.delete(document.ref)
     );
     seasonMatches.forEach((document) =>
@@ -277,6 +308,7 @@ export async function POST(request: NextRequest) {
         weeklyChampions: seasonChampions.length,
         automaticEvents: seasonAutomaticEvents.length,
         notifications: seasonNotifications.length,
+        matchMessages: seasonMatchMessages.length,
       },
       resetUsers: usersSnapshot.size,
       taskCleanupWarnings,

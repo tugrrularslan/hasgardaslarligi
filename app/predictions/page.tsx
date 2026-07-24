@@ -18,6 +18,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import HittiteIcon from "@/components/HittiteIcon";
+import GameNavigation from "@/components/GameNavigation";
+import MatchChat from "@/components/MatchChat";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
 const CURRENT_SEASON = "2026–2027 Sezonu";
@@ -248,6 +250,8 @@ export default function PredictionsPage() {
       className={`min-h-screen px-3 py-6 transition-all duration-500 sm:px-5 lg:px-6 ${activeTheme.pageClass}`}
     >
       <div className="mx-auto max-w-6xl">
+        <GameNavigation />
+
         <header
           className={`mb-8 rounded-3xl border p-6 backdrop-blur-md ${activeTheme.headerClass}`}
         >
@@ -434,6 +438,12 @@ export default function PredictionsPage() {
                               </button>
                             )}
                           </div>
+
+                          <MatchChat
+                            matchId={match.id}
+                            matchLabel={`${match.homeTeam} - ${match.awayTeam}`}
+                            theme={activeTheme}
+                          />
                         </article>
                       );
                     })}

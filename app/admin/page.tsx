@@ -397,6 +397,7 @@ export default function AdminPage() {
           `${deleted.matches ?? 0} maç, ` +
           `${deleted.predictions ?? 0} tahmin ve ` +
           `${deleted.weeklyChampions ?? 0} haftalık şampiyon kaydı temizlendi. ` +
+          `${deleted.matchMessages ?? 0} maç sohbeti mesajı silindi. ` +
           `${responseData.resetUsers ?? 0} kullanıcının puan ve rozetleri sıfırlandı.` +
           taskCleanupNote
       );
