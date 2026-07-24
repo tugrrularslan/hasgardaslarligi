@@ -20,6 +20,7 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
+import CollapsiblePanel from "@/components/CollapsiblePanel";
 import HittiteIcon from "@/components/HittiteIcon";
 import SeasonLabel from "@/components/SeasonLabel";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
@@ -1450,7 +1451,13 @@ export default function AdminPage() {
           </div>
         )}
 
-        <section className="mb-8 rounded-3xl border border-emerald-500/30 bg-zinc-950 p-6">
+        <CollapsiblePanel
+          title="Sezon Ayarları"
+          description="Aktif sezon kimliğini ve görünen adını yönet"
+          icon="sun"
+          className="mb-8"
+        >
+        <section className="rounded-3xl border border-emerald-500/30 bg-zinc-950 p-6">
           <div>
             <p className="text-sm font-bold uppercase tracking-widest text-emerald-400">
               Aktif Sezon
@@ -1501,8 +1508,15 @@ export default function AdminPage() {
             </button>
           </form>
         </section>
+        </CollapsiblePanel>
 
-        <section className="mb-8 rounded-3xl border border-blue-500/30 bg-zinc-950 p-6">
+        <CollapsiblePanel
+          title="Bildirim Araçları"
+          description="Tüm oyunculara site içi bildirim gönder"
+          icon="record"
+          className="mb-8"
+        >
+        <section className="rounded-3xl border border-blue-500/30 bg-zinc-950 p-6">
           <div className="flex flex-col gap-2">
             <p className="text-sm font-bold uppercase tracking-widest text-blue-400">
               Bildirim Merkezi
@@ -1621,7 +1635,15 @@ export default function AdminPage() {
             </div>
           </form>
         </section>
+        </CollapsiblePanel>
 
+        <CollapsiblePanel
+          title="Maç Yönetimi"
+          description={`${matches.length} maç • maç ekleme, yayınlama ve sonuç işlemleri`}
+          icon="ball"
+          defaultOpen
+          className="mb-8"
+        >
         <section className="grid gap-8 lg:grid-cols-[380px_1fr]">
           <div className="h-fit rounded-3xl border border-yellow-500/30 bg-zinc-950 p-6">
             <h2 className="text-xl font-black text-yellow-400">
@@ -1981,8 +2003,15 @@ export default function AdminPage() {
             )}
           </div>
         </section>
+        </CollapsiblePanel>
 
-        <section className="mt-8 rounded-3xl border border-red-500/40 bg-red-950/20 p-6 shadow-xl">
+        <CollapsiblePanel
+          title="Tehlikeli İşlemler"
+          description="Aktif sezon verilerini kalıcı olarak sıfırlama alanı"
+          icon="shield"
+          className="mt-8"
+        >
+        <section className="rounded-3xl border border-red-500/40 bg-red-950/20 p-6 shadow-xl">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-sm font-black uppercase tracking-widest text-red-400">
@@ -2082,6 +2111,7 @@ export default function AdminPage() {
             </div>
           )}
         </section>
+        </CollapsiblePanel>
       </div>
     </main>
   );

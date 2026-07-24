@@ -272,6 +272,79 @@ body.global-theme-bazalt {
   gap: .55rem;
 }
 
+.hg-collapsible {
+  min-width: 0;
+}
+.hg-collapsible__trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--hg-border);
+  border-radius: 1.25rem;
+  background: var(--hg-panel);
+  padding: 1rem 1.15rem;
+  color: var(--hg-ink);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--hg-bg-deep) 28%, transparent);
+  cursor: pointer;
+  transition: border-color .2s ease, filter .2s ease, transform .2s ease;
+}
+.hg-collapsible__trigger:hover {
+  border-color: var(--hg-border-strong);
+  filter: brightness(1.06);
+}
+.hg-collapsible__trigger:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--hg-accent) 66%, transparent);
+  outline-offset: 3px;
+}
+.hg-collapsible__description {
+  display: block;
+  margin-top: .2rem;
+  color: var(--hg-muted);
+  font-size: .78rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.hg-collapsible__toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: .5rem;
+  color: var(--hg-accent);
+}
+.hg-collapsible__state {
+  font-size: .7rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.hg-collapsible__toggle .hg-hittite-icon {
+  transition: transform .24s ease;
+}
+.hg-collapsible.is-open .hg-collapsible__toggle .hg-hittite-icon {
+  transform: rotate(90deg);
+}
+.hg-collapsible__content {
+  padding-top: .65rem;
+}
+.hg-collapsible__content[hidden] {
+  display: none;
+}
+@media (max-width: 520px) {
+  .hg-collapsible__state {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .hg-collapsible__trigger {
+    padding: .9rem;
+  }
+}
+
 /* Inputs and controls across every screen */
 body[class*="global-theme-"] :is(input, textarea, select) {
   border: 1px solid var(--hg-border) !important;

@@ -19,6 +19,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import BadgeArtwork from "@/components/BadgeArtwork";
+import CollapsiblePanel from "@/components/CollapsiblePanel";
 import HittiteIcon from "@/components/HittiteIcon";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import SeasonLabel from "@/components/SeasonLabel";
@@ -737,6 +738,13 @@ export default function ProfilePage() {
           </aside>
 
           <div className="space-y-7">
+            <CollapsiblePanel
+              title="Rozet Yönetimi"
+              description="Vitrinini ve kazandığın rozetleri düzenle"
+              icon="trophy"
+              defaultOpen
+              triggerClassName={activeTheme.cardClass}
+            >
             <section
               className={`rounded-[2rem] border p-6 shadow-2xl sm:p-7 ${activeTheme.cardClass}`}
             >
@@ -846,7 +854,14 @@ export default function ProfilePage() {
                 )}
               </div>
             </section>
+            </CollapsiblePanel>
 
+            <CollapsiblePanel
+              title="Başarım Hedefleri"
+              description="Kilitli rozetleri ve ilerleme durumunu görüntüle"
+              icon="target"
+              triggerClassName={activeTheme.cardClass}
+            >
             <section
               className={`rounded-[2rem] border p-6 shadow-2xl sm:p-7 ${activeTheme.cardClass}`}
             >
@@ -877,7 +892,14 @@ export default function ProfilePage() {
                 ))}
               </div>
             </section>
+            </CollapsiblePanel>
 
+            <CollapsiblePanel
+              title="Avatar Kataloğu"
+              description="24 Hitit avatarı arasından profil görünümünü seç"
+              icon="user"
+              triggerClassName={activeTheme.cardClass}
+            >
             <section
               className={`rounded-[2rem] border p-6 shadow-2xl sm:p-7 ${activeTheme.cardClass}`}
             >
@@ -980,6 +1002,7 @@ export default function ProfilePage() {
                 </button>
               </div>
             </section>
+            </CollapsiblePanel>
           </div>
         </section>
       </div>
