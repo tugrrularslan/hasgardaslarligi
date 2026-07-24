@@ -10,7 +10,7 @@ const rules = [
   ["Kalesini gole kapatan kaleci", "En fazla lig maçında gol yemeyen kaleciyi doğru bilirsen 12 puan kazanırsın."],
   ["Hücum ve savunma", "En çok gol atan ve en az gol yiyen takımların her biri 8 puandır."],
   ["Eşitlik", "Bir kategoride birden fazla resmî lider varsa doğru isimlerden herhangi biri tam puan kazandırır."],
-  ["Kahin mührü", "Adminin belirlediği süre dolduğunda tahminler kilitlenir ve değiştirilemez."],
+  ["Kahin mührü", "14.08.2026 saat 21.00'de tahminler kapanır. Bu saatten sonra kehanetler değiştirilemez."],
 ];
 
 export default function KahinRulesPage() {

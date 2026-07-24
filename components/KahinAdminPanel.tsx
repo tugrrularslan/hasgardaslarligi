@@ -16,6 +16,7 @@ import HittiteIcon from "@/components/HittiteIcon";
 import { db } from "@/lib/firebase";
 import {
   calculateKahinScore,
+  DEFAULT_KAHIN_SETTINGS,
   KAHIN_TEAMS,
   sanitizeKahinPrediction,
   sanitizeLeagueOrder,
@@ -54,7 +55,11 @@ export default function KahinAdminPanel({
   seasonId,
   seasonName,
 }: KahinAdminPanelProps) {
-  const [deadline, setDeadline] = useState("");
+  const [deadline, setDeadline] = useState(() =>
+    DEFAULT_KAHIN_SETTINGS.deadline
+      ? toDateTimeLocal(DEFAULT_KAHIN_SETTINGS.deadline)
+      : "",
+  );
   const [scorerOptions, setScorerOptions] = useState("");
   const [assistOptions, setAssistOptions] = useState("");
   const [goalkeeperOptions, setGoalkeeperOptions] = useState("");

@@ -68,7 +68,7 @@ export type KahinSettings = {
 export const DEFAULT_KAHIN_SETTINGS: KahinSettings = {
   seasonId: DEFAULT_SEASON_ID,
   seasonName: DEFAULT_SEASON_NAME,
-  deadline: null,
+  deadline: new Date("2026-08-14T21:00:00+03:00"),
   scorerOptions: [],
   assistOptions: [],
   goalkeeperOptions: [],

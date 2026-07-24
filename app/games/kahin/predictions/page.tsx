@@ -87,7 +87,9 @@ export default function KahinPredictionsPage() {
 
           const data = snapshot.data();
           const deadline =
-            data.deadline instanceof Timestamp ? data.deadline.toDate() : null;
+            data.deadline instanceof Timestamp
+              ? data.deadline.toDate()
+              : DEFAULT_KAHIN_SETTINGS.deadline;
 
           setSettings({
             seasonId:
