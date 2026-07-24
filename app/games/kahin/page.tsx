@@ -84,14 +84,6 @@ export default function KahinPage() {
             </Link>
           ))}
         </section>
-
-        <Link
-          href="/games"
-          className="hg-secondary hg-icon-label mt-7 rounded-xl px-5 py-3 font-bold"
-        >
-          <HittiteIcon name="back" size="sm" />
-          Oyunlara Dön
-        </Link>
       </div>
     </main>
   );
