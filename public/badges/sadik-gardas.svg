@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Sadık Gardaş</title>
-  <desc id="desc">Sadık Gardaş rozeti</desc>
+  <title id="title">Sadık Göbel</title>
+  <desc id="desc">Sadık Göbel rozeti</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#111827"/>
@@ -34,7 +34,7 @@
 
   <rect x="96" y="355" width="320" height="66" rx="24" fill="#030712" stroke="#3B82F6" stroke-width="3"/>
   <text x="256" y="397" text-anchor="middle" font-size="25" font-weight="800"
-        font-family="Arial, Helvetica, sans-serif" fill="#F9FAFB">Sadık Gardaş</text>
+        font-family="Arial, Helvetica, sans-serif" fill="#F9FAFB">Sadık Göbel</text>
 
   <path d="M164 435 L220 460 L256 430 L292 460 L348 435" fill="none" stroke="#3B82F6" stroke-width="10" stroke-linecap="round"/>
 </svg>

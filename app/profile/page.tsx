@@ -5,6 +5,7 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -17,7 +18,10 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
+import BadgeArtwork from "@/components/BadgeArtwork";
 import SeasonLabel from "@/components/SeasonLabel";
+import { calculateBadgeProgressFromRecords } from "@/lib/badge-progress";
+import { DEFAULT_SEASON_ID } from "@/lib/season";
 import { getThemeById } from "@/lib/themes";
 import {
   BADGES,
@@ -154,13 +158,61 @@ export default function ProfilePage() {
             typeof data.weeklyWins === "number" ? data.weeklyWins : 0;
 
           const storedProgress = normalizeBadgeProgress(data.badgeProgress);
+          let calculatedProgress = storedProgress;
+
+          try {
+            const [
+              seasonSnapshot,
+              matchesSnapshot,
+              predictionsSnapshot,
+              weeklyChampionsSnapshot,
+            ] = await Promise.all([
+              getDoc(doc(db, "settings", "currentSeason")),
+              getDocs(collection(db, "matches")),
+              getDocs(
+                query(
+                  collection(db, "predictions"),
+                  where("userId", "==", firebaseUser.uid)
+                )
+              ),
+              getDocs(collection(db, "weeklyChampions")),
+            ]);
+
+            const seasonData = seasonSnapshot.data();
+            const activeSeasonId =
+              typeof seasonData?.seasonId === "string" &&
+              seasonData.seasonId.trim()
+                ? seasonData.seasonId.trim()
+                : DEFAULT_SEASON_ID;
+
+            calculatedProgress = calculateBadgeProgressFromRecords({
+              activeSeasonId,
+              userId: firebaseUser.uid,
+              matches: matchesSnapshot.docs.map((matchDocument) => ({
+                id: matchDocument.id,
+                ...matchDocument.data(),
+              })),
+              predictions: predictionsSnapshot.docs.map(
+                (predictionDocument) => predictionDocument.data()
+              ),
+              weeklyChampions: weeklyChampionsSnapshot.docs.map(
+                (championDocument) => ({
+                  id: championDocument.id,
+                  ...championDocument.data(),
+                })
+              ),
+            });
+          } catch (error) {
+            console.error("Rozet ilerlemesi hesaplanamadı:", error);
+          }
+
           const badgeProgress: BadgeProgressData = {
-            ...storedProgress,
+            ...calculatedProgress,
             totalCorrectPredictions: Math.max(
-              storedProgress.totalCorrectPredictions,
+              calculatedProgress.totalCorrectPredictions,
               correctPredictions
             ),
-            weeklyWins: Math.max(storedProgress.weeklyWins, weeklyWins),
+            weeklyWins: Math.max(calculatedProgress.weeklyWins, weeklyWins),
           };
 
           const storedUnlocked = sanitizeBadgeIds(data.unlockedBadges);
@@ -540,11 +592,7 @@ export default function ProfilePage() {
                   <div
                     className={`mt-2 flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black ${activeTheme.secondaryCardClass}`}
                   >
-                    <img
-                      src={activeTitleBadge.image}
-                      alt=""
-                      className="h-6 w-6 rounded-full"
-                    />
+                    <BadgeArtwork badge={activeTitleBadge} size="xs" />
                     <span className={activeTheme.textClass}>
                       {activeTitleBadge.name}
                     </span>
@@ -560,12 +608,12 @@ export default function ProfilePage() {
                 <div className="mt-5 flex min-h-16 items-center justify-center gap-2">
                   {selectedBadgeDefinitions.length > 0 ? (
                     selectedBadgeDefinitions.map((badge) => (
-                      <img
+                      <BadgeArtwork
                         key={badge.id}
-                        src={badge.image}
-                        alt={badge.name}
+                        badge={badge}
+                        size="md"
                         title={badge.name}
-                        className="h-16 w-16 rounded-2xl object-contain drop-shadow-xl transition hover:-translate-y-1 hover:scale-110"
+                        className="transition hover:-translate-y-1 hover:scale-110"
                       />
                     ))
                   ) : (
@@ -745,11 +793,7 @@ export default function ProfilePage() {
                     >
                       {badge ? (
                         <>
-                          <img
-                            src={badge.image}
-                            alt={badge.name}
-                            className="h-20 w-20 object-contain drop-shadow-xl"
-                          />
+                          <BadgeArtwork badge={badge} size="lg" />
                           <p
                             className={`mt-2 text-xs font-black ${activeTheme.textClass}`}
                           >
@@ -977,11 +1021,7 @@ function BadgeCard({
       className={`rounded-2xl border p-4 transition hover:-translate-y-1 ${theme.secondaryCardClass}`}
     >
       <div className="flex items-start gap-3">
-        <img
-          src={badge.image}
-          alt={badge.name}
-          className="h-20 w-20 shrink-0 rounded-2xl object-contain drop-shadow-xl"
-        />
+        <BadgeArtwork badge={badge} size="lg" />
 
         <div className="min-w-0">
           <p className={`font-black ${theme.textClass}`}>{badge.name}</p>
@@ -1041,11 +1081,7 @@ function LockedBadgeCard({
       </div>
 
       <div className="flex items-start gap-3">
-        <img
-          src={badge.image}
-          alt={badge.name}
-          className="h-20 w-20 shrink-0 rounded-2xl object-contain grayscale opacity-40 blur-[0.3px]"
-        />
+        <BadgeArtwork badge={badge} size="lg" locked />
 
         <div className="min-w-0">
           <p className={`font-black ${theme.textClass}`}>{badge.name}</p>

@@ -20,7 +20,7 @@ export type BadgeRequirementType =
   | "weekly-win"
   | "consecutive-weekly-win"
   | "participated-weeks"
-  | "season-complete";
+  | "season-all-matches";
 
 export type BadgeDefinition = {
   id: string;
@@ -40,11 +40,15 @@ export type BadgeProgressData = {
   totalCorrectPredictions: number;
   currentWeekCorrectPredictions: number;
   currentWeekTotalMatches: number;
+  perfectWeeks: number;
   consecutiveCorrectPredictions: number;
   weeklyWins: number;
   consecutiveWeeklyWins: number;
   participatedWeeks: number;
   completedSeasons: number;
+  seasonTotalMatches: number;
+  seasonPredictedMatches: number;
+  seasonAllMatchesFinished: number;
 };
 
 export type BadgeProgressResult = {
@@ -179,7 +183,7 @@ export const BADGES: BadgeDefinition[] = [
   },
   {
     id: "sadik-gardas",
-    name: "Sadık Gardaş",
+    name: "Sadık Göbel",
     description: "En az 10 farklı haftada tahmin yap.",
     shortDescription: "10 hafta katılım",
     rarity: "rare",
@@ -192,12 +196,13 @@ export const BADGES: BadgeDefinition[] = [
   {
     id: "sezon-emektari",
     name: "Sezon Emektarı",
-    description: "Bir sezonu en az bir tahmin yaparak tamamla.",
-    shortDescription: "Bir sezonu tamamla",
-    rarity: "epic",
+    description:
+      "Sezon tamamlandığında o sezondaki bütün maçlara tahmin yapmış ol.",
+    shortDescription: "Sezonun bütün maçlarına katıl",
+    rarity: "legendary",
     category: "season",
     image: "/badges/sezon-emektari.svg",
-    requirementType: "season-complete",
+    requirementType: "season-all-matches",
     requirementValue: 1,
     sortOrder: 12,
   },
@@ -211,11 +216,15 @@ export const DEFAULT_BADGE_PROGRESS: BadgeProgressData = {
   totalCorrectPredictions: 0,
   currentWeekCorrectPredictions: 0,
   currentWeekTotalMatches: 0,
+  perfectWeeks: 0,
   consecutiveCorrectPredictions: 0,
   weeklyWins: 0,
   consecutiveWeeklyWins: 0,
   participatedWeeks: 0,
   completedSeasons: 0,
+  seasonTotalMatches: 0,
+  seasonPredictedMatches: 0,
+  seasonAllMatchesFinished: 0,
 };
 
 export const BADGE_RARITY_LABELS: Record<BadgeRarity, string> = {
@@ -306,15 +315,8 @@ export function getBadgeCurrentValue(
     case "weekly-correct":
       return progress.currentWeekCorrectPredictions;
 
-    case "perfect-week": {
-      const hasMatches = progress.currentWeekTotalMatches > 0;
-      const isPerfectWeek =
-        hasMatches &&
-        progress.currentWeekCorrectPredictions ===
-          progress.currentWeekTotalMatches;
-
-      return isPerfectWeek ? 1 : 0;
-    }
+    case "perfect-week":
+      return progress.perfectWeeks;
 
     case "consecutive-correct":
       return progress.consecutiveCorrectPredictions;
@@ -328,8 +330,8 @@ export function getBadgeCurrentValue(
     case "participated-weeks":
       return progress.participatedWeeks;
 
-    case "season-complete":
-      return progress.completedSeasons;
+    case "season-all-matches":
+      return progress.seasonPredictedMatches;
 
     default:
       return 0;
@@ -340,6 +342,14 @@ export function isBadgeUnlocked(
   badge: BadgeDefinition,
   progress: BadgeProgressData,
 ): boolean {
+  if (badge.requirementType === "season-all-matches") {
+    return (
+      progress.seasonAllMatchesFinished === 1 &&
+      progress.seasonTotalMatches > 0 &&
+      progress.seasonPredictedMatches >= progress.seasonTotalMatches
+    );
+  }
+
   const currentValue = getBadgeCurrentValue(badge, progress);
 
   return currentValue >= badge.requirementValue;
@@ -363,8 +373,11 @@ export function getBadgeProgress(
   progress: BadgeProgressData,
 ): BadgeProgressResult {
   const currentValue = getBadgeCurrentValue(badge, progress);
-  const targetValue = badge.requirementValue;
-  const unlocked = currentValue >= targetValue;
+  const targetValue =
+    badge.requirementType === "season-all-matches"
+      ? Math.max(1, progress.seasonTotalMatches)
+      : badge.requirementValue;
+  const unlocked = isBadgeUnlocked(badge, progress);
 
   return {
     badge,
@@ -424,6 +437,7 @@ export function normalizeBadgeProgress(
     currentWeekTotalMatches: normalizePositiveNumber(
       progress?.currentWeekTotalMatches,
     ),
+    perfectWeeks: normalizePositiveNumber(progress?.perfectWeeks),
     consecutiveCorrectPredictions: normalizePositiveNumber(
       progress?.consecutiveCorrectPredictions,
     ),
@@ -436,6 +450,15 @@ export function normalizeBadgeProgress(
     ),
     completedSeasons: normalizePositiveNumber(
       progress?.completedSeasons,
+    ),
+    seasonTotalMatches: normalizePositiveNumber(
+      progress?.seasonTotalMatches,
+    ),
+    seasonPredictedMatches: normalizePositiveNumber(
+      progress?.seasonPredictedMatches,
+    ),
+    seasonAllMatchesFinished: normalizePositiveNumber(
+      progress?.seasonAllMatchesFinished,
     ),
   };
 }

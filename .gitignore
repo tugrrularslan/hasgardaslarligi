@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# badge design drafts (only the approved frame is published)
+/public/badges/hasgardas-frame-v2.png
+/public/badges/hasgardas-frame-sun-disk-v3.png
+/public/badges/hasgardas-frame-sun-course-v4.png

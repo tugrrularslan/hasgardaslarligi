@@ -9,10 +9,10 @@ import {
   query,
   Timestamp,
 } from "firebase/firestore";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
+import BadgeArtwork from "@/components/BadgeArtwork";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 import SeasonLabel from "@/components/SeasonLabel";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
@@ -784,13 +784,7 @@ function PlayerBadgeShowcase({
           className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-1 text-xs font-black ${theme.secondaryCardClass}`}
           title={`Ünvan: ${activeTitleBadge.name}`}
         >
-          <Image
-            src={activeTitleBadge.image}
-            alt=""
-            width={compact ? 16 : 18}
-            height={compact ? 16 : 18}
-            className="shrink-0"
-          />
+          <BadgeArtwork badge={activeTitleBadge} size="xs" />
 
           <span className={`truncate ${theme.textClass}`}>
             {activeTitleBadge.name}
@@ -828,20 +822,12 @@ function StandingBadgeIcon({
   compact: boolean;
   theme: AppTheme;
 }) {
-  const sizeClass = compact ? "h-7 w-7" : "h-9 w-9";
-
   return (
     <div
-      className={`group relative flex ${sizeClass} items-center justify-center rounded-full border p-1 shadow-lg ${theme.secondaryCardClass}`}
+      className={`group relative flex items-center justify-center rounded-full border p-0.5 shadow-lg ${theme.secondaryCardClass}`}
       title={badge.name}
     >
-      <Image
-        src={badge.image}
-        alt={badge.name}
-        width={compact ? 22 : 30}
-        height={compact ? 22 : 30}
-        className="h-full w-full object-contain"
-      />
+      <BadgeArtwork badge={badge} size={compact ? "xs" : "sm"} />
 
       <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-black/90 px-2 py-1 text-[10px] font-bold text-white shadow-xl group-hover:block">
         {badge.name}
