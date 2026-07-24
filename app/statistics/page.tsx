@@ -132,7 +132,7 @@ export default function StatisticsPage() {
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [selectedTheme, setSelectedTheme] = useState("klasik");
+  const [selectedTheme, setSelectedTheme] = useState("obsidyen");
   const [checkingAccess, setCheckingAccess] = useState(true);
 
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -167,7 +167,7 @@ export default function StatisticsPage() {
           const savedTheme =
             typeof profileData?.selectedTheme === "string"
               ? normalizeThemeId(profileData.selectedTheme)
-              : "klasik";
+              : "obsidyen";
 
           setIsAdmin(admin);
           setSelectedTheme(savedTheme);
@@ -880,11 +880,11 @@ function normalizeThemeId(selectedTheme: string): string {
   const normalizedTheme = selectedTheme.trim();
 
   if (
-    normalizedTheme === "Klasik" ||
-    normalizedTheme.toLocaleLowerCase("tr-TR") === "klasik"
+    normalizedTheme === "Obsidyen" ||
+    normalizedTheme.toLocaleLowerCase("tr-TR") === "obsidyen"
   ) {
-    return "klasik";
+    return "obsidyen";
   }
 
-  return normalizedTheme || "klasik";
+  return normalizedTheme || "obsidyen";
 }

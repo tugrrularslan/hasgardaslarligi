@@ -77,7 +77,7 @@ export default function StandingsPage() {
         (snapshot) => {
           if (!snapshot.exists()) {
             setCurrentUserProfile({
-              selectedTheme: "klasik",
+              selectedTheme: "obsidyen",
             });
             return;
           }
@@ -88,14 +88,14 @@ export default function StandingsPage() {
             selectedTheme:
               typeof data.selectedTheme === "string"
                 ? normalizeThemeId(data.selectedTheme)
-                : "klasik",
+                : "obsidyen",
           });
         },
         (error) => {
           console.error(error);
 
           setCurrentUserProfile({
-            selectedTheme: "klasik",
+            selectedTheme: "obsidyen",
           });
 
           setMessage(
@@ -186,7 +186,7 @@ export default function StandingsPage() {
               selectedTheme:
                 typeof data.selectedTheme === "string"
                   ? normalizeThemeId(data.selectedTheme)
-                  : "klasik",
+                  : "obsidyen",
 
               totalPoints:
                 seasonStats && typeof seasonStats.totalPoints === "number"
@@ -690,7 +690,7 @@ function PodiumCard({
         <p
           className={`mt-2 truncate text-center text-sm ${theme.mutedTextClass}`}
         >
-          Tema: {user.selectedTheme ?? "klasik"}
+          Tema: {user.selectedTheme ?? "obsidyen"}
         </p>
 
         <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -953,11 +953,11 @@ function normalizeThemeId(selectedTheme: string): string {
   const normalizedTheme = selectedTheme.trim();
 
   if (
-    normalizedTheme === "Klasik" ||
+    normalizedTheme === "Obsidyen" ||
     normalizedTheme.toLocaleLowerCase("tr-TR") ===
-      "klasik"
+      "obsidyen"
   ) {
-    return "klasik";
+    return "obsidyen";
   }
 
   return normalizedTheme;

@@ -1,0 +1,19 @@
+HAS GARDAŞLAR — 4 ÖZEL TEMA PAKETİ
+
+1) Bu paketteki dosyaları mevcut projenin üzerine kopyalayın.
+2) Aynı adlı dosyalar sorulduğunda "Değiştir" seçin.
+3) Terminalde önce şu komutu çalıştırın:
+   npm run build
+4) Başarılıysa:
+   git add .
+   git commit -m "Dort ozel tema sistemi"
+   git push
+
+Tema koleksiyonu:
+- Obsidyen (varsayılan)
+- Hitit Zeytini
+- Traverten
+- Bazalt
+
+Dört tema herkese açıktır. Eski tema kimlikleri otomatik olarak bu dört temadan birine dönüştürülür.
+Seçim Firestore users/{uid}.selectedTheme alanına kaydedilir ve GlobalThemeBridge sayesinde giriş sonrası tüm sayfalara uygulanır.

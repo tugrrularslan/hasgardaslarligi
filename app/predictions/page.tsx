@@ -79,7 +79,7 @@ export default function PredictionsPage() {
           userReference,
           (snapshot) => {
             if (!snapshot.exists()) {
-              setProfile({ selectedTheme: "klasik" });
+              setProfile({ selectedTheme: "obsidyen" });
               return;
             }
 
@@ -89,12 +89,12 @@ export default function PredictionsPage() {
               selectedTheme:
                 typeof data.selectedTheme === "string"
                   ? normalizeThemeId(data.selectedTheme)
-                  : "klasik",
+                  : "obsidyen",
             });
           },
           (error) => {
             console.error(error);
-            setProfile({ selectedTheme: "klasik" });
+            setProfile({ selectedTheme: "obsidyen" });
             setMessage("Tema bilgisi alınamadı. Klasik tema kullanılıyor.");
           }
         );
@@ -552,10 +552,10 @@ function normalizeThemeId(selectedTheme: string): string {
   const normalizedTheme = selectedTheme.trim();
 
   if (
-    normalizedTheme === "Klasik" ||
-    normalizedTheme.toLocaleLowerCase("tr-TR") === "klasik"
+    normalizedTheme === "Obsidyen" ||
+    normalizedTheme.toLocaleLowerCase("tr-TR") === "obsidyen"
   ) {
-    return "klasik";
+    return "obsidyen";
   }
 
   return normalizedTheme;

@@ -1,14 +1,8 @@
 export type ThemeId =
-  | "klasik"
-  | "gıdala"
-  | "ganara"
-  | "rüzgar"
-  | "batti"
-  | "yalçın"
-  | "oktay"
-  | "harun"
-  | "alayınızı gavladırım"
-  | "deli gobel";
+  | "obsidyen"
+  | "hitit-zeytini"
+  | "traverten"
+  | "bazalt";
 
 export type AppTheme = {
   id: ThemeId;
@@ -16,19 +10,16 @@ export type AppTheme = {
   requiredPoints: number;
   description: string;
   icon: string;
-
+  emblem: string;
   pageClass: string;
   headerClass: string;
   cardClass: string;
   secondaryCardClass: string;
-
   primaryButtonClass: string;
   secondaryButtonClass: string;
-
   titleClass: string;
   textClass: string;
   mutedTextClass: string;
-
   borderClass: string;
   badgeClass: string;
   previewClass: string;
@@ -36,406 +27,119 @@ export type AppTheme = {
 
 export const appThemes: AppTheme[] = [
   {
-    id: "klasik",
-    name: "Klasik",
+    id: "obsidyen",
+    name: "Obsidyen",
     requiredPoints: 0,
-    description: "Kırmızı ve beyaz klasik futbol görünümü.",
-    icon: "⚽",
-
-    pageClass:
-      "bg-gradient-to-br from-red-950 via-red-900 to-black text-white",
-
-    headerClass:
-      "border-red-400/40 bg-red-950/70",
-
-    cardClass:
-      "border-red-400/40 bg-red-950/80",
-
-    secondaryCardClass:
-      "border-white/20 bg-white/10",
-
-    primaryButtonClass:
-      "bg-white text-red-700 hover:bg-red-100",
-
-    secondaryButtonClass:
-      "border border-white text-white hover:bg-white/10",
-
-    titleClass: "text-white",
-    textClass: "text-white",
-    mutedTextClass: "text-red-100/70",
-
-    borderClass: "border-red-400/40",
-
-    badgeClass:
-      "bg-white text-red-700",
-
-    previewClass:
-      "border-red-400/50 bg-gradient-to-br from-red-700 via-red-900 to-white/20",
+    description: "Siyah taş, altın çizgiler ve mor obsidyen parıltısı.",
+    icon: "◆",
+    emblem: "/themes/obsidyen.png",
+    pageClass: "theme-surface theme-obsidyen text-stone-50",
+    headerClass: "theme-panel border-amber-400/45 bg-black/72 shadow-[0_18px_60px_rgba(0,0,0,.42)]",
+    cardClass: "theme-panel border-amber-400/35 bg-black/74 shadow-[0_16px_45px_rgba(0,0,0,.32)]",
+    secondaryCardClass: "theme-panel-soft border-violet-400/20 bg-violet-950/20",
+    primaryButtonClass: "border border-amber-300/50 bg-gradient-to-r from-amber-500 to-yellow-300 text-black shadow-lg hover:brightness-110",
+    secondaryButtonClass: "border border-amber-400/45 bg-black/35 text-amber-200 hover:bg-amber-400/10",
+    titleClass: "text-amber-200",
+    textClass: "text-stone-100",
+    mutedTextClass: "text-amber-100/65",
+    borderClass: "border-amber-400/30",
+    badgeClass: "border border-amber-300/40 bg-amber-400/15 text-amber-200",
+    previewClass: "theme-preview preview-obsidyen border-amber-400/45",
   },
-
   {
-    id: "gıdala",
-    name: "gıdala",
-    requiredPoints: 10,
-    description: "Yeşil saha ve çim havası.",
-    icon: "🌱",
-
-    pageClass:
-      "bg-gradient-to-br from-green-950 via-emerald-900 to-black text-white",
-
-    headerClass:
-      "border-green-400/40 bg-green-950/70",
-
-    cardClass:
-      "border-green-400/40 bg-green-950/80",
-
-    secondaryCardClass:
-      "border-green-300/20 bg-green-500/10",
-
-    primaryButtonClass:
-      "bg-green-400 text-green-950 hover:bg-green-300",
-
-    secondaryButtonClass:
-      "border border-green-400 text-green-300 hover:bg-green-500/10",
-
-    titleClass: "text-green-300",
-    textClass: "text-white",
-    mutedTextClass: "text-green-100/60",
-
-    borderClass: "border-green-400/40",
-
-    badgeClass:
-      "bg-green-400 text-green-950",
-
-    previewClass:
-      "border-green-400/50 bg-gradient-to-br from-green-700 via-emerald-950 to-black",
+    id: "hitit-zeytini",
+    name: "Hitit Zeytini",
+    requiredPoints: 0,
+    description: "Zeytin yeşili, kum taşı ve bronz Hitit ayrıntıları.",
+    icon: "❧",
+    emblem: "/themes/hitit-zeytini.png",
+    pageClass: "theme-surface theme-hitit text-lime-50",
+    headerClass: "theme-panel border-yellow-500/35 bg-[#18200e]/78 shadow-[0_18px_60px_rgba(10,20,4,.45)]",
+    cardClass: "theme-panel border-yellow-500/30 bg-[#18200e]/76 shadow-[0_16px_45px_rgba(8,18,4,.35)]",
+    secondaryCardClass: "theme-panel-soft border-lime-400/20 bg-lime-950/25",
+    primaryButtonClass: "border border-yellow-300/50 bg-gradient-to-r from-[#777c25] to-[#bfa64d] text-[#111407] shadow-lg hover:brightness-110",
+    secondaryButtonClass: "border border-yellow-500/40 bg-[#111707]/45 text-yellow-200 hover:bg-lime-500/10",
+    titleClass: "text-yellow-200",
+    textClass: "text-lime-50",
+    mutedTextClass: "text-lime-100/60",
+    borderClass: "border-yellow-500/28",
+    badgeClass: "border border-yellow-300/35 bg-lime-400/12 text-yellow-200",
+    previewClass: "theme-preview preview-hitit border-yellow-500/40",
   },
-
   {
-    id: "ganara",
-    name: "ganara",
-    requiredPoints: 20,
-    description: "Turkuaz ve neon görünümlü tema.",
-    icon: "💎",
-
-    pageClass:
-      "bg-gradient-to-br from-cyan-950 via-teal-900 to-black text-white",
-
-    headerClass:
-      "border-cyan-400/40 bg-cyan-950/70",
-
-    cardClass:
-      "border-cyan-400/40 bg-cyan-950/80",
-
-    secondaryCardClass:
-      "border-cyan-300/20 bg-cyan-500/10",
-
-    primaryButtonClass:
-      "bg-cyan-400 text-cyan-950 hover:bg-cyan-300",
-
-    secondaryButtonClass:
-      "border border-cyan-400 text-cyan-300 hover:bg-cyan-500/10",
-
-    titleClass: "text-cyan-300",
-    textClass: "text-white",
-    mutedTextClass: "text-cyan-100/60",
-
-    borderClass: "border-cyan-400/40",
-
-    badgeClass:
-      "bg-cyan-400 text-cyan-950",
-
-    previewClass:
-      "border-cyan-400/50 bg-gradient-to-br from-cyan-500 via-teal-900 to-black",
+    id: "traverten",
+    name: "Traverten",
+    requiredPoints: 0,
+    description: "Açık taş yüzeyler, bronz zarafet ve ferah bir görünüm.",
+    icon: "◫",
+    emblem: "/themes/traverten.png",
+    pageClass: "theme-surface theme-traverten text-[#392515]",
+    headerClass: "theme-panel border-[#9b6631]/40 bg-[#f1dfbd]/80 shadow-[0_18px_60px_rgba(85,52,20,.22)]",
+    cardClass: "theme-panel border-[#9b6631]/35 bg-[#ead5ae]/82 shadow-[0_16px_42px_rgba(84,50,18,.2)]",
+    secondaryCardClass: "theme-panel-soft border-[#9b6631]/30 bg-[#fff1d2]/58",
+    primaryButtonClass: "border border-[#78451d]/45 bg-gradient-to-r from-[#8a5528] to-[#bd8c4b] text-white shadow-lg hover:brightness-110",
+    secondaryButtonClass: "border border-[#78451d]/45 bg-[#f8e6c6]/55 text-[#5f3518] hover:bg-[#d8b783]/35",
+    titleClass: "text-[#5d3318]",
+    textClass: "text-[#3d2818]",
+    mutedTextClass: "text-[#654a34]/72",
+    borderClass: "border-[#8b5b32]/30",
+    badgeClass: "border border-[#845128]/35 bg-[#8b5524]/12 text-[#683b1c]",
+    previewClass: "theme-preview preview-traverten border-[#8b5b32]/45",
   },
-
   {
-    id: "rüzgar",
-    name: "rüzgar",
-    requiredPoints: 35,
-    description: "Mavi ve hareketli rüzgâr görünümü.",
-    icon: "🌪️",
-
-    pageClass:
-      "bg-gradient-to-br from-blue-950 via-blue-900 to-slate-950 text-white",
-
-    headerClass:
-      "border-blue-400/40 bg-blue-950/70",
-
-    cardClass:
-      "border-blue-400/40 bg-blue-950/80",
-
-    secondaryCardClass:
-      "border-blue-300/20 bg-blue-500/10",
-
-    primaryButtonClass:
-      "bg-blue-400 text-blue-950 hover:bg-blue-300",
-
-    secondaryButtonClass:
-      "border border-blue-400 text-blue-300 hover:bg-blue-500/10",
-
-    titleClass: "text-blue-300",
-    textClass: "text-white",
-    mutedTextClass: "text-blue-100/60",
-
-    borderClass: "border-blue-400/40",
-
-    badgeClass:
-      "bg-blue-400 text-blue-950",
-
-    previewClass:
-      "border-blue-400/50 bg-gradient-to-br from-sky-500 via-blue-900 to-slate-950",
-  },
-
-  {
-    id: "batti",
-    name: "batti",
-    requiredPoints: 50,
-    description: "Tam siyah ve premium görünüm.",
-    icon: "🌑",
-
-    pageClass:
-      "bg-black text-white",
-
-    headerClass:
-      "border-zinc-700 bg-zinc-950",
-
-    cardClass:
-      "border-zinc-700 bg-zinc-950",
-
-    secondaryCardClass:
-      "border-zinc-800 bg-zinc-900",
-
-    primaryButtonClass:
-      "bg-white text-black hover:bg-zinc-200",
-
-    secondaryButtonClass:
-      "border border-zinc-600 text-white hover:bg-zinc-900",
-
-    titleClass: "text-white",
-    textClass: "text-zinc-100",
-    mutedTextClass: "text-zinc-500",
-
-    borderClass: "border-zinc-700",
-
-    badgeClass:
-      "bg-white text-black",
-
-    previewClass:
-      "border-zinc-700 bg-gradient-to-br from-zinc-800 via-black to-black",
-  },
-
-  {
-    id: "yalçın",
-    name: "yalçın",
-    requiredPoints: 75,
-    description: "Beyaz, sade ve temiz görünüm.",
-    icon: "🏔️",
-
-    pageClass:
-      "bg-gradient-to-br from-white via-zinc-100 to-zinc-300 text-zinc-950",
-
-    headerClass:
-      "border-zinc-300 bg-white/80",
-
-    cardClass:
-      "border-zinc-300 bg-white/90",
-
-    secondaryCardClass:
-      "border-zinc-300 bg-zinc-100",
-
-    primaryButtonClass:
-      "bg-zinc-950 text-white hover:bg-zinc-800",
-
-    secondaryButtonClass:
-      "border border-zinc-500 text-zinc-900 hover:bg-zinc-200",
-
-    titleClass: "text-zinc-950",
-    textClass: "text-zinc-900",
-    mutedTextClass: "text-zinc-500",
-
-    borderClass: "border-zinc-300",
-
-    badgeClass:
-      "bg-zinc-950 text-white",
-
-    previewClass:
-      "border-zinc-300 bg-gradient-to-br from-white via-zinc-100 to-zinc-400",
-  },
-
-  {
-    id: "oktay",
-    name: "oktay",
-    requiredPoints: 100,
-    description: "Mor ve neon etkili güçlü görünüm.",
-    icon: "🟣",
-
-    pageClass:
-      "bg-gradient-to-br from-purple-950 via-violet-900 to-black text-white",
-
-    headerClass:
-      "border-purple-400/40 bg-purple-950/70",
-
-    cardClass:
-      "border-purple-400/40 bg-purple-950/80",
-
-    secondaryCardClass:
-      "border-purple-300/20 bg-purple-500/10",
-
-    primaryButtonClass:
-      "bg-purple-400 text-purple-950 hover:bg-purple-300",
-
-    secondaryButtonClass:
-      "border border-purple-400 text-purple-300 hover:bg-purple-500/10",
-
-    titleClass: "text-purple-300",
-    textClass: "text-white",
-    mutedTextClass: "text-purple-100/60",
-
-    borderClass: "border-purple-400/40",
-
-    badgeClass:
-      "bg-purple-400 text-purple-950",
-
-    previewClass:
-      "border-purple-400/50 bg-gradient-to-br from-purple-500 via-violet-950 to-black",
-  },
-
-  {
-    id: "harun",
-    name: "harun",
-    requiredPoints: 150,
-    description: "Altın ve siyah VIP görünümü.",
-    icon: "👑",
-
-    pageClass:
-      "bg-gradient-to-br from-yellow-950 via-black to-black text-white",
-
-    headerClass:
-      "border-yellow-400/50 bg-black/80",
-
-    cardClass:
-      "border-yellow-400/50 bg-black/80",
-
-    secondaryCardClass:
-      "border-yellow-400/20 bg-yellow-500/10",
-
-    primaryButtonClass:
-      "bg-yellow-400 text-black hover:bg-yellow-300",
-
-    secondaryButtonClass:
-      "border border-yellow-400 text-yellow-300 hover:bg-yellow-500/10",
-
-    titleClass: "text-yellow-300",
-    textClass: "text-white",
-    mutedTextClass: "text-yellow-100/60",
-
-    borderClass: "border-yellow-400/50",
-
-    badgeClass:
-      "bg-yellow-400 text-black",
-
-    previewClass:
-      "border-yellow-400/60 bg-gradient-to-br from-yellow-500 via-yellow-950 to-black",
-  },
-
-  {
-    id: "alayınızı gavladırım",
-    name: "alayınızı gavladırım",
-    requiredPoints: 200,
-    description: "Kırmızı ve siyah agresif görünüm.",
-    icon: "😈",
-
-    pageClass:
-      "bg-gradient-to-br from-red-950 via-black to-black text-white",
-
-    headerClass:
-      "border-red-500/50 bg-black/80",
-
-    cardClass:
-      "border-red-500/50 bg-black/80",
-
-    secondaryCardClass:
-      "border-red-500/30 bg-red-950/40",
-
-    primaryButtonClass:
-      "bg-red-600 text-white hover:bg-red-500",
-
-    secondaryButtonClass:
-      "border border-red-500 text-red-400 hover:bg-red-500/10",
-
-    titleClass: "text-red-500",
-    textClass: "text-white",
-    mutedTextClass: "text-red-100/60",
-
-    borderClass: "border-red-500/50",
-
-    badgeClass:
-      "bg-red-600 text-white",
-
-    previewClass:
-      "border-red-500/60 bg-gradient-to-br from-red-700 via-black to-black",
-  },
-
-  {
-    id: "deli gobel",
-    name: "deli gobel",
-    requiredPoints: 300,
-    description: "Turuncu, ateşli ve enerjik görünüm.",
-    icon: "🔥",
-
-    pageClass:
-      "bg-gradient-to-br from-orange-950 via-orange-800 to-black text-white",
-
-    headerClass:
-      "border-orange-400/50 bg-orange-950/70",
-
-    cardClass:
-      "border-orange-400/50 bg-orange-950/80",
-
-    secondaryCardClass:
-      "border-orange-300/20 bg-orange-500/10",
-
-    primaryButtonClass:
-      "bg-orange-400 text-orange-950 hover:bg-orange-300",
-
-    secondaryButtonClass:
-      "border border-orange-400 text-orange-300 hover:bg-orange-500/10",
-
+    id: "bazalt",
+    name: "Bazalt",
+    requiredPoints: 0,
+    description: "Bazalt siyahı, bakır vurgular ve sert volkanik yüzeyler.",
+    icon: "▲",
+    emblem: "/themes/bazalt.png",
+    pageClass: "theme-surface theme-bazalt text-zinc-100",
+    headerClass: "theme-panel border-orange-500/38 bg-[#111214]/80 shadow-[0_18px_60px_rgba(0,0,0,.46)]",
+    cardClass: "theme-panel border-orange-500/30 bg-[#111214]/78 shadow-[0_16px_45px_rgba(0,0,0,.38)]",
+    secondaryCardClass: "theme-panel-soft border-orange-500/22 bg-orange-950/18",
+    primaryButtonClass: "border border-orange-400/50 bg-gradient-to-r from-[#8d3514] to-[#d56f2b] text-white shadow-lg hover:brightness-110",
+    secondaryButtonClass: "border border-orange-500/40 bg-black/35 text-orange-300 hover:bg-orange-500/10",
     titleClass: "text-orange-300",
-    textClass: "text-white",
-    mutedTextClass: "text-orange-100/60",
-
-    borderClass: "border-orange-400/50",
-
-    badgeClass:
-      "bg-orange-400 text-orange-950",
-
-    previewClass:
-      "border-orange-400/60 bg-gradient-to-br from-orange-400 via-orange-900 to-black",
+    textClass: "text-zinc-100",
+    mutedTextClass: "text-zinc-400",
+    borderClass: "border-orange-500/28",
+    badgeClass: "border border-orange-400/35 bg-orange-500/12 text-orange-300",
+    previewClass: "theme-preview preview-bazalt border-orange-500/40",
   },
 ];
 
 export const defaultTheme = appThemes[0];
 
-export function getThemeById(
-  selectedTheme?: string | null
-): AppTheme {
-  if (!selectedTheme) {
-    return defaultTheme;
-  }
+const legacyThemeAliases: Record<string, ThemeId> = {
+  klasik: "obsidyen",
+  Klasik: "obsidyen",
+  "gıdala": "hitit-zeytini",
+  ganara: "traverten",
+  "rüzgar": "bazalt",
+  batti: "obsidyen",
+  "yalçın": "traverten",
+  oktay: "obsidyen",
+  harun: "hitit-zeytini",
+  "alayınızı gavladırım": "bazalt",
+  "deli gobel": "bazalt",
+};
 
-  return (
-    appThemes.find(
-      (theme) => theme.id === selectedTheme
-    ) ?? defaultTheme
-  );
+export function normalizeThemeId(selectedTheme?: string | null): ThemeId {
+  const clean = selectedTheme?.trim();
+  if (!clean) return defaultTheme.id;
+  if (appThemes.some((theme) => theme.id === clean)) return clean as ThemeId;
+  return legacyThemeAliases[clean] ?? defaultTheme.id;
+}
+
+export function getThemeById(selectedTheme?: string | null): AppTheme {
+  const normalized = normalizeThemeId(selectedTheme);
+  return appThemes.find((theme) => theme.id === normalized) ?? defaultTheme;
 }
 
 export function isThemeUnlocked(
-  theme: AppTheme,
-  totalPoints: number,
-  isAdmin: boolean
+  _theme?: AppTheme,
+  _totalPoints?: number,
+  _isAdmin?: boolean
 ): boolean {
-  return isAdmin || totalPoints >= theme.requiredPoints;
+  return true;
 }

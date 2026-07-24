@@ -87,7 +87,7 @@ const AVATAR_CATEGORIES: AvatarCategory[] = [
 const DEFAULT_PROFILE: ProfileData = {
   username: "İsimsiz Gardaş",
   avatar: "⚽",
-  selectedTheme: "klasik",
+  selectedTheme: "obsidyen",
   totalPoints: 0,
   correctPredictions: 0,
   weeklyWins: 0,
@@ -193,7 +193,7 @@ export default function ProfilePage() {
             selectedTheme:
               typeof data.selectedTheme === "string"
                 ? normalizeThemeId(data.selectedTheme)
-                : "klasik",
+                : "obsidyen",
             totalPoints,
             correctPredictions,
             weeklyWins,
@@ -1116,10 +1116,10 @@ function normalizeThemeId(selectedTheme: string): string {
   const normalizedTheme = selectedTheme.trim();
 
   if (
-    normalizedTheme === "Klasik" ||
-    normalizedTheme.toLocaleLowerCase("tr-TR") === "klasik"
+    normalizedTheme === "Obsidyen" ||
+    normalizedTheme.toLocaleLowerCase("tr-TR") === "obsidyen"
   ) {
-    return "klasik";
+    return "obsidyen";
   }
 
   return normalizedTheme;

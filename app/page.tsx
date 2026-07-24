@@ -98,7 +98,7 @@ export default function HomePage() {
                   "İsimsiz Gardaş",
                 email: firebaseUser.email ?? "",
                 avatar: "⚽",
-                selectedTheme: "klasik",
+                selectedTheme: "obsidyen",
                 totalPoints: 0,
                 correctPredictions: 0,
                 weeklyWins: 0,
@@ -135,7 +135,7 @@ export default function HomePage() {
               selectedTheme:
                 typeof data.selectedTheme === "string"
                   ? normalizeThemeId(data.selectedTheme)
-                  : "klasik",
+                  : "obsidyen",
 
               totalPoints:
                 typeof data.totalPoints === "number"
@@ -196,7 +196,7 @@ export default function HomePage() {
 
   const activeTheme = useMemo(() => {
     return getThemeById(
-      profile?.selectedTheme ?? "klasik"
+      profile?.selectedTheme ?? "obsidyen"
     );
   }, [profile?.selectedTheme]);
 
@@ -240,7 +240,7 @@ export default function HomePage() {
             result.user.email ??
             cleanEmail,
           avatar,
-          selectedTheme: "klasik",
+          selectedTheme: "obsidyen",
           totalPoints: 0,
           correctPredictions: 0,
           weeklyWins: 0,
@@ -730,12 +730,12 @@ function normalizeThemeId(
     selectedTheme.trim();
 
   if (
-    normalizedTheme === "Klasik" ||
+    normalizedTheme === "Obsidyen" ||
     normalizedTheme.toLocaleLowerCase(
       "tr-TR"
-    ) === "klasik"
+    ) === "obsidyen"
   ) {
-    return "klasik";
+    return "obsidyen";
   }
 
   return normalizedTheme;
