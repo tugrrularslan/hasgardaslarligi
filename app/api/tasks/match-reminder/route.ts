@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import {
   adminDb,
   adminMessaging,
@@ -102,6 +102,9 @@ export async function POST(request: NextRequest) {
     | null = null;
 
   let config: ReminderConfig | null = null;
+  let eventReference:
+    | FirebaseFirestore.DocumentReference
+    | null = null;
 
   try {
     const body = (await request.json()) as TaskBody;
@@ -136,11 +139,17 @@ export async function POST(request: NextRequest) {
     config = getReminderConfig(reminderType);
     matchReference = adminDb.collection("matches").doc(matchId);
 
+    const eventId = `${matchId}_${reminderType}`;
+    eventReference = adminDb
+      .collection("automaticNotificationEvents")
+      .doc(eventId);
+
     const transactionResult = await adminDb.runTransaction(
       async (transaction) => {
-        const matchSnapshot = await transaction.get(
-          matchReference!
-        );
+        const [matchSnapshot, eventSnapshot] = await Promise.all([
+          transaction.get(matchReference!),
+          transaction.get(eventReference!),
+        ]);
 
         if (!matchSnapshot.exists) {
           return {
@@ -164,6 +173,46 @@ export async function POST(request: NextRequest) {
             matchData,
           };
         }
+
+        if (eventSnapshot.exists) {
+          const eventData = eventSnapshot.data();
+
+          if (eventData?.status === "sent") {
+            return {
+              action: "already-sent" as const,
+              matchData,
+            };
+          }
+
+          const processingAt = eventData?.processingAt;
+          const processingTime =
+            processingAt instanceof Timestamp
+              ? processingAt.toMillis()
+              : 0;
+          const leaseIsActive =
+            eventData?.status === "processing" &&
+            Date.now() - processingTime < 10 * 60 * 1000;
+
+          if (leaseIsActive) {
+            return {
+              action: "already-processing" as const,
+              matchData,
+            };
+          }
+        }
+
+        transaction.set(
+          eventReference!,
+          {
+            matchId,
+            notificationType: reminderType,
+            status: "processing",
+            processingAt: FieldValue.serverTimestamp(),
+            attemptCount: FieldValue.increment(1),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
 
         transaction.update(matchReference!, {
           [config!.processingField]: true,
@@ -198,6 +247,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: "Bildirim daha önce gönderilmiş.",
+      });
+    }
+
+    if (transactionResult.action === "already-processing") {
+      return NextResponse.json({
+        success: true,
+        message: "Bildirim başka bir görev tarafından işleniyor.",
       });
     }
 
@@ -240,13 +296,29 @@ export async function POST(request: NextRequest) {
     );
 
     if (tokens.length === 0) {
-      await matchReference.update({
-        [config.processingField]: false,
-        [config.failureCountField]: 0,
-        notificationTasksLastMessage:
-          "Bildirim gönderilecek kayıtlı cihaz bulunamadı.",
-        updatedAt: FieldValue.serverTimestamp(),
-      });
+      await Promise.all([
+        matchReference.update({
+          [config.sentField]: true,
+          [config.sentAtField]: FieldValue.serverTimestamp(),
+          [config.processingField]: false,
+          [config.successCountField]: 0,
+          [config.failureCountField]: 0,
+          notificationTasksLastMessage:
+            "Bildirim gönderilecek kayıtlı cihaz bulunamadı.",
+          updatedAt: FieldValue.serverTimestamp(),
+        }),
+        eventReference!.set(
+          {
+            status: "sent",
+            successCount: 0,
+            failureCount: 0,
+            tokenCount: 0,
+            sentAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        ),
+      ]);
 
       return NextResponse.json({
         success: true,
@@ -322,14 +394,27 @@ export async function POST(request: NextRequest) {
       await deleteBatch.commit();
     }
 
-    await matchReference.update({
-      [config.sentField]: true,
-      [config.sentAtField]: FieldValue.serverTimestamp(),
-      [config.successCountField]: totalSuccessCount,
-      [config.failureCountField]: totalFailureCount,
-      [config.processingField]: false,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+    await Promise.all([
+      matchReference.update({
+        [config.sentField]: true,
+        [config.sentAtField]: FieldValue.serverTimestamp(),
+        [config.successCountField]: totalSuccessCount,
+        [config.failureCountField]: totalFailureCount,
+        [config.processingField]: false,
+        updatedAt: FieldValue.serverTimestamp(),
+      }),
+      eventReference!.set(
+        {
+          status: "sent",
+          successCount: totalSuccessCount,
+          failureCount: totalFailureCount,
+          tokenCount: tokens.length,
+          sentAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      ),
+    ]);
 
     await adminDb.collection("notifications").add({
       title: config.title,
@@ -354,16 +439,31 @@ export async function POST(request: NextRequest) {
 
     if (matchReference && config) {
       try {
-        await matchReference.update({
-          [config.processingField]: false,
-          notificationTasksLastError:
-            error instanceof Error
-              ? error.message
-              : "Bilinmeyen bildirim hatası.",
-          notificationTasksLastErrorAt:
-            FieldValue.serverTimestamp(),
-          updatedAt: FieldValue.serverTimestamp(),
-        });
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Bilinmeyen bildirim hatası.";
+
+        await Promise.all([
+          matchReference.update({
+            [config.processingField]: false,
+            notificationTasksLastError: errorMessage,
+            notificationTasksLastErrorAt:
+              FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+          }),
+          eventReference
+            ? eventReference.set(
+                {
+                  status: "failed",
+                  error: errorMessage,
+                  failedAt: FieldValue.serverTimestamp(),
+                  updatedAt: FieldValue.serverTimestamp(),
+                },
+                { merge: true }
+              )
+            : Promise.resolve(),
+        ]);
       } catch (updateError) {
         console.error(
           "Bildirim hata kaydı yazılamadı:",
