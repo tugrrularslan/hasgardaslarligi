@@ -29,6 +29,7 @@ export default function ProfileAvatar({
         alt={alt}
         width={384}
         height={384}
+        unoptimized
         priority={priority}
         className={`shrink-0 object-cover ${className}`}
       />
