@@ -510,18 +510,21 @@ export default function StandingsPage() {
                           <div
                             className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border text-2xl ${activeTheme.secondaryCardClass}`}
                           >
-                            <ProfileAvatar
-                              avatar={standingUser.avatar}
-                              alt={`${standingUser.username} profil avatarı`}
-                              className="h-full w-full rounded-full"
-                            />
+                            <span className="block h-full w-full shrink-0 overflow-hidden rounded-full">
+                              <ProfileAvatar
+                                avatar={standingUser.avatar}
+                                alt={`${standingUser.username} profil avatarı`}
+                                className="h-full w-full rounded-full"
+                              />
+                            </span>
 
                             {position <= 3 && (
-                              <HittiteIcon
-                                name={position === 1 ? "crown" : "sun"}
-                                size="xs"
-                                className="absolute -right-1 -top-1"
-                              />
+                              <span className="absolute -right-1 -top-1 z-10">
+                                <HittiteIcon
+                                  name={position === 1 ? "crown" : "sun"}
+                                  size="xs"
+                                />
+                              </span>
                             )}
                           </div>
 
@@ -882,10 +885,6 @@ function StatValue({
 }
 
 function getPositionIcon(position: number): string {
-  if (position === 1) return "♛";
-  if (position === 2) return "◆";
-  if (position === 3) return "◇";
-
   return `${position}.`;
 }
 
