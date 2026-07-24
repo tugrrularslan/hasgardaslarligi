@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
         );
       });
 
-    await Promise.all(
+    const taskCleanupResults = await Promise.allSettled(
       seasonMatches.map((matchDocument) => {
         const matchData = matchDocument.data();
 
@@ -180,6 +180,18 @@ export async function POST(request: NextRequest) {
         });
       })
     );
+    const taskCleanupWarnings = taskCleanupResults.filter(
+      (result) => result.status === "rejected"
+    ).length;
+
+    taskCleanupResults.forEach((result) => {
+      if (result.status === "rejected") {
+        console.warn(
+          "Bildirim görevi silinemedi; maç silindikten sonra görev güvenli biçimde atlanacak:",
+          result.reason
+        );
+      }
+    });
 
     const writer = adminDb.bulkWriter();
 
@@ -238,6 +250,7 @@ export async function POST(request: NextRequest) {
         notifications: seasonNotifications.length,
       },
       resetUsers: usersSnapshot.size,
+      taskCleanupWarnings,
     });
   } catch (error) {
     console.error("Aktif sezon sıfırlama hatası:", error);

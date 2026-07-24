@@ -384,13 +384,18 @@ export default function AdminPage() {
       }
 
       const deleted = responseData.deleted ?? {};
+      const taskCleanupNote =
+        (responseData.taskCleanupWarnings ?? 0) > 0
+          ? " Bazı eski bildirim görevleri yetki nedeniyle kaldırılamadı; maç kayıtları silindiği için bu görevler çalıştığında bildirim göndermeden otomatik olarak atlanacak."
+          : "";
 
       setMessage(
         `${responseData.message} ` +
           `${deleted.matches ?? 0} maç, ` +
           `${deleted.predictions ?? 0} tahmin ve ` +
           `${deleted.weeklyChampions ?? 0} haftalık şampiyon kaydı temizlendi. ` +
-          `${responseData.resetUsers ?? 0} kullanıcının puan ve rozetleri sıfırlandı.`
+          `${responseData.resetUsers ?? 0} kullanıcının puan ve rozetleri sıfırlandı.` +
+          taskCleanupNote
       );
       setResetConfirmation("");
       setShowResetConfirmation(false);
@@ -2014,9 +2019,15 @@ export default function AdminPage() {
                 Devam etmek için aşağıdaki metni boşlukları ve büyük
                 harfleriyle birlikte aynen yaz:
               </p>
-              <code className="mt-4 block select-all rounded-xl border border-red-500/30 bg-black/40 px-4 py-3 font-black text-red-200">
-                {resetConfirmationText}
-              </code>
+              <div
+                id="season-reset-required-text"
+                className="season-reset-required-text mt-4"
+                role="note"
+                aria-label="Yazılması gereken onay metni"
+              >
+                <span>YAZMAN GEREKEN METİN</span>
+                <strong>{resetConfirmationText}</strong>
+              </div>
 
               <label
                 htmlFor="season-reset-confirmation"
@@ -2034,6 +2045,8 @@ export default function AdminPage() {
                 disabled={resettingSeason}
                 autoComplete="off"
                 spellCheck={false}
+                placeholder={resetConfirmationText}
+                aria-describedby="season-reset-required-text"
                 className="mt-2 w-full rounded-xl border border-red-500/35 bg-black px-4 py-3 font-bold outline-none focus:border-red-400 disabled:opacity-50"
               />
 
