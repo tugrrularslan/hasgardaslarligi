@@ -37,7 +37,6 @@ type Match = {
   id: string;
   week: number;
   seasonId?: string;
-  seasonId?: string;
   homeTeam: string;
   awayTeam: string;
   kickoff: Timestamp;
@@ -714,15 +713,18 @@ export default function AdminPage() {
     }
 
     const weekMatches = weekMatchesSnapshot.docs
-      .map((matchDocument) => ({
+  .map(
+    (matchDocument) =>
+      ({
         id: matchDocument.id,
         ...matchDocument.data(),
-      }))
-      .filter(
-        (match) =>
-          match.seasonId === activeSeasonId ||
-          (!match.seasonId && activeSeasonId === DEFAULT_SEASON_ID)
-      ) as Match[];
+      }) as Match
+  )
+  .filter(
+    (match) =>
+      match.seasonId === activeSeasonId ||
+      (!match.seasonId && activeSeasonId === DEFAULT_SEASON_ID)
+  );
 
     if (weekMatches.length === 0) {
       throw new Error(
