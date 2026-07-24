@@ -37,6 +37,7 @@ type Match = {
   id: string;
   week: number;
   seasonId?: string;
+  seasonId?: string;
   homeTeam: string;
   awayTeam: string;
   kickoff: Timestamp;
