@@ -43,7 +43,7 @@ export default function LoginPage() {
           <input id="email" type="email" placeholder="ornek@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
           <label htmlFor="password" className="mt-1 font-bold text-amber-100">Şifre</label>
           <input id="password" type="password" placeholder="Şifrenizi girin" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
-          <button type="submit" disabled={loading} className="mt-3 rounded-xl border border-amber-300/50 bg-gradient-to-r from-amber-500 to-yellow-300 px-4 py-3 font-black text-black disabled:opacity-60">{loading ? "İşlem yapılıyor..." : "Giriş Yap"}</button>
+          <button type="submit" disabled={loading} className="hg-primary mt-3 rounded-xl border border-amber-300/50 bg-gradient-to-r from-amber-500 to-yellow-300 px-4 py-3 font-black text-black disabled:opacity-60">{loading ? "İşlem yapılıyor..." : "Giriş Yap"}</button>
           <button type="button" onClick={handlePasswordReset} disabled={loading} className="rounded-xl px-4 py-2 font-bold text-amber-300 hover:bg-amber-400/10 disabled:opacity-60">Şifremi Unuttum</button>
         </form>
         {message && <p className="mt-5 rounded-xl border border-amber-400/25 bg-amber-400/10 p-3 text-sm text-amber-100">{message}</p>}

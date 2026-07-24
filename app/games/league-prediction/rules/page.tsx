@@ -76,7 +76,7 @@ export default function RulesPage() {
         <div className="mt-7 grid gap-3 sm:grid-cols-2">
           <Link
             href="/predictions"
-            className="rounded-xl bg-white px-5 py-4 text-center font-black text-red-800"
+            className="hg-primary rounded-xl px-5 py-4 text-center font-black"
           >
             ⚽ Tahminlere Git
           </Link>

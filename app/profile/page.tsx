@@ -655,7 +655,7 @@ export default function ProfilePage() {
                         !newUsername.trim() ||
                         newUsername.trim() === profile.username.trim()
                       }
-                      className={`mt-3 w-full rounded-xl px-5 py-3 font-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 ${activeTheme.badgeClass}`}
+                      className={`mt-3 w-full rounded-xl px-5 py-3 font-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 ${activeTheme.primaryButtonClass}`}
                     >
                       {savingUsername
                         ? "Değiştiriliyor..."
@@ -927,7 +927,7 @@ export default function ProfilePage() {
                   type="button"
                   onClick={handleSaveAvatar}
                   disabled={!avatarChanged || savingAvatar}
-                  className={`w-full rounded-xl px-5 py-3 font-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 ${activeTheme.badgeClass}`}
+                  className={`w-full rounded-xl px-5 py-3 font-black transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 ${activeTheme.primaryButtonClass}`}
                 >
                   {savingAvatar
                     ? "Kaydediliyor..."

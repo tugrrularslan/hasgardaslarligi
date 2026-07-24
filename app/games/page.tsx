@@ -28,7 +28,7 @@ export default function GamesPage() {
         <section className="grid gap-6 md:grid-cols-2">
           <Link
             href="/games/league-prediction"
-            className="group rounded-3xl border border-red-400/30 bg-red-950/60 p-7 shadow-xl transition hover:-translate-y-1 hover:border-red-300 hover:bg-red-900/60"
+            className="game-card group rounded-3xl border border-red-400/30 bg-red-950/60 p-7 shadow-xl transition hover:-translate-y-1 hover:border-red-300 hover:bg-red-900/60"
           >
             <div className="text-6xl">⚽</div>
 
@@ -53,8 +53,8 @@ export default function GamesPage() {
               zirveye çık.
             </p>
 
-            <div className="mt-6 rounded-xl bg-white px-5 py-3 text-center font-black text-red-800">
-              Oyuna Gir
+            <div className="hg-primary mt-6 rounded-xl px-5 py-3 text-center font-black transition">
+              Oyunu Aç
             </div>
           </Link>
 

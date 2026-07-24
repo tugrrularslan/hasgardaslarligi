@@ -681,7 +681,7 @@ export default function HomePage() {
           <button
             type="submit"
             disabled={formLoading}
-            className="w-full rounded-xl bg-white px-4 py-3 font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+            className="hg-primary w-full rounded-xl bg-white px-4 py-3 font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {formLoading
               ? "İşlem yapılıyor..."

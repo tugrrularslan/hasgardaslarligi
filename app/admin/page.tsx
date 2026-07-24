@@ -1419,7 +1419,7 @@ export default function AdminPage() {
             <button
               type="submit"
               disabled={savingSeason}
-              className="md:col-span-2 rounded-xl bg-emerald-500 px-5 py-3 font-black text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="hg-primary md:col-span-2 rounded-xl bg-emerald-500 px-5 py-3 font-black text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {savingSeason ? "Sezon Kaydediliyor..." : "Aktif Sezonu Kaydet"}
             </button>
@@ -1536,7 +1536,7 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={sendingNotification}
-                className="w-full rounded-xl bg-blue-500 px-5 py-3 font-black text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="hg-primary w-full rounded-xl bg-blue-500 px-5 py-3 font-black text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {sendingNotification
                   ? "Bildirim isteği oluşturuluyor..."
@@ -1631,7 +1631,7 @@ export default function AdminPage() {
               <button
                 type="submit"
                 disabled={savingMatch}
-                className="w-full rounded-xl bg-yellow-500 px-4 py-3 font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="hg-primary w-full rounded-xl bg-yellow-500 px-4 py-3 font-black text-black transition hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingMatch ? "Ekleniyor..." : "Maçı Ekle"}
               </button>
@@ -1651,7 +1651,7 @@ export default function AdminPage() {
                 type="button"
                 onClick={handlePublishWeek}
                 disabled={publishingWeek || savingMatch}
-                className="mt-4 w-full rounded-xl bg-blue-500 px-4 py-3 font-black text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="hg-primary mt-4 w-full rounded-xl bg-blue-500 px-4 py-3 font-black text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {publishingWeek
                   ? `${week}. Hafta Yayınlanıyor...`
@@ -1679,7 +1679,7 @@ export default function AdminPage() {
                   savingMatch ||
                   savingResultId !== null
                 }
-                className="mt-4 w-full rounded-xl bg-green-500 px-4 py-3 font-black text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="hg-primary mt-4 w-full rounded-xl bg-green-500 px-4 py-3 font-black text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {declaringChampion
                   ? `${week}. Hafta Hesaplanıyor...`
@@ -1887,7 +1887,7 @@ export default function AdminPage() {
                                 score.home === "" ||
                                 score.away === ""
                               }
-                              className="rounded-xl bg-green-500 px-5 py-3 font-black text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="hg-primary rounded-xl bg-green-500 px-5 py-3 font-black text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {savingThisResult
                                 ? "Sonuç ve puanlar kaydediliyor..."

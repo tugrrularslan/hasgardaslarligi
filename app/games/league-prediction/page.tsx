@@ -99,7 +99,7 @@ export default function LeaguePredictionPage() {
                 {section.description}
               </p>
 
-              <div className="mt-6 rounded-xl bg-white/10 px-4 py-3 text-center font-black transition group-hover:bg-white group-hover:text-red-800">
+              <div className="hg-primary mt-6 rounded-xl px-4 py-3 text-center font-black transition">
                 Aç
               </div>
             </Link>
