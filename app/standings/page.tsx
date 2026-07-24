@@ -678,7 +678,7 @@ function PodiumCard({
                 : "h-20 w-20 md:h-24 md:w-24"
             } ${podiumStyle.avatarClass}`}
           >
-            <span className="block h-full w-full overflow-hidden rounded-full">
+            <span className="block h-full w-full shrink-0 overflow-hidden rounded-full">
               <ProfileAvatar
                 avatar={user.avatar}
                 alt={`${user.username} profil avatarı`}
@@ -687,11 +687,9 @@ function PodiumCard({
             </span>
 
             {position === 1 && (
-              <HittiteIcon
-                name="crown"
-                size="md"
-                className="absolute left-1/2 -top-6 z-10 -translate-x-1/2"
-              />
+              <span className="absolute left-1/2 -top-6 z-10 -translate-x-1/2">
+                <HittiteIcon name="crown" size="md" />
+              </span>
             )}
           </div>
         </div>

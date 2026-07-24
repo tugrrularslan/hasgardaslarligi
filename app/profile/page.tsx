@@ -551,7 +551,7 @@ export default function ProfilePage() {
                 <div
                   className={`relative flex h-36 w-36 items-center justify-center rounded-full border text-7xl shadow-2xl ring-4 ring-white/5 ${activeTheme.secondaryCardClass}`}
                 >
-                  <span className="block h-full w-full overflow-hidden rounded-full">
+                  <span className="block h-full w-full shrink-0 overflow-hidden rounded-full">
                     <ProfileAvatar
                       avatar={selectedAvatar}
                       alt="Seçili profil avatarı"
@@ -560,11 +560,13 @@ export default function ProfilePage() {
                     />
                   </span>
                   {avatarChanged && (
-                    <HittiteIcon
-                      name="check"
-                      size="md"
-                      className={`absolute bottom-1 right-1 z-10 ${activeTheme.badgeClass}`}
-                    />
+                    <span className="absolute bottom-1 right-1 z-10">
+                      <HittiteIcon
+                        name="check"
+                        size="md"
+                        className={activeTheme.badgeClass}
+                      />
+                    </span>
                   )}
                 </div>
 
@@ -966,11 +968,13 @@ export default function ProfilePage() {
                               />
                             </span>
                             {isSelected && (
-                              <HittiteIcon
-                                name="check"
-                                size="xs"
-                                className={`absolute right-1 top-1 z-10 ${activeTheme.badgeClass}`}
-                              />
+                              <span className="absolute right-1 top-1 z-10">
+                                <HittiteIcon
+                                  name="check"
+                                  size="xs"
+                                  className={activeTheme.badgeClass}
+                                />
+                              </span>
                             )}
                           </button>
                         );

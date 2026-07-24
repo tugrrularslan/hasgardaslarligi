@@ -32,7 +32,7 @@ export default function ProfileAvatar({
         unoptimized
         priority={priority}
         draggable={false}
-        className={`block shrink-0 object-contain object-center ${className}`}
+        className={`block shrink-0 object-cover object-center ${className}`}
       />
     );
   }
