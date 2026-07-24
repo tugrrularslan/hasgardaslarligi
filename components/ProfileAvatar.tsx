@@ -31,7 +31,8 @@ export default function ProfileAvatar({
         height={384}
         unoptimized
         priority={priority}
-        className={`shrink-0 object-cover ${className}`}
+        draggable={false}
+        className={`block shrink-0 object-contain object-center ${className}`}
       />
     );
   }

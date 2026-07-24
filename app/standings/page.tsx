@@ -678,17 +678,19 @@ function PodiumCard({
                 : "h-20 w-20 md:h-24 md:w-24"
             } ${podiumStyle.avatarClass}`}
           >
-            <ProfileAvatar
-              avatar={user.avatar}
-              alt={`${user.username} profil avatarı`}
-              className="h-full w-full rounded-full"
-            />
+            <span className="block h-full w-full overflow-hidden rounded-full">
+              <ProfileAvatar
+                avatar={user.avatar}
+                alt={`${user.username} profil avatarı`}
+                className="h-full w-full rounded-full"
+              />
+            </span>
 
             {position === 1 && (
               <HittiteIcon
                 name="crown"
                 size="md"
-                className="absolute -top-6"
+                className="absolute left-1/2 -top-6 z-10 -translate-x-1/2"
               />
             )}
           </div>
@@ -911,7 +913,7 @@ function getPodiumStyle(position: number) {
       medal: "crown" as const,
       title: "Şampiyon",
       cardClass:
-        "border-yellow-300/50 bg-gradient-to-b from-yellow-400/20 via-yellow-950/20 to-black/30 shadow-[0_0_45px_rgba(250,204,21,0.18)] md:scale-105",
+        "border-yellow-300/50 bg-gradient-to-b from-yellow-400/20 via-yellow-950/20 to-black/30 shadow-[0_0_45px_rgba(250,204,21,0.18)]",
       barClass:
         "bg-gradient-to-r from-yellow-700 via-yellow-300 to-yellow-700",
       labelClass: "text-yellow-200",

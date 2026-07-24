@@ -549,19 +549,21 @@ export default function ProfilePage() {
             >
               <div className="flex flex-col items-center text-center">
                 <div
-                  className={`relative flex h-36 w-36 items-center justify-center rounded-full border text-7xl shadow-2xl ring-4 ring-white/5 transition-transform duration-300 hover:scale-105 ${activeTheme.secondaryCardClass}`}
+                  className={`relative flex h-36 w-36 items-center justify-center rounded-full border text-7xl shadow-2xl ring-4 ring-white/5 ${activeTheme.secondaryCardClass}`}
                 >
-                  <ProfileAvatar
-                    avatar={selectedAvatar}
-                    alt="Seçili profil avatarı"
-                    priority
-                    className="h-full w-full rounded-full"
-                  />
+                  <span className="block h-full w-full overflow-hidden rounded-full">
+                    <ProfileAvatar
+                      avatar={selectedAvatar}
+                      alt="Seçili profil avatarı"
+                      priority
+                      className="h-full w-full rounded-full"
+                    />
+                  </span>
                   {avatarChanged && (
                     <HittiteIcon
                       name="check"
                       size="md"
-                      className={`absolute -bottom-1 -right-1 ${activeTheme.badgeClass}`}
+                      className={`absolute bottom-1 right-1 z-10 ${activeTheme.badgeClass}`}
                     />
                   )}
                 </div>
@@ -950,22 +952,24 @@ export default function ProfilePage() {
                             }}
                             aria-label={`${avatarOption.name} avatarını seç`}
                             aria-pressed={isSelected}
-                            className={`relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl border transition duration-200 hover:-translate-y-1 hover:scale-105 ${
+                            className={`relative flex aspect-square items-center justify-center rounded-2xl border transition duration-200 hover:brightness-110 ${
                               isSelected
                                 ? activeTheme.secondaryCardClass
                                 : activeTheme.cardClass
                             }`}
                           >
-                            <ProfileAvatar
-                              avatar={avatarOption.src}
-                              alt=""
-                              className="h-full w-full"
-                            />
+                            <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
+                              <ProfileAvatar
+                                avatar={avatarOption.src}
+                                alt=""
+                                className="h-full w-full"
+                              />
+                            </span>
                             {isSelected && (
                               <HittiteIcon
                                 name="check"
                                 size="xs"
-                                className={`absolute -right-1 -top-1 ${activeTheme.badgeClass}`}
+                                className={`absolute right-1 top-1 z-10 ${activeTheme.badgeClass}`}
                               />
                             )}
                           </button>
