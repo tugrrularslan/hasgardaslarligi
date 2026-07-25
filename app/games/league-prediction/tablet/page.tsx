@@ -123,7 +123,15 @@ export default function WeeklyTabletPage() {
         return;
       }
 
-      void loadTablet();
+      const weekFromUrl = Number(
+        new URLSearchParams(window.location.search).get("week"),
+      );
+
+      void loadTablet(
+        Number.isInteger(weekFromUrl) && weekFromUrl > 0
+          ? weekFromUrl
+          : undefined,
+      );
     });
 
     return unsubscribe;

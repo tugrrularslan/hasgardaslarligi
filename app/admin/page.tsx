@@ -1196,6 +1196,7 @@ export default function AdminPage() {
       }
 
       const idToken = await user?.getIdToken();
+      let tabletNotificationMessage = "";
 
       if (idToken) {
         const notificationResponse = await fetch(
@@ -1219,10 +1220,52 @@ export default function AdminPage() {
             "Maç sonucu bildirimi gönderilemedi."
           );
         }
+
+        try {
+          const tabletNotificationResponse = await fetch(
+            "/api/admin/publish-weekly-tablet",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({
+                week: match.week,
+              }),
+            }
+          );
+          const tabletNotificationData =
+            await tabletNotificationResponse.json();
+
+          if (!tabletNotificationResponse.ok) {
+            throw new Error(
+              tabletNotificationData.error ||
+                "Haftanın Tableti bildirimi gönderilemedi."
+            );
+          }
+
+          if (tabletNotificationData.sent === true) {
+            tabletNotificationMessage =
+              (tabletNotificationData.tokenCount ?? 0) > 0
+                ? ` ${match.week}. Haftanın Tableti hazırlandı ve bildirim ${
+                    tabletNotificationData.successCount ?? 0
+                  } cihaza ulaştı.`
+                : ` ${match.week}. Haftanın Tableti hazırlandı; kayıtlı bildirim cihazı bulunamadı.`;
+          }
+        } catch (tabletNotificationError) {
+          console.error(
+            "Haftanın Tableti bildirimi gönderilemedi:",
+            tabletNotificationError
+          );
+
+          tabletNotificationMessage =
+            " Haftanın Tableti hazır olabilir ancak bildirimi gönderilemedi.";
+        }
       }
 
       setMessage(
-        `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sonucu kaydedildi. ${checkedPredictionCount} tahmin kontrol edildi ve puanlar otomatik hesaplandı.${weeklyBonusMessage}`
+        `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sonucu kaydedildi. ${checkedPredictionCount} tahmin kontrol edildi ve puanlar otomatik hesaplandı.${weeklyBonusMessage}${tabletNotificationMessage}`
       );
     } catch (error) {
       console.error(error);

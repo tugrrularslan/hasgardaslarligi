@@ -155,8 +155,10 @@ export async function POST(request: NextRequest) {
         const eventData = eventDocument.data();
 
         return (
-          typeof eventData.matchId === "string" &&
-          matchIds.has(eventData.matchId)
+          (typeof eventData.matchId === "string" &&
+            matchIds.has(eventData.matchId)) ||
+          (eventData.notificationType === "weekly-tablet-ready" &&
+            eventData.seasonId === activeSeasonId)
         );
       });
 
@@ -165,8 +167,11 @@ export async function POST(request: NextRequest) {
         const notificationData = notificationDocument.data();
 
         return (
-          typeof notificationData.matchId === "string" &&
-          matchIds.has(notificationData.matchId)
+          (typeof notificationData.matchId === "string" &&
+            matchIds.has(notificationData.matchId)) ||
+          (notificationData.notificationType ===
+            "weekly-tablet-ready" &&
+            notificationData.seasonId === activeSeasonId)
         );
       });
 
