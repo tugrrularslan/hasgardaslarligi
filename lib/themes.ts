@@ -110,6 +110,28 @@ export const appThemes: AppTheme[] = [
 
 export const defaultTheme = appThemes[0];
 
+export const themeAppColors: Record<
+  ThemeId,
+  { backgroundColor: string; themeColor: string }
+> = {
+  obsidyen: {
+    backgroundColor: "#07080a",
+    themeColor: "#d8a94d",
+  },
+  "hitit-zeytini": {
+    backgroundColor: "#101506",
+    themeColor: "#bfa64d",
+  },
+  traverten: {
+    backgroundColor: "#dcc299",
+    themeColor: "#8a5528",
+  },
+  bazalt: {
+    backgroundColor: "#0b0c0e",
+    themeColor: "#d56f2b",
+  },
+};
+
 const legacyThemeAliases: Record<string, ThemeId> = {
   klasik: "obsidyen",
   Klasik: "obsidyen",
