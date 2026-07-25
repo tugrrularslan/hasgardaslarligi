@@ -1476,7 +1476,7 @@ export default function AdminPage() {
             </h1>
 
             <p className="mt-2 text-zinc-400">
-              Maçları ve sonuçları buradan yönetebilirsin.
+              Oyunları, maçları ve sonuçları buradan yönetebilirsin.
             </p>
           </div>
 
@@ -1683,8 +1683,8 @@ export default function AdminPage() {
         </CollapsiblePanel>
 
         <CollapsiblePanel
-          title="Maç Yönetimi"
-          description={`${matches.length} maç • maç ekleme, yayınlama ve sonuç işlemleri`}
+          title="Gardaş 1X2 Maç Yönetimi"
+          description={`${matches.length} maç • Gardaş 1X2 maç ekleme, yayınlama ve sonuç işlemleri`}
           icon="ball"
           defaultOpen
           className="mb-8"
@@ -1692,7 +1692,7 @@ export default function AdminPage() {
         <section className="grid gap-8 lg:grid-cols-[380px_1fr]">
           <div className="h-fit rounded-3xl border border-yellow-500/30 bg-zinc-950 p-6">
             <h2 className="text-xl font-black text-yellow-400">
-              Yeni Maç Ekle
+              Gardaş 1X2 Maç Ekle
             </h2>
 
             <p className="mt-2 text-sm text-zinc-500">
@@ -1834,7 +1834,7 @@ export default function AdminPage() {
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
             <div className="mb-6">
               <h2 className="text-xl font-black">
-                Maçlar ve Sonuçlar
+                Gardaş 1X2 Maçları ve Sonuçları
               </h2>
 
               <p className="mt-1 text-sm text-zinc-400">
