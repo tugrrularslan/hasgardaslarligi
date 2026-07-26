@@ -923,7 +923,7 @@ export default function ProfilePage() {
 
               <div className="space-y-8">
                 {AVATAR_CATEGORIES.map((category) => (
-                  <div key={category.title}>
+                  <div key={category.title} className="hg-scroll-section">
                     <div className="mb-4">
                       <h3
                         className={`text-lg font-black ${activeTheme.textClass}`}

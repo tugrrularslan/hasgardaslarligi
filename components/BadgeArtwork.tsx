@@ -59,13 +59,13 @@ export default function BadgeArtwork({
 
   return (
     <span
-      className={`relative inline-block shrink-0 ${SIZE_CLASSES[size]} ${className}`}
+      className={`hg-badge-artwork relative inline-block shrink-0 ${SIZE_CLASSES[size]} ${className}`}
       title={title ?? badge.name}
       aria-label={`${badge.name} rozeti`}
     >
       <span
         aria-hidden="true"
-        className={`absolute inset-[16%] rounded-full blur-lg ${
+        className={`hg-badge-artwork-aura absolute inset-[16%] rounded-full blur-lg ${
           locked ? "opacity-0" : badge.rarity === "legendary" ? "opacity-45" : "opacity-30"
         }`}
         style={auraStyle}

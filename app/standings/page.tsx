@@ -485,7 +485,7 @@ export default function StandingsPage() {
                   return (
                     <article
                       key={standingUser.id}
-                      className={`border-b px-5 py-5 transition last:border-b-0 hover:translate-x-1 ${activeTheme.borderClass} ${
+                      className={`hg-scroll-item border-b px-5 py-5 transition last:border-b-0 hover:translate-x-1 ${activeTheme.borderClass} ${
                         isCurrentUser
                           ? activeTheme.secondaryCardClass
                           : ""

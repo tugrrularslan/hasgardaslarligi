@@ -346,7 +346,7 @@ export default function PredictionsPage() {
                       return (
                         <article
                           key={match.id}
-                          className={`rounded-3xl border p-4 shadow-xl transition-[transform,box-shadow,border-color,background-color] duration-200 hover:scale-[1.01] md:p-6 ${activeTheme.cardClass}`}
+                          className={`hg-scroll-item rounded-3xl border p-4 shadow-xl transition-[transform,box-shadow,border-color,background-color] duration-200 hover:scale-[1.01] md:p-6 ${activeTheme.cardClass}`}
                         >
                           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>

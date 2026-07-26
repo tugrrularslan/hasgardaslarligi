@@ -3,8 +3,8 @@
 :root {
   --background: #07080a;
   --foreground: #f8edcf;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
   --hg-bg: #07080a;
   --hg-bg-deep: #030405;
   --hg-panel: rgba(9, 10, 13, .86);
@@ -35,8 +35,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
 }
 
 * { box-sizing: border-box; }
@@ -606,6 +606,112 @@ body[class*="global-theme-"] .game-card:focus-visible {
 
   body[class*="global-theme-"] :is(div, section, article, aside, nav, header)[class*="shadow-2xl"] {
     box-shadow: 0 10px 28px rgba(0, 0, 0, .3) !important;
+  }
+}
+
+/* Android performance mode. The original theme used fixed multi-layer
+   gradients, blended viewport overlays, blur and large shadows. Those layers
+   are repainted while the finger moves and cause visible dropped frames on
+   mid-range phones. Mobile keeps the theme colors and borders, but uses only
+   compositor-friendly solid surfaces. */
+@media (max-width: 900px), (pointer: coarse) {
+  html,
+  body,
+  .theme-surface,
+  .hg-page,
+  .hg-login-page,
+  body[class*="global-theme-"],
+  body[class*="global-theme-"] main:not(.hg-login-page),
+  body[class*="global-theme-"] .theme-surface,
+  body[class*="global-theme-"] .hg-page,
+  body[class*="global-theme-"] .hg-login-page,
+  body[class*="global-theme-"] :is([class*="min-h-screen"], [class*="min-h-dvh"], [class*="h-screen"]) {
+    background-color: var(--hg-bg) !important;
+    background-image: none !important;
+    background-attachment: scroll !important;
+  }
+
+  body {
+    transition: none !important;
+  }
+
+  .theme-surface::after,
+  .hg-page::after,
+  .theme-panel::before,
+  .theme-panel-soft::before,
+  .hg-card::before,
+  .hg-card-soft::before {
+    content: none !important;
+    display: none !important;
+    mix-blend-mode: normal !important;
+  }
+
+  .theme-panel,
+  .theme-panel-soft,
+  .hg-card,
+  .hg-card-soft,
+  .hg-nav,
+  .hg-login-card,
+  body[class*="global-theme-"] :is(div, section, article, aside, nav, header)[class*="rounded-"][class*="border-"] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  body[class*="global-theme-"] [class*="bg-gradient-to-"],
+  body[class*="global-theme-"] :is(button, a)[class*="shadow-"],
+  body[class*="global-theme-"] [class*="shadow-["],
+  .hg-primary,
+  .hg-secondary,
+  .hg-nav-item,
+  .hg-nav-active,
+  .hg-mobile-nav,
+  .hg-hittite-icon {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  body[class*="global-theme-"] [class*="bg-gradient-to-"] {
+    background-image: none !important;
+  }
+
+  .hg-hittite-icon {
+    background: var(--hg-panel-soft) !important;
+  }
+
+  .hg-badge-artwork,
+  .hg-scroll-item,
+  .hg-scroll-section {
+    contain: paint;
+  }
+
+  .hg-badge-artwork-aura,
+  .blur-3xl,
+  .blur-2xl {
+    display: none !important;
+  }
+
+  .hg-badge-artwork img {
+    filter: none !important;
+  }
+
+  .hg-scroll-item,
+  .hg-scroll-item:hover,
+  .game-card,
+  .game-card:hover {
+    transform: none !important;
+  }
+}
+
+@media (hover: none) {
+  .hg-primary:hover,
+  .hg-secondary:hover,
+  .hg-nav-item:hover,
+  .hg-nav-active:hover,
+  .game-card:hover,
+  .hg-scroll-item:hover {
+    filter: none !important;
+    transform: none !important;
   }
 }
 
