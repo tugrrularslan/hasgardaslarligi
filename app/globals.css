@@ -671,8 +671,22 @@ body[class*="global-theme-"] .game-card:focus-visible {
     filter: none !important;
   }
 
-  body[class*="global-theme-"] [class*="bg-gradient-to-"] {
+  body[class*="global-theme-"] [class*="bg-gradient-to-"]:not(.hg-primary):not(.hg-nav-active) {
     background-image: none !important;
+  }
+
+  body[class*="global-theme-"] :is(.hg-primary, .hg-nav-active) {
+    border-color: var(--hg-border-strong) !important;
+    background-color: var(--hg-cta) !important;
+    background-image: none !important;
+    color: var(--hg-cta-ink) !important;
+  }
+
+  body[class*="global-theme-"] :is(.hg-secondary, .hg-nav-item) {
+    border-color: var(--hg-border) !important;
+    background-color: var(--hg-panel-soft) !important;
+    background-image: none !important;
+    color: var(--hg-ink) !important;
   }
 
   .hg-hittite-icon {
@@ -740,4 +754,29 @@ body[class*="global-theme-"] .season-reset-required-text strong {
   letter-spacing: .045em;
   overflow-wrap: anywhere;
   user-select: all;
+}
+
+/* Button roles must keep their contrast even when broad legacy theme rules
+   remap Tailwind color utilities. */
+.hg-danger,
+body[class*="global-theme-"] .hg-danger {
+  border-color: #ef4444 !important;
+  background: #b91c1c !important;
+  color: #ffffff !important;
+}
+.hg-danger-outline,
+body[class*="global-theme-"] .hg-danger-outline {
+  border-color: #ef4444 !important;
+  background: #450a0a !important;
+  color: #ffffff !important;
+}
+.hg-segmented-active,
+body[class*="global-theme-"] .hg-segmented-active {
+  background: var(--hg-cta) !important;
+  color: var(--hg-cta-ink) !important;
+}
+.hg-segmented-inactive,
+body[class*="global-theme-"] .hg-segmented-inactive {
+  background: transparent !important;
+  color: var(--hg-ink) !important;
 }

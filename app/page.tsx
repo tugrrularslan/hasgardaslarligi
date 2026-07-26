@@ -524,8 +524,8 @@ export default function HomePage() {
             }}
             className={`rounded-lg py-3 font-bold transition ${
               mode === "login"
-                ? "bg-white text-red-700"
-                : "text-red-100/70 hover:bg-white/10"
+                ? "hg-segmented-active"
+                : "hg-segmented-inactive"
             }`}
           >
             Giriş
@@ -539,8 +539,8 @@ export default function HomePage() {
             }}
             className={`rounded-lg py-3 font-bold transition ${
               mode === "register"
-                ? "bg-white text-red-700"
-                : "text-red-100/70 hover:bg-white/10"
+                ? "hg-segmented-active"
+                : "hg-segmented-inactive"
             }`}
           >
             Kayıt Ol

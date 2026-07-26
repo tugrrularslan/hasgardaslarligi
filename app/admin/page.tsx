@@ -1483,7 +1483,7 @@ export default function AdminPage() {
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="hg-icon-label rounded-xl border border-zinc-700 px-5 py-3 font-bold text-zinc-300 transition hover:border-yellow-500 hover:text-yellow-400"
+            className="hg-secondary hg-icon-label rounded-xl border border-zinc-700 px-5 py-3 font-bold text-zinc-300 transition hover:border-yellow-500 hover:text-yellow-400"
           >
             <HittiteIcon name="home" size="sm" />
             Ana Sayfaya Dön
@@ -1686,7 +1686,6 @@ export default function AdminPage() {
           title="Gardaş 1X2 Maç Yönetimi"
           description={`${matches.length} maç • Gardaş 1X2 maç ekleme, yayınlama ve sonuç işlemleri`}
           icon="ball"
-          defaultOpen
           className="mb-8"
         >
         <section className="grid gap-8 lg:grid-cols-[380px_1fr]">
@@ -1946,7 +1945,7 @@ export default function AdminPage() {
                               deletingThisMatch ||
                               savingThisResult
                             }
-                            className="rounded-xl border border-red-500/30 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="hg-danger-outline rounded-xl border border-red-500/30 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             {deletingThisMatch
                               ? "Siliniyor..."
@@ -2096,7 +2095,7 @@ export default function AdminPage() {
                   setResetConfirmation("");
                   setShowResetConfirmation(true);
                 }}
-                className="shrink-0 rounded-xl border border-red-500/50 px-5 py-3 font-black text-red-300 transition hover:bg-red-500/10"
+                className="hg-danger-outline shrink-0 rounded-xl border border-red-500/50 px-5 py-3 font-black text-red-300 transition hover:bg-red-500/10"
               >
                 Sıfırlama Ekranını Aç
               </button>
@@ -2151,7 +2150,7 @@ export default function AdminPage() {
                     resettingSeason ||
                     resetConfirmation !== resetConfirmationText
                   }
-                  className="rounded-xl bg-red-600 px-5 py-3 font-black text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="hg-danger rounded-xl bg-red-600 px-5 py-3 font-black text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {resettingSeason
                     ? "Veriler Sıfırlanıyor..."
@@ -2164,7 +2163,7 @@ export default function AdminPage() {
                     setShowResetConfirmation(false);
                   }}
                   disabled={resettingSeason}
-                  className="rounded-xl border border-zinc-700 px-5 py-3 font-bold text-zinc-300 transition hover:bg-white/5 disabled:opacity-50"
+                  className="hg-secondary rounded-xl border border-zinc-700 px-5 py-3 font-bold text-zinc-300 transition hover:bg-white/5 disabled:opacity-50"
                 >
                   Vazgeç
                 </button>

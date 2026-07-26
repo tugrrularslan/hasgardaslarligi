@@ -102,7 +102,7 @@ export default function ThemesPage() {
                   </div>
                 </div>
                 <p className={`mt-4 min-h-12 text-sm leading-6 ${theme.mutedTextClass}`}>{theme.description}</p>
-                <button type="button" onClick={() => handleSelectTheme(theme)} disabled={selected || saving} className={`mt-4 w-full rounded-xl px-4 py-3 font-black transition disabled:cursor-not-allowed ${selected ? theme.secondaryCardClass : theme.primaryButtonClass}`}>
+                <button type="button" onClick={() => handleSelectTheme(theme)} disabled={selected || saving} className={`mt-4 w-full rounded-xl px-4 py-3 font-black transition disabled:cursor-not-allowed ${selected ? `hg-secondary ${theme.secondaryCardClass}` : theme.primaryButtonClass}`}>
                   {saving ? "Uygulanıyor..." : selected ? "Kullanılıyor" : "Temayı Kullan"}
                 </button>
               </article>
