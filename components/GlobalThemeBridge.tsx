@@ -18,45 +18,6 @@ const themeClasses = [
   "global-theme-bazalt",
 ];
 
-function ensureLink(rel: string) {
-  let link = document.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
-  if (!link) {
-    link = document.createElement("link");
-    link.rel = rel;
-    document.head.appendChild(link);
-  }
-  return link;
-}
-
-function applyThemeAppIdentity(themeId: ThemeId) {
-  const encodedTheme = encodeURIComponent(themeId);
-  const iconHref = `/api/theme-icon?theme=${encodedTheme}&size=192`;
-
-  const faviconLinks = document.querySelectorAll<HTMLLinkElement>(
-    'link[rel="icon"], link[rel="shortcut icon"]'
-  );
-  if (faviconLinks.length === 0) {
-    const favicon = ensureLink("icon");
-    favicon.href = iconHref;
-    favicon.type = "image/png";
-    favicon.sizes = "192x192";
-  } else {
-    faviconLinks.forEach((favicon) => {
-      favicon.href = iconHref;
-      favicon.type = "image/png";
-      favicon.sizes = "192x192";
-    });
-  }
-
-  const appleIcon = ensureLink("apple-touch-icon");
-  appleIcon.href = `/api/theme-icon?theme=${encodedTheme}&size=180`;
-  appleIcon.type = "image/png";
-  appleIcon.sizes = "180x180";
-
-  const manifest = ensureLink("manifest");
-  manifest.href = `/api/theme-manifest?theme=${encodedTheme}`;
-}
-
 function applyTheme(themeId: ThemeId) {
   const colors = themeAppColors[themeId];
 
@@ -65,7 +26,6 @@ function applyTheme(themeId: ThemeId) {
   document.documentElement.dataset.theme = themeId;
   document.documentElement.style.backgroundColor = colors.backgroundColor;
   localStorage.setItem(STORAGE_KEY, themeId);
-  applyThemeAppIdentity(themeId);
 
   let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (!meta) {

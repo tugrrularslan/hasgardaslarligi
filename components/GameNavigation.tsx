@@ -24,7 +24,7 @@ export default function GameNavigation() {
   const pathname = usePathname();
 
   return (
-    <div className="mb-6 space-y-3">
+    <div className="hg-desktop-game-nav mb-6 space-y-3">
       <Link
         href="/games/league-prediction"
         className="hg-secondary hg-icon-label rounded-xl px-4 py-2.5 text-sm font-black"

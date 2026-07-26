@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import NotificationInitializer from "@/components/NotificationInitializer";
 import GlobalThemeBridge from "@/components/GlobalThemeBridge";
+import MobileNavigation from "@/components/MobileNavigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,6 +18,21 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Has Gardaşlar Ligi",
   description: "Has Gardaşlar Ligi · Gardaş 1X2 ve Kahin",
+  applicationName: "Has Gardaşlar Ligi",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Has Gardaşlar",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: { telephone: false },
 };
 
 export default function RootLayout({
@@ -33,6 +49,7 @@ export default function RootLayout({
         <GlobalThemeBridge />
         <NotificationInitializer />
         {children}
+        <MobileNavigation />
       </body>
     </html>
   );

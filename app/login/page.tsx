@@ -1,12 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import SeasonLabel from "@/components/SeasonLabel";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -15,10 +17,14 @@ export default function LoginPage() {
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setMessage("");
     if (!email || !password) { setMessage("E-posta ve şifre alanlarını doldurun."); return; }
-    try { setLoading(true); await signInWithEmailAndPassword(auth, email, password); window.location.href = "/predictions"; }
-    catch (error: any) {
+    try { setLoading(true); await signInWithEmailAndPassword(auth, email, password); router.push("/predictions"); }
+    catch (error: unknown) {
       console.error(error);
-      setMessage(error.code === "auth/invalid-credential" ? "E-posta veya şifre yanlış." : error.code === "auth/too-many-requests" ? "Çok fazla deneme yapıldı. Bir süre sonra tekrar deneyin." : "Giriş yapılırken bir hata oluştu.");
+      const code =
+        typeof error === "object" && error !== null && "code" in error
+          ? String(error.code)
+          : "";
+      setMessage(code === "auth/invalid-credential" ? "E-posta veya şifre yanlış." : code === "auth/too-many-requests" ? "Çok fazla deneme yapıldı. Bir süre sonra tekrar deneyin." : "Giriş yapılırken bir hata oluştu.");
     } finally { setLoading(false); }
   }
 

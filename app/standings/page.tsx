@@ -156,8 +156,6 @@ export default function StandingsPage() {
   useEffect(() => {
     if (!currentUser) return;
 
-    setLoading(true);
-
     const unsubscribeUsers = onSnapshot(
       query(collection(db, "users")),
       (snapshot) => {
@@ -305,7 +303,7 @@ export default function StandingsPage() {
 
   return (
     <main
-      className={`min-h-screen px-3 py-6 transition-all duration-500 sm:px-5 lg:px-6 ${activeTheme.pageClass}`}
+      className={`min-h-screen px-3 py-6 transition-colors duration-300 sm:px-5 lg:px-6 ${activeTheme.pageClass}`}
     >
       <div className="mx-auto max-w-7xl">
         <GameNavigation />

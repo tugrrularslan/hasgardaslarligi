@@ -152,7 +152,7 @@ export default function WeeklyTabletPage() {
 
   return (
     <main
-      className={`min-h-screen px-3 py-6 transition-all duration-500 sm:px-5 lg:px-6 ${activeTheme.pageClass}`}
+      className={`min-h-screen px-3 py-6 transition-colors duration-300 sm:px-5 lg:px-6 ${activeTheme.pageClass}`}
     >
       <div className="mx-auto max-w-6xl">
         <GameNavigation />

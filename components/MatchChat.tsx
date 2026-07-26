@@ -77,13 +77,18 @@ export default function MatchChat({
   useEffect(() => {
     if (!open) return;
 
-    void loadMessages(true);
+    const initialLoadTimer = window.setTimeout(() => {
+      void loadMessages(false);
+    }, 0);
 
     const refreshTimer = window.setInterval(() => {
       void loadMessages(false);
     }, 15_000);
 
-    return () => window.clearInterval(refreshTimer);
+    return () => {
+      window.clearTimeout(initialLoadTimer);
+      window.clearInterval(refreshTimer);
+    };
   }, [loadMessages, open]);
 
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
@@ -168,7 +173,10 @@ export default function MatchChat({
     >
       <button
         type="button"
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          if (!open) setLoading(true);
+          setOpen((current) => !current);
+        }}
         aria-expanded={open}
         className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left font-black transition ${theme.textClass}`}
       >

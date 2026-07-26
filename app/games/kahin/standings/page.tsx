@@ -78,7 +78,6 @@ export default function KahinStandingsPage() {
   useEffect(() => {
     if (!currentUser) return;
 
-    setLoading(true);
     const unsubscribeUsers = onSnapshot(
       collection(db, "users"),
       (snapshot) => {

@@ -247,7 +247,7 @@ export default function PredictionsPage() {
 
   return (
     <main
-      className={`min-h-screen px-3 py-6 transition-all duration-500 sm:px-5 lg:px-6 ${activeTheme.pageClass}`}
+      className={`min-h-screen px-3 py-6 transition-colors duration-300 sm:px-5 lg:px-6 ${activeTheme.pageClass}`}
     >
       <div className="mx-auto max-w-6xl">
         <GameNavigation />
@@ -346,7 +346,7 @@ export default function PredictionsPage() {
                       return (
                         <article
                           key={match.id}
-                          className={`rounded-3xl border p-4 shadow-xl transition-all duration-300 hover:scale-[1.01] md:p-6 ${activeTheme.cardClass}`}
+                          className={`rounded-3xl border p-4 shadow-xl transition-[transform,box-shadow,border-color,background-color] duration-200 hover:scale-[1.01] md:p-6 ${activeTheme.cardClass}`}
                         >
                           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>

@@ -158,10 +158,6 @@ export function getThemeById(selectedTheme?: string | null): AppTheme {
   return appThemes.find((theme) => theme.id === normalized) ?? defaultTheme;
 }
 
-export function isThemeUnlocked(
-  _theme?: AppTheme,
-  _totalPoints?: number,
-  _isAdmin?: boolean
-): boolean {
+export function isThemeUnlocked(): boolean {
   return true;
 }

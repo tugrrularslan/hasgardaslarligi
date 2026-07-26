@@ -2,6 +2,7 @@
 
 import GameNavigation from "@/components/GameNavigation";
 import HittiteIcon, { type HittiteIconName } from "@/components/HittiteIcon";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
@@ -479,7 +480,7 @@ export default function StatisticsPage() {
 
   return (
     <main
-      className={`min-h-screen px-4 py-8 transition-all duration-500 ${activeTheme.pageClass}`}
+      className={`min-h-screen px-4 py-8 transition-colors duration-300 ${activeTheme.pageClass}`}
     >
       <div className="mx-auto max-w-6xl">
         <GameNavigation />
@@ -596,9 +597,12 @@ export default function StatisticsPage() {
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
                     <div className={`flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 text-3xl font-black ${activeTheme.secondaryCardClass} ${activeTheme.titleClass}`}>
                       {selectedUser.photoURL ? (
-                        <img
+                        <Image
                           src={selectedUser.photoURL}
                           alt={selectedUser.username}
+                          width={80}
+                          height={80}
+                          sizes="80px"
                           className="h-full w-full object-cover"
                         />
                       ) : (

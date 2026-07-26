@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import type { BadgeDefinition, BadgeRarity } from "@/lib/achievements";
 
 type BadgeArtworkSize = "xs" | "sm" | "md" | "lg";
@@ -71,20 +72,25 @@ export default function BadgeArtwork({
       />
 
       <span className="absolute left-[23%] top-[25%] h-[55%] w-[54%] overflow-hidden rounded-full bg-black/55 shadow-inner">
-        <img
+        <Image
           src={badge.image}
           alt=""
           aria-hidden="true"
+          fill
+          sizes="80px"
+          unoptimized={badge.image.endsWith(".svg")}
           className={`h-full w-full scale-[1.18] object-cover ${
             locked ? "grayscale opacity-35" : ""
           }`}
         />
       </span>
 
-      <img
+      <Image
         src="/badges/hasgardas-achievement-frame.png"
         alt=""
         aria-hidden="true"
+        fill
+        sizes="80px"
         className="absolute inset-0 z-10 h-full w-full object-contain"
         style={frameStyle}
       />

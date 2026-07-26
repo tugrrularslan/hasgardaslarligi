@@ -35,7 +35,6 @@ export default function KahinPredictionsPage() {
     EMPTY_KAHIN_PREDICTION,
   );
   const [savedSeasonId, setSavedSeasonId] = useState("");
-  const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -123,17 +122,17 @@ export default function KahinPredictionsPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!savedSeasonId) {
-      setSubmitted(false);
-      return;
-    }
+    if (!savedSeasonId || savedSeasonId === settings.seasonId) return;
 
-    const belongsToActiveSeason = savedSeasonId === settings.seasonId;
-    setSubmitted(belongsToActiveSeason);
-    if (!belongsToActiveSeason) {
-      setPrediction(EMPTY_KAHIN_PREDICTION);
-    }
+    const resetTimer = window.setTimeout(
+      () => setPrediction(EMPTY_KAHIN_PREDICTION),
+      0,
+    );
+    return () => window.clearTimeout(resetTimer);
   }, [savedSeasonId, settings.seasonId]);
+
+  const submitted =
+    savedSeasonId.length > 0 && savedSeasonId === settings.seasonId;
 
   const isLocked =
     settings.resultsPublished ||
@@ -182,7 +181,6 @@ export default function KahinPredictionsPage() {
         { merge: true },
       );
       setSavedSeasonId(settings.seasonId);
-      setSubmitted(true);
       setMessage("Kehanetin mühürlendi. Kilit tarihine kadar değiştirebilirsin.");
     } catch (error) {
       console.error(error);

@@ -31,13 +31,11 @@ import { calculateBadgeProgressFromRecords } from "@/lib/badge-progress";
 import { DEFAULT_SEASON_ID } from "@/lib/season";
 import { getThemeById } from "@/lib/themes";
 import {
-  BADGES,
   BADGE_RARITY_LABELS,
   DEFAULT_BADGE_PROGRESS,
   MAX_SELECTED_BADGES,
   calculateUnlockedBadgeIds,
   getActiveTitleBadge,
-  getBadgeById,
   getBadgeProgress,
   getLockedBadges,
   getSelectedBadgeDefinitions,
@@ -488,7 +486,7 @@ export default function ProfilePage() {
 
   return (
     <main
-      className={`min-h-screen px-4 py-8 transition-all duration-500 ${activeTheme.pageClass}`}
+      className={`min-h-screen px-4 py-8 transition-colors duration-300 ${activeTheme.pageClass}`}
     >
       <div className="mx-auto max-w-7xl">
         <header
@@ -1125,7 +1123,7 @@ function LockedBadgeCard({
 
         <div className="h-2 overflow-hidden rounded-full bg-black/25">
           <div
-            className="h-full rounded-full bg-white/70 transition-all duration-500"
+            className="h-full rounded-full bg-white/70 transition-[width] duration-500"
             style={{ width: `${result.percentage}%` }}
           />
         </div>

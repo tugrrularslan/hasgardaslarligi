@@ -8,7 +8,6 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const themeId = normalizeThemeId(url.searchParams.get("theme"));
   const colors = themeAppColors[themeId];
-  const encodedTheme = encodeURIComponent(themeId);
 
   const manifest: MetadataRoute.Manifest = {
     id: "/",
@@ -21,16 +20,22 @@ export async function GET(request: Request) {
     theme_color: colors.themeColor,
     icons: [
       {
-        src: `/api/theme-icon?theme=${encodedTheme}&size=192`,
+        src: "/icons/icon-192x192.png",
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: `/api/theme-icon?theme=${encodedTheme}&size=512`,
+        src: "/icons/icon-512x512.png",
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
+      },
+      {
+        src: "/icons/icon-maskable-512x512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
     ],
   };

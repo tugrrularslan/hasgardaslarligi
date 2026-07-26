@@ -362,7 +362,7 @@ export default function HomePage() {
   if (user) {
     return (
       <main
-        className={`min-h-screen px-4 py-8 transition-all duration-500 sm:px-6 sm:py-12 ${activeTheme.pageClass}`}
+        className={`min-h-screen px-4 py-8 transition-colors duration-300 sm:px-6 sm:py-12 ${activeTheme.pageClass}`}
       >
         <div
           className={`mx-auto max-w-6xl rounded-3xl border p-5 shadow-2xl backdrop-blur-md sm:p-8 ${activeTheme.cardClass}`}

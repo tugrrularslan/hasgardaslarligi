@@ -1,8 +1,6 @@
 import Image from "next/image";
 import { DEFAULT_AVATAR, isImageAvatar } from "@/lib/avatars";
 
-const AVATAR_ASSET_VERSION = "20260725";
-
 type ProfileAvatarProps = {
   avatar?: string | null;
   alt: string;
@@ -20,16 +18,13 @@ export default function ProfileAvatar({
     typeof avatar === "string" && avatar.trim() ? avatar : DEFAULT_AVATAR;
 
   if (isImageAvatar(avatarValue)) {
-    const separator = avatarValue.includes("?") ? "&" : "?";
-    const avatarSrc = `${avatarValue}${separator}v=${AVATAR_ASSET_VERSION}`;
-
     return (
       <Image
-        src={avatarSrc}
+        src={avatarValue}
         alt={alt}
         width={384}
         height={384}
-        unoptimized
+        sizes="(max-width: 640px) 96px, 128px"
         priority={priority}
         draggable={false}
         className={`block shrink-0 object-cover object-center ${className}`}
