@@ -1,4 +1,5 @@
 import Link from "next/link";
+import GameNavigation from "@/components/GameNavigation";
 import HittiteIcon, { type HittiteIconName } from "@/components/HittiteIcon";
 
 const gameSections: Array<{
@@ -46,8 +47,10 @@ const gameSections: Array<{
 
 export default function LeaguePredictionPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-zinc-950 via-red-950 to-black px-4 py-10 text-white">
+    <main className="hg-page px-4 py-8">
       <div className="mx-auto max-w-6xl">
+        <GameNavigation />
+
         <header className="mb-8 rounded-3xl border border-white/10 bg-black/30 p-6 shadow-xl backdrop-blur-md sm:p-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -69,23 +72,6 @@ export default function LeaguePredictionPage() {
             <HittiteIcon name="sun" size="xl" />
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link
-              href="/games"
-              className="hg-icon-label rounded-xl border border-white/20 px-5 py-3 font-bold transition hover:bg-white/10"
-            >
-              <HittiteIcon name="back" size="sm" />
-              Oyunlara Dön
-            </Link>
-
-            <Link
-              href="/"
-              className="hg-icon-label rounded-xl border border-white/20 px-5 py-3 font-bold transition hover:bg-white/10"
-            >
-              <HittiteIcon name="home" size="sm" />
-              Ana Sayfa
-            </Link>
-          </div>
         </header>
 
         <section className="grid gap-5 sm:grid-cols-2">

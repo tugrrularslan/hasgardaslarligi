@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import GameReturnLinks from "@/components/GameReturnLinks";
 import HittiteIcon, { type HittiteIconName } from "@/components/HittiteIcon";
 
 const links: Array<{
@@ -19,23 +20,7 @@ export default function KahinNavigation() {
 
   return (
     <div className="mb-6 space-y-3">
-      <div className="flex flex-wrap gap-2">
-        <Link
-          href="/games"
-          className="hg-secondary hg-icon-label rounded-xl px-4 py-2.5 text-sm font-black"
-        >
-          <HittiteIcon name="back" size="sm" />
-          Oyunlara Dön
-        </Link>
-
-        <Link
-          href="/"
-          className="hg-secondary hg-icon-label rounded-xl px-4 py-2.5 text-sm font-black"
-        >
-          <HittiteIcon name="home" size="sm" />
-          Ana Sayfa
-        </Link>
-      </div>
+      <GameReturnLinks />
 
       <nav
         className="hg-desktop-game-nav hg-nav rounded-2xl p-3"

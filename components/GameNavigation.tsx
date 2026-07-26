@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import GameReturnLinks from "@/components/GameReturnLinks";
 import HittiteIcon, { type HittiteIconName } from "@/components/HittiteIcon";
 
 const links: Array<{
@@ -24,17 +25,11 @@ export default function GameNavigation() {
   const pathname = usePathname();
 
   return (
-    <div className="hg-desktop-game-nav mb-6 space-y-3">
-      <Link
-        href="/games/league-prediction"
-        className="hg-secondary hg-icon-label rounded-xl px-4 py-2.5 text-sm font-black"
-      >
-        <HittiteIcon name="back" size="sm" />
-        Gardaş 1X2&apos;ye Dön
-      </Link>
+    <div className="mb-6 space-y-3">
+      <GameReturnLinks />
 
       <nav
-        className="hg-nav rounded-2xl p-3"
+        className="hg-desktop-game-nav hg-nav rounded-2xl p-3"
         aria-label="Gardaş 1X2 menüsü"
       >
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
