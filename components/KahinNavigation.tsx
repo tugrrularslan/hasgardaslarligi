@@ -18,16 +18,29 @@ export default function KahinNavigation() {
   const pathname = usePathname();
 
   return (
-    <div className="hg-desktop-game-nav mb-6 space-y-3">
-      <Link
-        href="/games"
-        className="hg-secondary hg-icon-label rounded-xl px-4 py-2.5 text-sm font-black"
-      >
-        <HittiteIcon name="back" size="sm" />
-        Oyunlara Dön
-      </Link>
+    <div className="mb-6 space-y-3">
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href="/games"
+          className="hg-secondary hg-icon-label rounded-xl px-4 py-2.5 text-sm font-black"
+        >
+          <HittiteIcon name="back" size="sm" />
+          Oyunlara Dön
+        </Link>
 
-      <nav className="hg-nav rounded-2xl p-3" aria-label="Kahin menüsü">
+        <Link
+          href="/"
+          className="hg-secondary hg-icon-label rounded-xl px-4 py-2.5 text-sm font-black"
+        >
+          <HittiteIcon name="home" size="sm" />
+          Ana Sayfa
+        </Link>
+      </div>
+
+      <nav
+        className="hg-desktop-game-nav hg-nav rounded-2xl p-3"
+        aria-label="Kahin menüsü"
+      >
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {links.map((link) => {
             const active = pathname === link.href;
