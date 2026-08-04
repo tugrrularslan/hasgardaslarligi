@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { User } from "firebase/auth";
 import {
   collection,
@@ -18,10 +18,14 @@ import { db } from "@/lib/firebase";
 import {
   calculateKahinScore,
   DEFAULT_KAHIN_SETTINGS,
+  KAHIN_FALLBACK_PLAYERS,
   KAHIN_TEAMS,
+  mergeKahinPlayers,
   sanitizeKahinPrediction,
   sanitizeLeagueOrder,
+  sanitizeKahinPlayers,
   sanitizeStringList,
+  type KahinPlayer,
   type KahinResults,
 } from "@/lib/kahin";
 
@@ -67,6 +71,13 @@ export default function KahinAdminPanel({
   const [cleanSheetKeepers, setCleanSheetKeepers] = useState("");
   const [topScoringTeams, setTopScoringTeams] = useState("");
   const [bestDefenseTeams, setBestDefenseTeams] = useState("");
+  const [officialPlayers, setOfficialPlayers] = useState<KahinPlayer[]>(
+    KAHIN_FALLBACK_PLAYERS,
+  );
+  const [customPlayers, setCustomPlayers] = useState<KahinPlayer[]>([]);
+  const [newPlayerName, setNewPlayerName] = useState("");
+  const [newPlayerTeam, setNewPlayerTeam] = useState("");
+  const [playerSearch, setPlayerSearch] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [message, setMessage] = useState("");
@@ -78,6 +89,7 @@ export default function KahinAdminPanel({
       if (data.deadline instanceof Timestamp) {
         setDeadline(toDateTimeLocal(data.deadline.toDate()));
       }
+      setCustomPlayers(sanitizeKahinPlayers(data.customPlayerOptions));
       if (data.results && typeof data.results === "object") {
         const results = data.results as Record<string, unknown>;
         setFinalOrder(sanitizeLeagueOrder(results.leagueOrder));
@@ -89,6 +101,45 @@ export default function KahinAdminPanel({
       }
     });
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadOfficialPlayers() {
+      try {
+        const response = await fetch("/api/kahin/players");
+        const data = (await response.json()) as {
+          success?: boolean;
+          players?: KahinPlayer[];
+        };
+
+        if (active && response.ok && data.success && data.players?.length) {
+          setOfficialPlayers(sanitizeKahinPlayers(data.players));
+        }
+      } catch (error) {
+        console.error("Kahin oyuncu havuzu alınamadı:", error);
+      }
+    }
+
+    void loadOfficialPlayers();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const playerOptions = useMemo(
+    () => mergeKahinPlayers(officialPlayers, customPlayers),
+    [customPlayers, officialPlayers],
+  );
+  const normalizedPlayerSearch = playerSearch.trim().toLocaleLowerCase("tr-TR");
+  const visiblePlayers = playerOptions.filter((player) => {
+    if (!normalizedPlayerSearch) return false;
+
+    return (
+      player.name.toLocaleLowerCase("tr-TR").includes(normalizedPlayerSearch) ||
+      player.team.toLocaleLowerCase("tr-TR").includes(normalizedPlayerSearch)
+    );
+  });
 
   function moveTeam(index: number, direction: -1 | 1) {
     const target = index + direction;
@@ -111,6 +162,7 @@ export default function KahinAdminPanel({
           deadline: deadline
             ? Timestamp.fromDate(new Date(deadline))
             : null,
+          customPlayerOptions: customPlayers,
           scorerOptions: deleteField(),
           assistOptions: deleteField(),
           goalkeeperOptions: deleteField(),
@@ -126,6 +178,31 @@ export default function KahinAdminPanel({
     } finally {
       setSavingSettings(false);
     }
+  }
+
+  function addPlayer() {
+    const name = newPlayerName.trim();
+    const team = newPlayerTeam.trim();
+
+    if (!name) {
+      setMessage("Önce futbolcunun adını yaz.");
+      return;
+    }
+
+    const duplicate = playerOptions.some(
+      (player) =>
+        player.name.localeCompare(name, "tr-TR", { sensitivity: "accent" }) === 0 &&
+        player.team.localeCompare(team, "tr-TR", { sensitivity: "accent" }) === 0,
+    );
+    if (duplicate) {
+      setMessage("Bu futbolcu zaten listede.");
+      return;
+    }
+
+    setCustomPlayers((current) => mergeKahinPlayers(current, [{ name, team }]));
+    setNewPlayerName("");
+    setNewPlayerTeam("");
+    setMessage("Futbolcu eklendi. Kalıcı olması için Kahin ayarlarını kaydet.");
   }
 
   async function calculateResults() {
@@ -230,6 +307,75 @@ export default function KahinAdminPanel({
             className="w-full rounded-xl border px-4 py-3"
           />
         </label>
+
+        <div className="hg-card-soft mt-5 rounded-2xl border p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <p className="font-black">Futbolcu Havuzu</p>
+              <p className="hg-muted mt-1 text-sm">
+                2026-27 kadroları otomatik yüklenir. Listede olmayan bir futbolcuyu buradan ekleyebilirsin.
+              </p>
+            </div>
+            <span className="hg-badge rounded-full px-3 py-1 text-xs font-black">
+              {playerOptions.length} futbolcu
+            </span>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <input
+              type="text"
+              value={newPlayerName}
+              onChange={(event) => setNewPlayerName(event.target.value)}
+              placeholder="Futbolcu adı"
+              className="w-full rounded-xl border px-4 py-3"
+            />
+            <input
+              type="text"
+              value={newPlayerTeam}
+              onChange={(event) => setNewPlayerTeam(event.target.value)}
+              placeholder="Takımı (isteğe bağlı)"
+              className="w-full rounded-xl border px-4 py-3"
+            />
+            <button
+              type="button"
+              onClick={addPlayer}
+              className="hg-secondary rounded-xl px-4 py-3 font-black"
+            >
+              Futbolcu Ekle
+            </button>
+          </div>
+
+          <label className="mt-4 block">
+            <span className="sr-only">Oyuncu havuzunda ara</span>
+            <input
+              type="search"
+              value={playerSearch}
+              onChange={(event) => setPlayerSearch(event.target.value)}
+              placeholder="Oyuncu havuzunda ara"
+              className="w-full rounded-xl border px-4 py-3"
+            />
+          </label>
+
+          {normalizedPlayerSearch && (
+            <div className="mt-3 max-h-52 space-y-1 overflow-y-auto rounded-xl border p-2">
+              {visiblePlayers.length > 0 ? (
+                visiblePlayers.slice(0, 80).map((player) => (
+                  <p
+                    key={`${player.name}-${player.team}`}
+                    className="rounded-lg px-3 py-2 text-sm font-bold"
+                  >
+                    {player.name}
+                    {player.team ? ` — ${player.team}` : ""}
+                  </p>
+                ))
+              ) : (
+                <p className="hg-muted px-3 py-2 text-sm">
+                  Eşleşen futbolcu bulunamadı.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
         <button
           type="button"
