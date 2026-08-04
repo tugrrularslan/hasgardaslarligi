@@ -174,8 +174,6 @@ export default function KahinPredictionsPage() {
         {
           kahinSeasonId: settings.seasonId,
           kahinPrediction: prediction,
-          kahinScore: 0,
-          kahinBreakdown: null,
           kahinUpdatedAt: serverTimestamp(),
         },
         { merge: true },
