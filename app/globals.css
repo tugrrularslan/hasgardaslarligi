@@ -271,6 +271,9 @@ body.global-theme-bazalt {
   justify-content: center;
   gap: .55rem;
 }
+.hg-rule-index {
+  color: var(--hg-accent-ink) !important;
+}
 
 .hg-collapsible {
   min-width: 0;
