@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
   collection,
@@ -10,7 +10,6 @@ import {
   onSnapshot,
   query,
   serverTimestamp,
-  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -93,6 +92,8 @@ export default function ProfilePage() {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] =
     useState<"success" | "error">("success");
+  const avatarIsBeingEdited = useRef(false);
+  const usernameIsBeingEdited = useRef(false);
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
@@ -115,8 +116,12 @@ export default function ProfilePage() {
         async (snapshot) => {
           if (!snapshot.exists()) {
             setProfile(DEFAULT_PROFILE);
-            setSelectedAvatar(DEFAULT_PROFILE.avatar);
-            setNewUsername(DEFAULT_PROFILE.username);
+            if (!avatarIsBeingEdited.current) {
+              setSelectedAvatar(DEFAULT_PROFILE.avatar);
+            }
+            if (!usernameIsBeingEdited.current) {
+              setNewUsername(DEFAULT_PROFILE.username);
+            }
             setLoading(false);
             return;
           }
@@ -233,36 +238,13 @@ export default function ProfilePage() {
           };
 
           setProfile(loadedProfile);
-          setSelectedAvatar(loadedProfile.avatar);
-          setNewUsername(loadedProfile.username);
-          setLoading(false);
-
-          const fieldsNeedSync =
-            JSON.stringify(storedUnlocked) !==
-              JSON.stringify(unlockedBadges) ||
-            JSON.stringify(sanitizeBadgeIds(data.selectedBadges)) !==
-              JSON.stringify(selectedBadges) ||
-            data.activeTitle !== activeTitle ||
-            JSON.stringify(normalizeBadgeProgress(data.badgeProgress)) !==
-              JSON.stringify(badgeProgress);
-
-          if (fieldsNeedSync) {
-            try {
-              await setDoc(
-                doc(db, "users", firebaseUser.uid),
-                {
-                  unlockedBadges,
-                  selectedBadges,
-                  activeTitle,
-                  badgeProgress,
-                  badgesUpdatedAt: serverTimestamp(),
-                },
-                { merge: true }
-              );
-            } catch (error) {
-              console.error("Rozet alanları otomatik oluşturulamadı:", error);
-            }
+          if (!avatarIsBeingEdited.current) {
+            setSelectedAvatar(loadedProfile.avatar);
           }
+          if (!usernameIsBeingEdited.current) {
+            setNewUsername(loadedProfile.username);
+          }
+          setLoading(false);
         },
         (error) => {
           console.error(error);
@@ -322,6 +304,7 @@ export default function ProfilePage() {
         updatedAt: serverTimestamp(),
       });
 
+      avatarIsBeingEdited.current = false;
       showSuccess("Profil avatarın başarıyla güncellendi.");
     } catch (error) {
       console.error(error);
@@ -377,6 +360,7 @@ export default function ProfilePage() {
         return;
       }
 
+      usernameIsBeingEdited.current = false;
       showSuccess(
         profile.isAdmin
           ? "Yönetici kullanıcı adın başarıyla değiştirildi."
@@ -654,6 +638,7 @@ export default function ProfilePage() {
                       value={newUsername}
                       maxLength={20}
                       onChange={(event) => {
+                        usernameIsBeingEdited.current = true;
                         setNewUsername(event.target.value);
                         setMessage("");
                       }}
@@ -932,6 +917,7 @@ export default function ProfilePage() {
                             key={avatarOption.src}
                             type="button"
                             onClick={() => {
+                              avatarIsBeingEdited.current = true;
                               setSelectedAvatar(avatarOption.src);
                               setMessage("");
                             }}
@@ -984,7 +970,10 @@ export default function ProfilePage() {
 
                 <button
                   type="button"
-                  onClick={() => setSelectedAvatar(profile.avatar)}
+                  onClick={() => {
+                    avatarIsBeingEdited.current = false;
+                    setSelectedAvatar(profile.avatar);
+                  }}
                   disabled={!avatarChanged || savingAvatar}
                   className={`hg-icon-label w-full rounded-xl px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-50 ${activeTheme.secondaryButtonClass}`}
                 >
