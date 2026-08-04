@@ -62,6 +62,20 @@ export type BadgeProgressResult = {
 
 export const BADGES: BadgeDefinition[] = [
   {
+    id: "devrik-lider",
+    name: "Devrik Lider",
+    description:
+      "Geçmiş sezondaki değerli emeklerin için teşekkür ederiz.",
+    shortDescription: "Geçmiş sezon emeği",
+    rarity: "epic",
+    category: "special",
+    image: "/badges/devrik-lider.svg",
+    requirementType: "manual-award",
+    requirementValue: 1,
+    hidden: true,
+    sortOrder: -1,
+  },
+  {
     id: "gonullerin-sampiyonu",
     name: "Gönüllerin Şampiyonu",
     description:

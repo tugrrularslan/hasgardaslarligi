@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Devrik Lider</title>
+  <desc id="desc">Ge&#231;mi&#351; sezon eme&#287;i i&#231;in te&#351;ekk&#252;r rozeti</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="55%" stop-color="#1e1533"/>
+      <stop offset="100%" stop-color="#09070d"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f3d6ff"/>
+      <stop offset="42%" stop-color="#b884e8"/>
+      <stop offset="100%" stop-color="#59318d"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <circle cx="256" cy="242" r="178" fill="#0d0b18" stroke="url(#metal)" stroke-width="18"/>
+  <circle cx="256" cy="242" r="148" fill="none" stroke="#d8bcf0" stroke-width="3" opacity=".78"/>
+  <path d="M143 171 L193 224 L256 141 L319 224 L369 171 L385 300 H127 Z" fill="url(#metal)" filter="url(#glow)"/>
+  <path d="M130 290 L382 220" fill="none" stroke="#170d25" stroke-width="34" opacity=".8"/>
+  <path d="M134 286 L378 218" fill="none" stroke="#f3d6ff" stroke-width="6" opacity=".85"/>
+  <circle cx="202" cy="166" r="13" fill="#f7e9ff"/>
+  <circle cx="256" cy="132" r="13" fill="#f7e9ff"/>
+  <circle cx="310" cy="166" r="13" fill="#f7e9ff"/>
+  <path d="M201 350 L256 306 L311 350 L287 379 H225 Z" fill="#b884e8" filter="url(#glow)"/>
+  <path d="M165 414 L219 436 L256 410 L293 436 L347 414" fill="none" stroke="url(#metal)" stroke-width="10" stroke-linecap="round"/>
+</svg>
