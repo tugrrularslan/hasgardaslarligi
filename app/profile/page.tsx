@@ -7,7 +7,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  limit,
   onSnapshot,
   query,
   serverTimestamp,
@@ -336,8 +335,6 @@ export default function ProfilePage() {
     if (!currentUser || (profile.usernameChanged && !profile.isAdmin)) return;
 
     const trimmedUsername = newUsername.trim();
-    const normalizedUsername = trimmedUsername.toLocaleLowerCase("tr-TR");
-
     setMessage("");
 
     if (trimmedUsername.length < 3) {
@@ -357,40 +354,28 @@ export default function ProfilePage() {
       return;
     }
 
-    if (
-      normalizedUsername ===
-      profile.username.trim().toLocaleLowerCase("tr-TR")
-    ) {
-      showError("Yeni kullanıcı adı mevcut kullanıcı adından farklı olmalı.");
-      return;
-    }
-
     setSavingUsername(true);
 
     try {
-      const usernameQuery = query(
-        collection(db, "users"),
-        where("usernameLower", "==", normalizedUsername),
-        limit(1)
-      );
+      const idToken = await currentUser.getIdToken();
+      const response = await fetch("/api/profile/username", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: trimmedUsername }),
+      });
 
-      const usernameSnapshot = await getDocs(usernameQuery);
-      const isUsernameTaken = usernameSnapshot.docs.some(
-        (userDoc) => userDoc.id !== currentUser.uid
-      );
+      const result = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+      };
 
-      if (isUsernameTaken) {
-        showError("Bu kullanıcı adı başka biri tarafından kullanılıyor.");
+      if (!response.ok || !result.success) {
+        showError(result.error ?? "Kullanıcı adı değiştirilemedi. Lütfen tekrar dene.");
         return;
       }
-
-      await updateDoc(doc(db, "users", currentUser.uid), {
-        username: trimmedUsername,
-        usernameLower: normalizedUsername,
-        usernameChanged: true,
-        usernameChangedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
 
       showSuccess(
         profile.isAdmin
