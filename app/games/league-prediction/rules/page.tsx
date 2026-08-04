@@ -41,7 +41,7 @@ export default function RulesPage() {
           </p>
 
           <h1 className="mt-2 flex items-center gap-3 text-3xl font-black">
-            <HittiteIcon name="rules" size="lg" />
+            <HittiteIcon name="record" size="lg" />
             Oyun Kuralları
           </h1>
 
@@ -57,9 +57,10 @@ export default function RulesPage() {
               className="rounded-2xl border border-white/10 bg-black/30 p-5"
             >
               <div className="flex items-start gap-4">
-                <div className="hg-rule-index flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white font-black">
-                  {index + 1}
-                </div>
+                <HittiteIcon
+                  name={index < 3 ? "sun" : index < 5 ? "target" : "shield"}
+                  size="md"
+                />
 
                 <div>
                   <h2 className="text-lg font-black">
