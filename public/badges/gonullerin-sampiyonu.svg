@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">G&#246;n&#252;llerin &#350;ampiyonu</title>
+  <desc id="desc">Has Garda&#351;lar Ligi ilk sezon &#351;ampiyonluk rozeti</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2b1604"/>
+      <stop offset="55%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#170a22"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff4b8"/>
+      <stop offset="38%" stop-color="#f5bd42"/>
+      <stop offset="100%" stop-color="#a65313"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <circle cx="256" cy="238" r="178" fill="#120b17" stroke="url(#gold)" stroke-width="18"/>
+  <circle cx="256" cy="238" r="148" fill="none" stroke="#ffe695" stroke-width="3" opacity=".8"/>
+  <path d="M170 170 L205 232 L256 142 L307 232 L342 170 L360 290 H152 Z" fill="url(#gold)" filter="url(#glow)"/>
+  <circle cx="205" cy="155" r="14" fill="#fff4b8"/>
+  <circle cx="256" cy="126" r="14" fill="#fff4b8"/>
+  <circle cx="307" cy="155" r="14" fill="#fff4b8"/>
+  <path d="M256 350 C214 316 188 289 188 257 C188 231 207 214 230 214 C244 214 253 222 256 231 C259 222 268 214 282 214 C305 214 324 231 324 257 C324 289 298 316 256 350 Z" fill="#fb7185" stroke="#fff0e7" stroke-width="8" filter="url(#glow)"/>
+  <path d="M171 408 L219 430 L256 404 L293 430 L341 408" fill="none" stroke="url(#gold)" stroke-width="10" stroke-linecap="round"/>
+</svg>
