@@ -18,9 +18,11 @@ import {
   DEFAULT_KAHIN_SETTINGS,
   EMPTY_KAHIN_PREDICTION,
   isKahinPredictionComplete,
+  KAHIN_ASSIST_PLAYERS,
+  KAHIN_GOALKEEPERS,
+  KAHIN_SCORER_PLAYERS,
   KAHIN_TEAMS,
   sanitizeKahinPrediction,
-  sanitizeStringList,
   type KahinPrediction,
   type KahinSettings,
 } from "@/lib/kahin";
@@ -100,9 +102,6 @@ export default function KahinPredictionsPage() {
                 ? data.seasonName
                 : DEFAULT_KAHIN_SETTINGS.seasonName,
             deadline,
-            scorerOptions: sanitizeStringList(data.scorerOptions),
-            assistOptions: sanitizeStringList(data.assistOptions),
-            goalkeeperOptions: sanitizeStringList(data.goalkeeperOptions),
             resultsPublished: data.resultsPublished === true,
           });
           setLoading(false);
@@ -308,24 +307,21 @@ export default function KahinPredictionsPage() {
                 <PredictionInput
                   label="Gol kralı"
                   value={prediction.topScorer}
-                  options={settings.scorerOptions}
-                  listId="kahin-scorers"
+                  options={KAHIN_SCORER_PLAYERS}
                   disabled={isLocked}
                   onChange={(value) => updateField("topScorer", value)}
                 />
                 <PredictionInput
                   label="Asist kralı"
                   value={prediction.topAssist}
-                  options={settings.assistOptions}
-                  listId="kahin-assisters"
+                  options={KAHIN_ASSIST_PLAYERS}
                   disabled={isLocked}
                   onChange={(value) => updateField("topAssist", value)}
                 />
                 <PredictionInput
                   label="En fazla clean sheet yapan kaleci"
                   value={prediction.cleanSheetKeeper}
-                  options={settings.goalkeeperOptions}
-                  listId="kahin-goalkeepers"
+                  options={KAHIN_GOALKEEPERS}
                   disabled={isLocked}
                   onChange={(value) =>
                     updateField("cleanSheetKeeper", value)
@@ -389,34 +385,32 @@ function PredictionInput({
   label,
   value,
   options,
-  listId,
   disabled,
   onChange,
 }: {
   label: string;
   value: string;
-  options: string[];
-  listId: string;
+  options: readonly string[];
   disabled: boolean;
   onChange: (value: string) => void;
 }) {
+  const hasLegacyValue = value.trim() && !options.includes(value);
+
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-black">{label}</span>
-      <input
-        type="text"
+      <select
         value={value}
-        list={listId}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Oyuncu adını yaz veya listeden seç"
         className="w-full rounded-xl border px-4 py-3 disabled:opacity-60"
-      />
-      <datalist id={listId}>
+      >
+        <option value="">Futbolcu seç</option>
+        {hasLegacyValue && <option value={value}>{value} (eski seçim)</option>}
         {options.map((option) => (
           <option key={option} value={option} />
         ))}
-      </datalist>
+      </select>
     </label>
   );
 }
