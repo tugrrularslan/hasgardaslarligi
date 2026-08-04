@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import {
   collection,
+  deleteField,
   doc,
   getDocs,
   onSnapshot,
@@ -60,9 +61,6 @@ export default function KahinAdminPanel({
       ? toDateTimeLocal(DEFAULT_KAHIN_SETTINGS.deadline)
       : "",
   );
-  const [scorerOptions, setScorerOptions] = useState("");
-  const [assistOptions, setAssistOptions] = useState("");
-  const [goalkeeperOptions, setGoalkeeperOptions] = useState("");
   const [finalOrder, setFinalOrder] = useState<string[]>([...KAHIN_TEAMS]);
   const [topScorers, setTopScorers] = useState("");
   const [topAssisters, setTopAssisters] = useState("");
@@ -80,10 +78,6 @@ export default function KahinAdminPanel({
       if (data.deadline instanceof Timestamp) {
         setDeadline(toDateTimeLocal(data.deadline.toDate()));
       }
-      setScorerOptions(listToText(data.scorerOptions));
-      setAssistOptions(listToText(data.assistOptions));
-      setGoalkeeperOptions(listToText(data.goalkeeperOptions));
-
       if (data.results && typeof data.results === "object") {
         const results = data.results as Record<string, unknown>;
         setFinalOrder(sanitizeLeagueOrder(results.leagueOrder));
@@ -117,9 +111,9 @@ export default function KahinAdminPanel({
           deadline: deadline
             ? Timestamp.fromDate(new Date(deadline))
             : null,
-          scorerOptions: textToList(scorerOptions),
-          assistOptions: textToList(assistOptions),
-          goalkeeperOptions: textToList(goalkeeperOptions),
+          scorerOptions: deleteField(),
+          assistOptions: deleteField(),
+          goalkeeperOptions: deleteField(),
           updatedBy: user.uid,
           updatedAt: serverTimestamp(),
         },
@@ -220,7 +214,7 @@ export default function KahinAdminPanel({
           <div>
             <h3 className="hg-title text-xl font-black">Oyun Ayarları</h3>
             <p className="hg-muted text-sm">
-              Kilit tarihini ve oyuncu öneri listelerini belirle.
+              Tahminlerin kilitleneceği tarihi belirle.
             </p>
           </div>
         </div>
@@ -236,24 +230,6 @@ export default function KahinAdminPanel({
             className="w-full rounded-xl border px-4 py-3"
           />
         </label>
-
-        <div className="mt-5 grid gap-4 lg:grid-cols-3">
-          <CandidateList
-            label="Gol kralı adayları"
-            value={scorerOptions}
-            onChange={setScorerOptions}
-          />
-          <CandidateList
-            label="Asist kralı adayları"
-            value={assistOptions}
-            onChange={setAssistOptions}
-          />
-          <CandidateList
-            label="Kaleci adayları"
-            value={goalkeeperOptions}
-            onChange={setGoalkeeperOptions}
-          />
-        </div>
 
         <button
           type="button"
@@ -369,28 +345,6 @@ export default function KahinAdminPanel({
   );
 }
 
-function CandidateList({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-sm font-black">{label}</span>
-      <textarea
-        rows={7}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder="Her satıra bir oyuncu"
-        className="w-full resize-y rounded-xl border px-4 py-3"
-      />
-    </label>
-  );
-}
 
 function ResultInput({
   label,
