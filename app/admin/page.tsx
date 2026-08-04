@@ -60,6 +60,11 @@ type ScoreInputs = Record<
   }
 >;
 
+type DeletableUser = {
+  uid: string;
+  username: string;
+};
+
 export default function AdminPage() {
   const router = useRouter();
 
@@ -102,6 +107,12 @@ export default function AdminPage() {
     useState(false);
   const [resetConfirmation, setResetConfirmation] = useState("");
   const [resettingSeason, setResettingSeason] = useState(false);
+  const [showUserDeletion, setShowUserDeletion] = useState(false);
+  const [deletableUsers, setDeletableUsers] = useState<DeletableUser[]>([]);
+  const [loadingDeletableUsers, setLoadingDeletableUsers] = useState(false);
+  const [selectedUserToDelete, setSelectedUserToDelete] = useState("");
+  const [deleteUserConfirmation, setDeleteUserConfirmation] = useState("");
+  const [deletingUser, setDeletingUser] = useState(false);
 
   const resetConfirmationText = getSeasonResetConfirmation(
     seasonId.trim() || DEFAULT_SEASON_ID
@@ -412,6 +423,121 @@ export default function AdminPage() {
       );
     } finally {
       setResettingSeason(false);
+    }
+  }
+
+  async function loadDeletableUsers() {
+    if (!user) return;
+
+    setLoadingDeletableUsers(true);
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/admin/delete-user", {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      const responseData = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        users?: DeletableUser[];
+      };
+
+      if (!response.ok || !responseData.success) {
+        throw new Error(responseData.error || "Kullanıcı listesi alınamadı.");
+      }
+
+      setDeletableUsers(responseData.users ?? []);
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Kullanıcı listesi alınamadı."
+      );
+      setShowUserDeletion(false);
+    } finally {
+      setLoadingDeletableUsers(false);
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!user) {
+      setMessage("Kullanıcı silmek için yeniden giriş yap.");
+      return;
+    }
+
+    const selectedProfile = deletableUsers.find(
+      (profile) => profile.uid === selectedUserToDelete
+    );
+
+    if (!selectedProfile) {
+      setMessage("Silinecek kullanıcıyı seç.");
+      return;
+    }
+
+    const expectedConfirmation = `HESABI SİL: ${selectedProfile.username}`;
+
+    if (deleteUserConfirmation !== expectedConfirmation) {
+      setMessage("Onay metni seçilen kullanıcıyla eşleşmiyor.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `${selectedProfile.username} kullanıcısının hesabı ve verileri kalıcı olarak silinecek. Bu işlem geri alınamaz. Devam etmek istiyor musun?`
+    );
+
+    if (!confirmed) return;
+
+    setDeletingUser(true);
+    setMessage("");
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          userId: selectedProfile.uid,
+          confirmation: deleteUserConfirmation,
+        }),
+      });
+      const responseData = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        username?: string;
+        deleted?: {
+          predictions?: number;
+          matchMessages?: number;
+        };
+      };
+
+      if (!response.ok || !responseData.success) {
+        throw new Error(responseData.error || "Kullanıcı silinemedi.");
+      }
+
+      setMessage(
+        `${responseData.username ?? selectedProfile.username} hesabı kalıcı olarak silindi. ` +
+          `${responseData.deleted?.predictions ?? 0} tahmin ve ` +
+          `${responseData.deleted?.matchMessages ?? 0} sohbet mesajı temizlendi.`
+      );
+      setDeletableUsers((current) =>
+        current.filter((profile) => profile.uid !== selectedProfile.uid)
+      );
+      setSelectedUserToDelete("");
+      setDeleteUserConfirmation("");
+      setShowUserDeletion(false);
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        error instanceof Error ? error.message : "Kullanıcı silinemedi."
+      );
+    } finally {
+      setDeletingUser(false);
     }
   }
 
@@ -2066,7 +2192,7 @@ export default function AdminPage() {
 
         <CollapsiblePanel
           title="Tehlikeli İşlemler"
-          description="Aktif sezon verilerini kalıcı olarak sıfırlama alanı"
+          description="Sezon verilerini veya seçtiğin kullanıcı hesabını kalıcı olarak silme alanı"
           icon="shield"
           className="mt-8"
         >
@@ -2168,6 +2294,155 @@ export default function AdminPage() {
                   Vazgeç
                 </button>
               </div>
+            </div>
+          )}
+        </section>
+
+        <section className="mt-6 rounded-3xl border border-red-500/40 bg-red-950/20 p-6 shadow-xl">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-sm font-black uppercase tracking-widest text-red-400">
+                Hesap Silme
+              </p>
+              <h2 className="mt-2 text-2xl font-black">
+                Kullanıcı Hesabını Kalıcı Olarak Sil
+              </h2>
+              <p className="mt-3 leading-7 text-zinc-300">
+                Seçilen kullanıcının giriş hesabı, profili, tahminleri, cihaz
+                bildirim anahtarları ve maç sohbeti mesajları kalıcı olarak
+                silinir. Kendi hesabın ve diğer yönetici hesapları korunur.
+              </p>
+            </div>
+
+            {!showUserDeletion && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedUserToDelete("");
+                  setDeleteUserConfirmation("");
+                  setShowUserDeletion(true);
+                  void loadDeletableUsers();
+                }}
+                className="hg-danger-outline shrink-0 rounded-xl border border-red-500/50 px-5 py-3 font-black text-red-300 transition hover:bg-red-500/10"
+              >
+                Kullanıcı Silme Ekranını Aç
+              </button>
+            )}
+          </div>
+
+          {showUserDeletion && (
+            <div className="mt-6 rounded-2xl border border-red-500/35 bg-black/30 p-5">
+              <p className="font-black text-red-200">
+                Bu işlem geri alınamaz.
+              </p>
+
+              {loadingDeletableUsers ? (
+                <p className="mt-3 text-sm text-zinc-300">
+                  Kullanıcılar yükleniyor...
+                </p>
+              ) : (
+                <>
+                  <label
+                    htmlFor="delete-user-select"
+                    className="mt-5 block text-sm font-bold text-zinc-200"
+                  >
+                    Silinecek kullanıcı
+                  </label>
+                  <select
+                    id="delete-user-select"
+                    value={selectedUserToDelete}
+                    onChange={(event) => {
+                      setSelectedUserToDelete(event.target.value);
+                      setDeleteUserConfirmation("");
+                    }}
+                    disabled={deletingUser}
+                    className="mt-2 w-full rounded-xl border border-red-500/35 bg-black px-4 py-3 font-bold outline-none focus:border-red-400 disabled:opacity-50"
+                  >
+                    <option value="">Kullanıcı seç</option>
+                    {deletableUsers.map((profile) => (
+                      <option key={profile.uid} value={profile.uid}>
+                        {profile.username}
+                      </option>
+                    ))}
+                  </select>
+
+                  {selectedUserToDelete && (() => {
+                    const selectedProfile = deletableUsers.find(
+                      (profile) => profile.uid === selectedUserToDelete
+                    );
+
+                    if (!selectedProfile) return null;
+
+                    const expectedConfirmation = `HESABI SİL: ${selectedProfile.username}`;
+
+                    return (
+                      <>
+                        <p className="mt-5 text-sm leading-6 text-zinc-300">
+                          Devam etmek için aşağıdaki metni eksiksiz yaz:
+                        </p>
+                        <div
+                          id="delete-user-required-text"
+                          className="season-reset-required-text mt-4"
+                          role="note"
+                          aria-label="Yazılması gereken kullanıcı silme onay metni"
+                        >
+                          <span>YAZMAN GEREKEN METİN</span>
+                          <strong>{expectedConfirmation}</strong>
+                        </div>
+                        <label
+                          htmlFor="delete-user-confirmation"
+                          className="mt-5 block text-sm font-bold text-zinc-200"
+                        >
+                          Onay metni
+                        </label>
+                        <input
+                          id="delete-user-confirmation"
+                          type="text"
+                          value={deleteUserConfirmation}
+                          onChange={(event) =>
+                            setDeleteUserConfirmation(event.target.value)
+                          }
+                          disabled={deletingUser}
+                          autoComplete="off"
+                          spellCheck={false}
+                          placeholder={expectedConfirmation}
+                          aria-describedby="delete-user-required-text"
+                          className="mt-2 w-full rounded-xl border border-red-500/35 bg-black px-4 py-3 font-bold outline-none focus:border-red-400 disabled:opacity-50"
+                        />
+                      </>
+                    );
+                  })()}
+
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={handleDeleteUser}
+                      disabled={
+                        deletingUser ||
+                        !selectedUserToDelete ||
+                        !deleteUserConfirmation
+                      }
+                      className="hg-danger rounded-xl bg-red-600 px-5 py-3 font-black text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {deletingUser
+                        ? "Kullanıcı Siliniyor..."
+                        : "Hesabı Kalıcı Olarak Sil"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedUserToDelete("");
+                        setDeleteUserConfirmation("");
+                        setShowUserDeletion(false);
+                      }}
+                      disabled={deletingUser}
+                      className="hg-secondary rounded-xl border border-zinc-700 px-5 py-3 font-bold text-zinc-300 transition hover:bg-white/5 disabled:opacity-50"
+                    >
+                      Vazgeç
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </section>
