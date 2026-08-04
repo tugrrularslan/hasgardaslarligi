@@ -23,6 +23,75 @@ export const KAHIN_TEAMS = [
   "Trabzonspor",
 ] as const;
 
+// Kahin özel tahminlerinde herkesin aynı isimleri seçmesi için sabit aday havuzu.
+// Yeni sezon başında bu listeler kod üzerinden birlikte güncellenir.
+export const KAHIN_SCORER_PLAYERS = [
+  "Ahmed Kutucu",
+  "Ali Sowe",
+  "Anderson Talisca",
+  "Barış Alper Yılmaz",
+  "Carlo Holse",
+  "David Okereke",
+  "Denis Drăguș",
+  "Edin Višća",
+  "Emre Kılınç",
+  "Ernest Muçi",
+  "Felipe Augusto",
+  "Gabriel Sara",
+  "İrfan Can Kahveci",
+  "Jhon Durán",
+  "Juan",
+  "Kerem Aktürkoğlu",
+  "Kubilay Kanatsızkuş",
+  "Leroy Sané",
+  "Marius Mouandilmadji",
+  "Mauro Icardi",
+  "Milot Rashica",
+  "Oleksandr Zubkov",
+  "Oğuz Aydın",
+  "Paul Onuachu",
+  "Rafa Silva",
+  "Rômulo",
+  "Sebastian Szymański",
+  "Tammy Abraham",
+  "Victor Osimhen",
+  "Youssef En-Nesyri",
+  "Yunus Akgün",
+] as const;
+
+export const KAHIN_ASSIST_PLAYERS = [
+  "Anderson Talisca",
+  "Barış Alper Yılmaz",
+  "Carlo Holse",
+  "Edin Višća",
+  "Emre Kılınç",
+  "Ernest Muçi",
+  "Gabriel Sara",
+  "İrfan Can Kahveci",
+  "Jhon Durán",
+  "Kerem Aktürkoğlu",
+  "Leroy Sané",
+  "Milot Rashica",
+  "Oleksandr Zubkov",
+  "Oğuz Aydın",
+  "Rafa Silva",
+  "Sebastian Szymański",
+  "Yunus Akgün",
+] as const;
+
+export const KAHIN_GOALKEEPERS = [
+  "Berke Özer",
+  "Dominik Livaković",
+  "Ertuğrul Taşkıran",
+  "Gökhan Akkan",
+  "İrfan Can Eğribayat",
+  "Mateusz Lis",
+  "Mert Günok",
+  "Muhammed Şengezer",
+  "Okan Kocuk",
+  "Uğurcan Çakır",
+] as const;
+
 export type KahinPrediction = {
   leagueOrder: string[];
   topScorer: string;
@@ -59,9 +128,6 @@ export type KahinSettings = {
   seasonId: string;
   seasonName: string;
   deadline: Date | null;
-  scorerOptions: string[];
-  assistOptions: string[];
-  goalkeeperOptions: string[];
   resultsPublished: boolean;
 };
 
@@ -69,9 +135,6 @@ export const DEFAULT_KAHIN_SETTINGS: KahinSettings = {
   seasonId: DEFAULT_SEASON_ID,
   seasonName: DEFAULT_SEASON_NAME,
   deadline: new Date("2026-08-14T21:00:00+03:00"),
-  scorerOptions: [],
-  assistOptions: [],
-  goalkeeperOptions: [],
   resultsPublished: false,
 };
 
