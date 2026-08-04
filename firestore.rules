@@ -1,0 +1,179 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function matchExists(matchId) {
+      return exists(/databases/$(database)/documents/matches/$(matchId));
+    }
+
+    function validPrediction(value) {
+      return value == "1" || value == "X" || value == "2";
+    }
+
+    function predictionIsOpen(matchId) {
+      return matchExists(matchId)
+        && get(/databases/$(database)/documents/matches/$(matchId)).data.status == "scheduled"
+        && request.time < get(/databases/$(database)/documents/matches/$(matchId)).data.predictionDeadline;
+    }
+
+    function kahinPredictionIsOpen() {
+      return exists(/databases/$(database)/documents/settings/kahin)
+        && get(/databases/$(database)/documents/settings/kahin).data.get("resultsPublished", false) != true
+        && get(/databases/$(database)/documents/settings/kahin).data.get("deadline", null) is timestamp
+        && request.time < get(/databases/$(database)/documents/settings/kahin).data.deadline;
+    }
+
+    function validOwnerKahinPredictionUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "kahinSeasonId",
+          "kahinPrediction",
+          "kahinUpdatedAt"
+        ])
+        && kahinPredictionIsOpen()
+        && request.resource.data.get("kahinSeasonId", "") == get(/databases/$(database)/documents/settings/kahin).data.seasonId
+        && request.resource.data.get("kahinPrediction", null) is map;
+    }
+
+    function usernameChanged() {
+      return request.resource.data.username != resource.data.username;
+    }
+
+    function validUsername() {
+      return request.resource.data.username is string
+        && request.resource.data.username.size() >= 3
+        && request.resource.data.username.size() <= 20
+        && request.resource.data.usernameLower is string
+        && request.resource.data.usernameLower.size() >= 3
+        && request.resource.data.usernameLower.size() <= 20;
+    }
+
+    function validOneTimeUsernameChange() {
+      return usernameChanged()
+        && resource.data.get("usernameChanged", false) == false
+        && request.resource.data.usernameChanged == true
+        && validUsername();
+    }
+
+    function usernameFieldsUnchanged() {
+      return request.resource.data.username == resource.data.username
+        && request.resource.data.get("usernameLower", "") == resource.data.get("usernameLower", "")
+        && request.resource.data.get("usernameChanged", false) == resource.data.get("usernameChanged", false)
+        && request.resource.data.get("usernameChangedAt", null) == resource.data.get("usernameChangedAt", null);
+    }
+
+    function validOwnerProfileUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "username",
+          "usernameLower",
+          "usernameChanged",
+          "usernameChangedAt",
+          "avatar",
+          "selectedTheme",
+          "updatedAt"
+        ])
+        && request.resource.data.get("isAdmin", false) == resource.data.get("isAdmin", false)
+        && (usernameFieldsUnchanged() || validOneTimeUsernameChange());
+    }
+
+    match /settings/{settingId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create: if isOwner(userId)
+        && request.resource.data.get("isAdmin", false) == false;
+      allow update: if isAdmin()
+        || (isOwner(userId) && (validOwnerProfileUpdate() || validOwnerKahinPredictionUpdate()));
+      allow delete: if isAdmin();
+    }
+
+    match /matches/{matchId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /predictions/{predictionId} {
+      allow read: if signedIn()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && predictionId == request.auth.uid + "_" + request.resource.data.matchId
+        && validPrediction(request.resource.data.prediction)
+        && predictionIsOpen(request.resource.data.matchId);
+
+      allow update: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.userId == request.auth.uid
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.matchId == resource.data.matchId
+          && validPrediction(request.resource.data.prediction)
+          && predictionIsOpen(resource.data.matchId)
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /notificationTokens/{tokenId} {
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.token is string
+        && request.resource.data.enabled == true;
+
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.token == resource.data.token;
+
+      allow read: if signedIn()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow delete: if signedIn()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /notificationRequests/{requestId} {
+      allow create: if isAdmin()
+        && request.resource.data.title is string
+        && request.resource.data.body is string
+        && request.resource.data.targetUrl is string
+        && request.resource.data.targetUrl.matches('^/.*')
+        && request.resource.data.audience == "all"
+        && request.resource.data.status == "pending";
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /publishedWeeks/{weekId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /weeklyChampions/{weekId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /automaticNotificationEvents/{eventId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
