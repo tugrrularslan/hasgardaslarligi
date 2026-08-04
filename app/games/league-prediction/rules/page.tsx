@@ -57,7 +57,7 @@ export default function RulesPage() {
               className="rounded-2xl border border-white/10 bg-black/30 p-5"
             >
               <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white font-black text-red-800">
+                <div className="hg-rule-index flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white font-black">
                   {index + 1}
                 </div>
 
