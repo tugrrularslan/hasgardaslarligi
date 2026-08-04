@@ -18,11 +18,12 @@ import {
   DEFAULT_KAHIN_SETTINGS,
   EMPTY_KAHIN_PREDICTION,
   isKahinPredictionComplete,
-  KAHIN_ASSIST_PLAYERS,
-  KAHIN_GOALKEEPERS,
-  KAHIN_SCORER_PLAYERS,
+  KAHIN_FALLBACK_PLAYERS,
   KAHIN_TEAMS,
+  mergeKahinPlayers,
   sanitizeKahinPrediction,
+  sanitizeKahinPlayers,
+  type KahinPlayer,
   type KahinPrediction,
   type KahinSettings,
 } from "@/lib/kahin";
@@ -41,10 +42,39 @@ export default function KahinPredictionsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [now, setNow] = useState(() => new Date());
+  const [officialPlayers, setOfficialPlayers] = useState<KahinPlayer[]>(
+    KAHIN_FALLBACK_PLAYERS,
+  );
 
   useEffect(() => {
     const interval = window.setInterval(() => setNow(new Date()), 30_000);
     return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadOfficialPlayers() {
+      try {
+        const response = await fetch("/api/kahin/players");
+        const data = (await response.json()) as {
+          success?: boolean;
+          players?: KahinPlayer[];
+        };
+
+        if (active && response.ok && data.success && data.players?.length) {
+          setOfficialPlayers(sanitizeKahinPlayers(data.players));
+        }
+      } catch (error) {
+        console.error("Kahin oyuncu havuzu alınamadı:", error);
+      }
+    }
+
+    void loadOfficialPlayers();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -102,6 +132,7 @@ export default function KahinPredictionsPage() {
                 ? data.seasonName
                 : DEFAULT_KAHIN_SETTINGS.seasonName,
             deadline,
+            customPlayers: sanitizeKahinPlayers(data.customPlayerOptions),
             resultsPublished: data.resultsPublished === true,
           });
           setLoading(false);
@@ -139,6 +170,10 @@ export default function KahinPredictionsPage() {
   const complete = useMemo(
     () => isKahinPredictionComplete(prediction),
     [prediction],
+  );
+  const playerOptions = useMemo(
+    () => mergeKahinPlayers(officialPlayers, settings.customPlayers),
+    [officialPlayers, settings.customPlayers],
   );
 
   function updateField<K extends keyof KahinPrediction>(
@@ -307,21 +342,21 @@ export default function KahinPredictionsPage() {
                 <PredictionInput
                   label="Gol kralı"
                   value={prediction.topScorer}
-                  options={KAHIN_SCORER_PLAYERS}
+                  options={playerOptions}
                   disabled={isLocked}
                   onChange={(value) => updateField("topScorer", value)}
                 />
                 <PredictionInput
                   label="Asist kralı"
                   value={prediction.topAssist}
-                  options={KAHIN_ASSIST_PLAYERS}
+                  options={playerOptions}
                   disabled={isLocked}
                   onChange={(value) => updateField("topAssist", value)}
                 />
                 <PredictionInput
                   label="En fazla clean sheet yapan kaleci"
                   value={prediction.cleanSheetKeeper}
-                  options={KAHIN_GOALKEEPERS}
+                  options={playerOptions}
                   disabled={isLocked}
                   onChange={(value) =>
                     updateField("cleanSheetKeeper", value)
@@ -390,15 +425,33 @@ function PredictionInput({
 }: {
   label: string;
   value: string;
-  options: readonly string[];
+  options: KahinPlayer[];
   disabled: boolean;
   onChange: (value: string) => void;
 }) {
-  const hasLegacyValue = value.trim() && !options.includes(value);
+  const [search, setSearch] = useState("");
+  const hasLegacyValue = value.trim() && !options.some((player) => player.name === value);
+  const normalizedSearch = search.trim().toLocaleLowerCase("tr-TR");
+  const visibleOptions = options.filter((player) => {
+    if (!normalizedSearch) return true;
+
+    return (
+      player.name.toLocaleLowerCase("tr-TR").includes(normalizedSearch) ||
+      player.team.toLocaleLowerCase("tr-TR").includes(normalizedSearch)
+    );
+  });
 
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-black">{label}</span>
+      <input
+        type="search"
+        value={search}
+        disabled={disabled}
+        onChange={(event) => setSearch(event.target.value)}
+        placeholder="Oyuncu veya takım ara"
+        className="mb-2 w-full rounded-xl border px-4 py-2.5 text-sm disabled:opacity-60"
+      />
       <select
         value={value}
         disabled={disabled}
@@ -407,8 +460,13 @@ function PredictionInput({
       >
         <option value="">Futbolcu seç</option>
         {hasLegacyValue && <option value={value}>{value} (eski seçim)</option>}
-        {options.map((option) => (
-          <option key={option} value={option} />
+        {visibleOptions.map((player) => (
+          <option
+            key={`${player.name}-${player.team}`}
+            value={player.name}
+          >
+            {player.team ? `${player.name} — ${player.team}` : player.name}
+          </option>
         ))}
       </select>
     </label>

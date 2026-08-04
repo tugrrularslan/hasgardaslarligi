@@ -92,6 +92,20 @@ export const KAHIN_GOALKEEPERS = [
   "Uğurcan Çakır",
 ] as const;
 
+export type KahinPlayer = {
+  name: string;
+  team: string;
+};
+
+// Harici kadro servisi geçici olarak ulaşılamazsa seçim ekranı boş kalmasın.
+export const KAHIN_FALLBACK_PLAYERS: KahinPlayer[] = Array.from(
+  new Set([
+    ...KAHIN_SCORER_PLAYERS,
+    ...KAHIN_ASSIST_PLAYERS,
+    ...KAHIN_GOALKEEPERS,
+  ]),
+).map((name) => ({ name, team: "" }));
+
 export type KahinPrediction = {
   leagueOrder: string[];
   topScorer: string;
@@ -128,6 +142,7 @@ export type KahinSettings = {
   seasonId: string;
   seasonName: string;
   deadline: Date | null;
+  customPlayers: KahinPlayer[];
   resultsPublished: boolean;
 };
 
@@ -135,6 +150,7 @@ export const DEFAULT_KAHIN_SETTINGS: KahinSettings = {
   seasonId: DEFAULT_SEASON_ID,
   seasonName: DEFAULT_SEASON_NAME,
   deadline: new Date("2026-08-14T21:00:00+03:00"),
+  customPlayers: [],
   resultsPublished: false,
 };
 
@@ -157,6 +173,49 @@ export function sanitizeStringList(value: unknown): string[] {
         .map((item) => item.trim())
         .filter(Boolean),
     ),
+  );
+}
+
+export function sanitizeKahinPlayers(value: unknown): KahinPlayer[] {
+  if (!Array.isArray(value)) return [];
+
+  const players = value
+    .map((item): KahinPlayer | null => {
+      if (typeof item === "string" && item.trim()) {
+        return { name: item.trim(), team: "" };
+      }
+
+      if (!item || typeof item !== "object") return null;
+
+      const data = item as Record<string, unknown>;
+      const name = typeof data.name === "string" ? data.name.trim() : "";
+      const team = typeof data.team === "string" ? data.team.trim() : "";
+
+      return name ? { name, team } : null;
+    })
+    .filter((player): player is KahinPlayer => player !== null);
+
+  return mergeKahinPlayers(players);
+}
+
+export function mergeKahinPlayers(
+  ...groups: KahinPlayer[][]
+): KahinPlayer[] {
+  const uniquePlayers = new Map<string, KahinPlayer>();
+
+  for (const player of groups.flat()) {
+    const name = player.name.trim();
+    const team = player.team.trim();
+    if (!name) continue;
+
+    const key = `${name.toLocaleLowerCase("tr-TR")}::${team.toLocaleLowerCase("tr-TR")}`;
+    if (!uniquePlayers.has(key)) {
+      uniquePlayers.set(key, { name, team });
+    }
+  }
+
+  return [...uniquePlayers.values()].sort((first, second) =>
+    first.name.localeCompare(second.name, "tr-TR"),
   );
 }
 
