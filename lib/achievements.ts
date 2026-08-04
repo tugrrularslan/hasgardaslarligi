@@ -20,7 +20,8 @@ export type BadgeRequirementType =
   | "weekly-win"
   | "consecutive-weekly-win"
   | "participated-weeks"
-  | "season-all-matches";
+  | "season-all-matches"
+  | "manual-award";
 
 export type BadgeDefinition = {
   id: string;
@@ -60,6 +61,20 @@ export type BadgeProgressResult = {
 };
 
 export const BADGES: BadgeDefinition[] = [
+  {
+    id: "gonullerin-sampiyonu",
+    name: "Gönüllerin Şampiyonu",
+    description:
+      "Has Gardaşlar Ligi ilk sezonunun şampiyonuna özel, tekil rozet.",
+    shortDescription: "İlk sezon şampiyonu",
+    rarity: "legendary",
+    category: "special",
+    image: "/badges/gonullerin-sampiyonu.svg",
+    requirementType: "manual-award",
+    requirementValue: 1,
+    hidden: true,
+    sortOrder: 0,
+  },
   {
     id: "ilk-kan",
     name: "İlk Kan",
@@ -333,6 +348,9 @@ export function getBadgeCurrentValue(
     case "season-all-matches":
       return progress.seasonPredictedMatches;
 
+    case "manual-award":
+      return 0;
+
     default:
       return 0;
   }
@@ -342,6 +360,10 @@ export function isBadgeUnlocked(
   badge: BadgeDefinition,
   progress: BadgeProgressData,
 ): boolean {
+  if (badge.requirementType === "manual-award") {
+    return false;
+  }
+
   if (badge.requirementType === "season-all-matches") {
     return (
       progress.seasonAllMatchesFinished === 1 &&
