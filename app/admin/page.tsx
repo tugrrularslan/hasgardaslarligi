@@ -75,6 +75,11 @@ type ScoreInputs = Record<
 
 type GoalEventInputs = Record<string, GoalEventInput[]>;
 
+type LeaguePlayer = {
+  name: string;
+  team: string;
+};
+
 type ImportedMatchResult = {
   matchId: string;
   homeScore: number;
@@ -101,6 +106,7 @@ export default function AdminPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [scoreInputs, setScoreInputs] = useState<ScoreInputs>({});
   const [goalEventInputs, setGoalEventInputs] = useState<GoalEventInputs>({});
+  const [leaguePlayers, setLeaguePlayers] = useState<LeaguePlayer[]>([]);
 
   const [savingMatch, setSavingMatch] = useState(false);
   const [publishingWeek, setPublishingWeek] = useState(false);
@@ -109,6 +115,7 @@ export default function AdminPage() {
     null
   );
   const [syncingResults, setSyncingResults] = useState(false);
+  const [updatingPlayers, setUpdatingPlayers] = useState(false);
   const [deletingMatchId, setDeletingMatchId] = useState<
     string | null
   >(null);
@@ -242,6 +249,12 @@ export default function AdminPage() {
     );
 
     return unsubscribe;
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    void handleLoadLeaguePlayers();
   }, [isAdmin]);
 
   useEffect(() => {
@@ -742,6 +755,34 @@ export default function AdminPage() {
       );
     } finally {
       setSyncingResults(false);
+    }
+  }
+
+  async function handleLoadLeaguePlayers(forceRefresh = false) {
+    setUpdatingPlayers(true);
+
+    try {
+      const response = await fetch(
+        `/api/kahin/players${forceRefresh ? "?refresh=1" : ""}`,
+        { cache: "no-store" },
+      );
+      const data = (await response.json()) as {
+        success?: boolean;
+        players?: LeaguePlayer[];
+        error?: string;
+      };
+
+      if (!response.ok || !data.success || !Array.isArray(data.players)) {
+        throw new Error(data.error ?? "Oyuncu listesi alınamadı.");
+      }
+
+      setLeaguePlayers(data.players);
+      setMessage(`${data.players.length} oyuncu güncel kadrolardan hazırlandı.`);
+    } catch (error) {
+      console.error(error);
+      setMessage("Oyuncu listesi şu anda güncellenemedi. Lütfen tekrar dene.");
+    } finally {
+      setUpdatingPlayers(false);
     }
   }
 
@@ -2136,21 +2177,38 @@ export default function AdminPage() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleFetchMatchResults}
-                disabled={
-                  syncingResults ||
-                  savingResultId !== null ||
-                  deletingMatchId !== null
-                }
-                className="hg-secondary hg-icon-label w-full rounded-xl border border-sky-400/35 px-4 py-3 text-sm font-black text-sky-200 transition hover:bg-sky-400/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-              >
-                <HittiteIcon name="clock" size="sm" />
-                {syncingResults
-                  ? "Sonuçlar getiriliyor..."
-                  : "Sonuçları Otomatik Getir"}
-              </button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => void handleLoadLeaguePlayers(true)}
+                  disabled={
+                    updatingPlayers ||
+                    savingResultId !== null ||
+                    deletingMatchId !== null
+                  }
+                  className="hg-secondary hg-icon-label w-full rounded-xl border border-amber-400/35 px-4 py-3 text-sm font-black text-amber-200 transition hover:bg-amber-400/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  <HittiteIcon name="clock" size="sm" />
+                  {updatingPlayers
+                    ? "Oyuncular güncelleniyor..."
+                    : "Oyuncuları Güncelle"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleFetchMatchResults}
+                  disabled={
+                    syncingResults ||
+                    savingResultId !== null ||
+                    deletingMatchId !== null
+                  }
+                  className="hg-secondary hg-icon-label w-full rounded-xl border border-sky-400/35 px-4 py-3 text-sm font-black text-sky-200 transition hover:bg-sky-400/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  <HittiteIcon name="clock" size="sm" />
+                  {syncingResults
+                    ? "Sonuçlar getiriliyor..."
+                    : "Sonuçları Otomatik Getir"}
+                </button>
+              </div>
             </div>
 
             {matches.length === 0 ? (
@@ -2167,6 +2225,14 @@ export default function AdminPage() {
                     away: "",
                   };
                   const goalEvents = goalEventInputs[match.id] ?? [];
+                  const homePlayers = getPlayersForTeam(
+                    leaguePlayers,
+                    match.homeTeam,
+                  );
+                  const awayPlayers = getPlayersForTeam(
+                    leaguePlayers,
+                    match.awayTeam,
+                  );
                   const expectedGoalCount =
                     scoreValue(score.home) + scoreValue(score.away);
 
@@ -2371,52 +2437,107 @@ export default function AdminPage() {
 
                               {goalEvents.length > 0 ? (
                                 <div className="mt-4 space-y-3">
-                                  {goalEvents.map((event, index) => (
-                                    <div
-                                      key={`${event.side}-${index}`}
-                                      className="grid gap-2 rounded-xl border border-zinc-800 bg-zinc-950/70 p-3 sm:grid-cols-[minmax(8rem,.7fr)_minmax(0,1fr)_minmax(0,1fr)]"
-                                    >
-                                      <span className="self-center truncate text-sm font-bold text-yellow-300">
-                                        {event.side === "home"
-                                          ? match.homeTeam
-                                          : match.awayTeam}
-                                      </span>
-                                      <input
-                                        type="text"
-                                        value={event.scorer}
-                                        onChange={(inputEvent) =>
-                                          handleGoalEventChange(
-                                            match.id,
-                                            index,
-                                            "scorer",
-                                            inputEvent.target.value,
-                                          )
-                                        }
-                                        disabled={
-                                          savingThisResult || deletingThisMatch
-                                        }
-                                        placeholder="Golü atan oyuncu"
-                                        className="w-full rounded-lg border border-zinc-700 bg-black px-3 py-2 text-sm outline-none focus:border-yellow-500 disabled:opacity-50"
-                                      />
-                                      <input
-                                        type="text"
-                                        value={event.assister}
-                                        onChange={(inputEvent) =>
-                                          handleGoalEventChange(
-                                            match.id,
-                                            index,
-                                            "assister",
-                                            inputEvent.target.value,
-                                          )
-                                        }
-                                        disabled={
-                                          savingThisResult || deletingThisMatch
-                                        }
-                                        placeholder="Asisti yapan oyuncu"
-                                        className="w-full rounded-lg border border-zinc-700 bg-black px-3 py-2 text-sm outline-none focus:border-yellow-500 disabled:opacity-50"
-                                      />
-                                    </div>
-                                  ))}
+                                  {goalEvents.map((event, index) => {
+                                    const eventTeam =
+                                      event.side === "home"
+                                        ? match.homeTeam
+                                        : match.awayTeam;
+                                    const teamPlayers =
+                                      event.side === "home"
+                                        ? homePlayers
+                                        : awayPlayers;
+                                    const hasScorer = teamPlayers.some(
+                                      (player) => player.name === event.scorer,
+                                    );
+                                    const hasAssister = teamPlayers.some(
+                                      (player) => player.name === event.assister,
+                                    );
+
+                                    return (
+                                      <div
+                                        key={`${event.side}-${index}`}
+                                        className="grid gap-2 rounded-xl border border-zinc-800 bg-zinc-950/70 p-3 sm:grid-cols-[minmax(8rem,.7fr)_minmax(0,1fr)_minmax(0,1fr)]"
+                                      >
+                                        <span className="self-center truncate text-sm font-bold text-yellow-300">
+                                          {eventTeam}
+                                        </span>
+                                        <select
+                                          value={event.scorer}
+                                          onChange={(inputEvent) =>
+                                            handleGoalEventChange(
+                                              match.id,
+                                              index,
+                                              "scorer",
+                                              inputEvent.target.value,
+                                            )
+                                          }
+                                          disabled={
+                                            savingThisResult ||
+                                            deletingThisMatch ||
+                                            updatingPlayers ||
+                                            teamPlayers.length === 0
+                                          }
+                                          className="w-full rounded-lg border border-zinc-700 bg-black px-3 py-2 text-sm outline-none focus:border-yellow-500 disabled:opacity-50"
+                                        >
+                                          <option value="">
+                                            {updatingPlayers
+                                              ? "Oyuncular güncelleniyor..."
+                                              : "Golü atan oyuncuyu seç"}
+                                          </option>
+                                          {!hasScorer && event.scorer && (
+                                            <option value={event.scorer}>
+                                              {event.scorer}
+                                            </option>
+                                          )}
+                                          {teamPlayers.map((player) => (
+                                            <option
+                                              key={`${player.team}-${player.name}`}
+                                              value={player.name}
+                                            >
+                                              {player.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <select
+                                          value={event.assister}
+                                          onChange={(inputEvent) =>
+                                            handleGoalEventChange(
+                                              match.id,
+                                              index,
+                                              "assister",
+                                              inputEvent.target.value,
+                                            )
+                                          }
+                                          disabled={
+                                            savingThisResult ||
+                                            deletingThisMatch ||
+                                            updatingPlayers ||
+                                            teamPlayers.length === 0
+                                          }
+                                          className="w-full rounded-lg border border-zinc-700 bg-black px-3 py-2 text-sm outline-none focus:border-yellow-500 disabled:opacity-50"
+                                        >
+                                          <option value="">
+                                            {updatingPlayers
+                                              ? "Oyuncular güncelleniyor..."
+                                              : "Asisti yapan oyuncuyu seç"}
+                                          </option>
+                                          {!hasAssister && event.assister && (
+                                            <option value={event.assister}>
+                                              {event.assister}
+                                            </option>
+                                          )}
+                                          {teamPlayers.map((player) => (
+                                            <option
+                                              key={`${player.team}-${player.name}`}
+                                              value={player.name}
+                                            >
+                                              {player.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               ) : (
                                 <p className="mt-4 text-sm text-zinc-500">
@@ -2730,6 +2851,29 @@ function calculateResult(
 
 function scoreValue(value: string): number {
   return /^\d+$/.test(value) ? Number(value) : 0;
+}
+
+function getPlayersForTeam(
+  players: LeaguePlayer[],
+  team: string,
+): LeaguePlayer[] {
+  const normalizedTeam = normalizeTeamForRoster(team);
+
+  return players
+    .filter((player) => normalizeTeamForRoster(player.team) === normalizedTeam)
+    .sort((first, second) => first.name.localeCompare(second.name, "tr-TR"));
+}
+
+function normalizeTeamForRoster(team: string): string {
+  return team
+    .trim()
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/ı/g, "i")
+    .replace(/\b(istanbul|fk|sk|sfk|bb)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 function sanitizeGoalEvents(

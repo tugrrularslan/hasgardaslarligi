@@ -321,12 +321,12 @@ export default function LeagueTablePage() {
           >
             <HittiteIcon name="clock" size="sm" />
             <div>
-              <p className={`font-black ${theme.textClass}`}>Sezon baÅŸlangÄ±Ã§ sÄ±ralamasÄ±</p>
+              <p className={`font-black ${theme.textClass}`}>Sezon başlangıç sıralaması</p>
               <p className={`mt-1 text-sm ${theme.mutedTextClass}`}>
-                HenÃ¼z resmÃ® lig maÃ§Ä± oynanmadÄ±ÄŸÄ± iÃ§in tÃ¼m takÄ±mlar 0 puanda.
-                Bu geÃ§ici dizi, veri saÄŸlayÄ±cÄ±sÄ± ESPNâ€™in yayÄ±nladÄ±ÄŸÄ± baÅŸlangÄ±Ã§
-                sÄ±rasÄ±dÄ±r; ilk maÃ§tan sonra resmÃ® puan ve lig eÅŸitlik kurallarÄ±na
-                gÃ¶re otomatik gÃ¼ncellenir.
+                Henüz resmî lig maçı oynanmadığı için tüm takımlar 0 puanda.
+                Bu geçici dizi, veri sağlayıcısı ESPN’in yayınladığı başlangıç
+                sırasıdır; ilk maçtan sonra resmî puan ve lig eşitlik kurallarına
+                göre otomatik güncellenir.
               </p>
             </div>
           </section>

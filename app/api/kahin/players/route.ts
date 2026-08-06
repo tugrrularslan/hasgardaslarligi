@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const revalidate = 3_600;
+export const dynamic = "force-dynamic";
 
 type EspnTeam = {
   id?: string;
@@ -18,12 +19,16 @@ function decodeName(value: string): string {
     .trim();
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const headers = { "User-Agent": "Has-Gardaslar-Ligi" };
+    const forceRefresh = request.nextUrl.searchParams.has("refresh");
+    const fetchOptions = forceRefresh
+      ? { headers, cache: "no-store" as const }
+      : { headers, next: { revalidate } };
     const teamsResponse = await fetch(
       "https://site.api.espn.com/apis/site/v2/sports/soccer/tur.1/teams",
-      { headers, next: { revalidate } },
+      fetchOptions,
     );
 
     if (!teamsResponse.ok) {
@@ -42,7 +47,7 @@ export async function GET() {
       teams.map(async (team) => {
         const rosterResponse = await fetch(
           `https://site.api.espn.com/apis/site/v2/sports/soccer/tur.1/teams/${team.id}/roster`,
-          { headers, next: { revalidate } },
+          fetchOptions,
         );
 
         if (!rosterResponse.ok) return [];
