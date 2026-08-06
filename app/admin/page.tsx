@@ -2180,21 +2180,6 @@ export default function AdminPage() {
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                 <button
                   type="button"
-                  onClick={() => void handleLoadLeaguePlayers(true)}
-                  disabled={
-                    updatingPlayers ||
-                    savingResultId !== null ||
-                    deletingMatchId !== null
-                  }
-                  className="hg-secondary hg-icon-label w-full rounded-xl border border-amber-400/35 px-4 py-3 text-sm font-black text-amber-200 transition hover:bg-amber-400/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-                >
-                  <HittiteIcon name="clock" size="sm" />
-                  {updatingPlayers
-                    ? "Oyuncular güncelleniyor..."
-                    : "Oyuncuları Güncelle"}
-                </button>
-                <button
-                  type="button"
                   onClick={handleFetchMatchResults}
                   disabled={
                     syncingResults ||
@@ -2422,13 +2407,32 @@ export default function AdminPage() {
 
                           {score.home !== "" && score.away !== "" && (
                             <div className="mt-5 rounded-2xl border border-zinc-800 bg-black/20 p-4">
-                              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="font-black text-zinc-100">
                                   Gol ve asist detayları
                                 </p>
-                                <span className="text-xs text-zinc-500">
-                                  {expectedGoalCount} gol kaydı bekleniyor
-                                </span>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-xs text-zinc-500">
+                                    {expectedGoalCount} gol kaydı bekleniyor
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleLoadLeaguePlayers(true)
+                                    }
+                                    disabled={
+                                      updatingPlayers ||
+                                      savingThisResult ||
+                                      deletingThisMatch
+                                    }
+                                    className="hg-secondary hg-icon-label rounded-lg border border-amber-400/35 px-3 py-2 text-xs font-black text-amber-200 transition hover:bg-amber-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    <HittiteIcon name="clock" size="xs" />
+                                    {updatingPlayers
+                                      ? "Güncelleniyor..."
+                                      : "Oyuncuları Güncelle"}
+                                  </button>
+                                </div>
                               </div>
 
                               <p className="mt-1 text-xs text-zinc-500">
