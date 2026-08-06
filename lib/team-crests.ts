@@ -1,36 +1,28 @@
-const TEAM_CREST_IDS: Record<string, number> = {
-  alanyaspor: 9078,
-  "amed sk": 132335,
-  "amed sfk": 132335,
-  amedspor: 132335,
-  "amed sportif faaliyetler": 132335,
-  besiktas: 1895,
-  basaksehir: 7914,
-  "basaksehir fk": 7914,
-  "istanbul basaksehir": 7914,
-  "caykur rizespor": 7656,
-  "corum fk": 132334,
-  "erzurumspor fk": 19267,
-  "erzurum bb": 19267,
-  eyupspor: 20729,
-  fenerbahce: 436,
-  galatasaray: 432,
-  "gaziantep fk": 20070,
-  genclerbirligi: 996,
-  goztepe: 789,
-  kasimpasa: 6870,
-  kocaelispor: 995,
-  konyaspor: 7648,
-  samsunspor: 11429,
-  trabzonspor: 997,
-};
-
-const TEAM_CREST_FALLBACK_SEARCHES: Record<string, string> = {
-  "amed sk": "Amed SK",
-  "amed sfk": "Amed SK",
-  amedspor: "Amed SK",
-  "amed sportif faaliyetler": "Amed SK",
-  "corum fk": "Corum FK",
+const TEAM_CREST_FILES: Record<string, string> = {
+  alanyaspor: "alanyaspor",
+  "amed sk": "amed-sfk",
+  "amed sfk": "amed-sfk",
+  amedspor: "amed-sfk",
+  "amed sportif faaliyetler": "amed-sfk",
+  besiktas: "besiktas",
+  basaksehir: "istanbul-basaksehir",
+  "basaksehir fk": "istanbul-basaksehir",
+  "istanbul basaksehir": "istanbul-basaksehir",
+  "caykur rizespor": "caykur-rizespor",
+  "corum fk": "corum-fk",
+  "erzurumspor fk": "erzurum-bb",
+  "erzurum bb": "erzurum-bb",
+  eyupspor: "eyupspor",
+  fenerbahce: "fenerbahce",
+  galatasaray: "galatasaray",
+  "gaziantep fk": "gaziantep-fk",
+  genclerbirligi: "genclerbirligi",
+  goztepe: "goztepe",
+  kasimpasa: "kasimpasa",
+  kocaelispor: "kocaelispor",
+  konyaspor: "konyaspor",
+  samsunspor: "samsunspor",
+  trabzonspor: "trabzonspor",
 };
 
 function normalizeTeamName(team: string): string {
@@ -43,13 +35,7 @@ function normalizeTeamName(team: string): string {
 }
 
 export function getTeamCrestUrl(team: string): string | null {
-  const teamId = TEAM_CREST_IDS[normalizeTeamName(team)];
+  const fileName = TEAM_CREST_FILES[normalizeTeamName(team)];
 
-  return teamId
-    ? `https://a.espncdn.com/i/teamlogos/soccer/500/${teamId}.png`
-    : null;
-}
-
-export function getTeamCrestFallbackSearch(team: string): string {
-  return TEAM_CREST_FALLBACK_SEARCHES[normalizeTeamName(team)] ?? team.trim();
+  return fileName ? `/team-crests/${fileName}.png` : null;
 }

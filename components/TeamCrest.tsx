@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import HittiteIcon from "@/components/HittiteIcon";
 import { getTeamCrestUrl } from "@/lib/team-crests";
 
@@ -29,39 +26,8 @@ export default function TeamCrest({
 }: TeamCrestProps) {
   const crestUrl = getTeamCrestUrl(team);
   const imageSize = imageSizes[size];
-  const [imageFailed, setImageFailed] = useState(false);
-  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
-  const [resolvingFallback, setResolvingFallback] = useState(false);
 
-  useEffect(() => {
-    setImageFailed(false);
-    setFallbackUrl(null);
-    setResolvingFallback(false);
-  }, [crestUrl]);
-
-  const loadFallback = async () => {
-    if (resolvingFallback || fallbackUrl) {
-      setImageFailed(true);
-      return;
-    }
-
-    setResolvingFallback(true);
-
-    try {
-      const response = await fetch(`/api/team-crest?team=${encodeURIComponent(team)}`);
-      const data = (await response.json()) as { crest?: unknown };
-      const nextUrl = typeof data.crest === "string" && data.crest ? data.crest : null;
-
-      if (nextUrl) setFallbackUrl(nextUrl);
-      else setImageFailed(true);
-    } catch {
-      setImageFailed(true);
-    } finally {
-      setResolvingFallback(false);
-    }
-  };
-
-  if (!crestUrl || imageFailed) {
+  if (!crestUrl) {
     return (
       <span
         role="img"
@@ -78,14 +44,13 @@ export default function TeamCrest({
       className={`hg-card-soft inline-flex shrink-0 items-center justify-center rounded-full border ${sizeClasses[size]} ${className}`}
     >
       <img
-        src={fallbackUrl ?? crestUrl}
+        src={crestUrl}
         width={imageSize}
         height={imageSize}
         alt={`${team} amblemi`}
         loading="lazy"
         decoding="async"
-        onError={() => void loadFallback()}
-        className={`h-full w-full object-contain ${resolvingFallback ? "opacity-0" : ""}`}
+        className="h-full w-full object-contain"
       />
     </span>
   );
