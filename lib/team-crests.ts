@@ -25,6 +25,14 @@ const TEAM_CREST_IDS: Record<string, number> = {
   trabzonspor: 997,
 };
 
+const TEAM_CREST_FALLBACK_SEARCHES: Record<string, string> = {
+  "amed sk": "Amed SK",
+  "amed sfk": "Amed SK",
+  amedspor: "Amed SK",
+  "amed sportif faaliyetler": "Amed SK",
+  "corum fk": "Corum FK",
+};
+
 function normalizeTeamName(team: string): string {
   return team
     .trim()
@@ -40,4 +48,8 @@ export function getTeamCrestUrl(team: string): string | null {
   return teamId
     ? `https://a.espncdn.com/i/teamlogos/soccer/500/${teamId}.png`
     : null;
+}
+
+export function getTeamCrestFallbackSearch(team: string): string {
+  return TEAM_CREST_FALLBACK_SEARCHES[normalizeTeamName(team)] ?? team.trim();
 }

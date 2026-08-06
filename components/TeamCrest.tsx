@@ -30,10 +30,36 @@ export default function TeamCrest({
   const crestUrl = getTeamCrestUrl(team);
   const imageSize = imageSizes[size];
   const [imageFailed, setImageFailed] = useState(false);
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  const [resolvingFallback, setResolvingFallback] = useState(false);
 
   useEffect(() => {
     setImageFailed(false);
+    setFallbackUrl(null);
+    setResolvingFallback(false);
   }, [crestUrl]);
+
+  const loadFallback = async () => {
+    if (resolvingFallback || fallbackUrl) {
+      setImageFailed(true);
+      return;
+    }
+
+    setResolvingFallback(true);
+
+    try {
+      const response = await fetch(`/api/team-crest?team=${encodeURIComponent(team)}`);
+      const data = (await response.json()) as { crest?: unknown };
+      const nextUrl = typeof data.crest === "string" && data.crest ? data.crest : null;
+
+      if (nextUrl) setFallbackUrl(nextUrl);
+      else setImageFailed(true);
+    } catch {
+      setImageFailed(true);
+    } finally {
+      setResolvingFallback(false);
+    }
+  };
 
   if (!crestUrl || imageFailed) {
     return (
@@ -52,14 +78,14 @@ export default function TeamCrest({
       className={`hg-card-soft inline-flex shrink-0 items-center justify-center rounded-full border ${sizeClasses[size]} ${className}`}
     >
       <img
-        src={crestUrl}
+        src={fallbackUrl ?? crestUrl}
         width={imageSize}
         height={imageSize}
         alt={`${team} amblemi`}
         loading="lazy"
         decoding="async"
-        onError={() => setImageFailed(true)}
-        className="h-full w-full object-contain"
+        onError={() => void loadFallback()}
+        className={`h-full w-full object-contain ${resolvingFallback ? "opacity-0" : ""}`}
       />
     </span>
   );
