@@ -75,6 +75,9 @@ type ScoreInputs = Record<
 
 type GoalEventInputs = Record<string, GoalEventInput[]>;
 
+type AdminWeekFilter = number | "all" | null;
+type AdminMatchStatusFilter = "all" | "scheduled" | "finished";
+
 type LeaguePlayer = {
   name: string;
   team: string;
@@ -107,6 +110,10 @@ export default function AdminPage() {
   const [scoreInputs, setScoreInputs] = useState<ScoreInputs>({});
   const [goalEventInputs, setGoalEventInputs] = useState<GoalEventInputs>({});
   const [leaguePlayers, setLeaguePlayers] = useState<LeaguePlayer[]>([]);
+  const [adminWeekFilter, setAdminWeekFilter] =
+    useState<AdminWeekFilter>(null);
+  const [adminMatchStatusFilter, setAdminMatchStatusFilter] =
+    useState<AdminMatchStatusFilter>("all");
 
   const [savingMatch, setSavingMatch] = useState(false);
   const [publishingWeek, setPublishingWeek] = useState(false);
@@ -146,6 +153,29 @@ export default function AdminPage() {
 
   const resetConfirmationText = getSeasonResetConfirmation(
     seasonId.trim() || DEFAULT_SEASON_ID
+  );
+  const activeSeasonId = seasonId.trim() || DEFAULT_SEASON_ID;
+  const activeSeasonMatches = matches.filter(
+    (match) =>
+      match.seasonId === activeSeasonId ||
+      (!match.seasonId && activeSeasonId === DEFAULT_SEASON_ID),
+  );
+  const adminWeekNumbers = getAdminWeekNumbers(activeSeasonMatches);
+  const suggestedAdminWeek =
+    activeSeasonMatches.find((match) => match.status === "scheduled")?.week ??
+    adminWeekNumbers.at(-1) ??
+    null;
+  const activeAdminWeek =
+    adminWeekFilter === "all" ||
+    (typeof adminWeekFilter === "number" &&
+      adminWeekNumbers.includes(adminWeekFilter))
+      ? adminWeekFilter
+      : suggestedAdminWeek;
+  const filteredAdminMatches = activeSeasonMatches.filter(
+    (match) =>
+      (activeAdminWeek === "all" || match.week === activeAdminWeek) &&
+      (adminMatchStatusFilter === "all" ||
+        match.status === adminMatchStatusFilter),
   );
 
   useEffect(() => {
@@ -2173,7 +2203,7 @@ export default function AdminPage() {
                 </h2>
 
                 <p className="mt-1 text-sm text-zinc-400">
-                  Toplam {matches.length} maç
+                  Bu sezonda {activeSeasonMatches.length} maç
                 </p>
               </div>
 
@@ -2196,13 +2226,88 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {matches.length === 0 ? (
+            {activeSeasonMatches.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-zinc-700 p-10 text-center text-zinc-500">
-                Henüz maç eklenmedi.
+                Bu sezona ait maç henüz eklenmedi.
               </div>
             ) : (
+              <>
+                <div className="mb-6 rounded-2xl border border-zinc-800 bg-black/20 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="font-black text-zinc-100">Maç listesini daralt</p>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        Sonuç gireceğin haftayı seç; geçmiş maçlar aşağıda birikmez.
+                      </p>
+                    </div>
+                    <span className="w-fit rounded-full bg-yellow-500/10 px-3 py-1 text-xs font-black text-yellow-300">
+                      {filteredAdminMatches.length} maç gösteriliyor
+                    </span>
+                  </div>
+
+                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                    {adminWeekNumbers.map((weekNumber) => {
+                      const isActive = activeAdminWeek === weekNumber;
+
+                      return (
+                        <button
+                          key={weekNumber}
+                          type="button"
+                          onClick={() => setAdminWeekFilter(weekNumber)}
+                          className={`shrink-0 rounded-xl px-4 py-2 text-sm font-black transition ${
+                            isActive
+                              ? "bg-yellow-400 text-black"
+                              : "border border-zinc-700 text-zinc-300 hover:bg-white/5"
+                          }`}
+                        >
+                          {weekNumber}. Hafta
+                        </button>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => setAdminWeekFilter("all")}
+                      className={`shrink-0 rounded-xl px-4 py-2 text-sm font-black transition ${
+                        activeAdminWeek === "all"
+                          ? "bg-yellow-400 text-black"
+                          : "border border-zinc-700 text-zinc-300 hover:bg-white/5"
+                      }`}
+                    >
+                      Tüm Haftalar
+                    </button>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {(
+                      [
+                        ["all", "Tüm Maçlar"],
+                        ["scheduled", "Sonuç Bekleyen"],
+                        ["finished", "Sonuçlanmış"],
+                      ] as const
+                    ).map(([status, label]) => (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => setAdminMatchStatusFilter(status)}
+                        className={`rounded-lg px-3 py-2 text-xs font-black transition ${
+                          adminMatchStatusFilter === status
+                            ? "bg-sky-400/20 text-sky-200"
+                            : "border border-zinc-700 text-zinc-400 hover:bg-white/5"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {filteredAdminMatches.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-zinc-700 p-10 text-center text-zinc-500">
+                    Bu filtrede gösterilecek maç bulunmuyor.
+                  </div>
+                ) : (
               <div className="space-y-5">
-                {matches.map((match) => {
+                {filteredAdminMatches.map((match) => {
                   const kickoffDate = match.kickoff.toDate();
 
                   const score = scoreInputs[match.id] ?? {
@@ -2556,6 +2661,8 @@ export default function AdminPage() {
                   );
                 })}
               </div>
+                )}
+              </>
             )}
           </div>
         </section>
@@ -2878,6 +2985,12 @@ function normalizeTeamForRoster(team: string): string {
     .replace(/\b(istanbul|fk|sk|sfk|bb)\b/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+}
+
+function getAdminWeekNumbers(matches: Match[]): number[] {
+  return [...new Set(matches.map((match) => match.week))].sort(
+    (first, second) => first - second,
+  );
 }
 
 function sanitizeGoalEvents(

@@ -39,6 +39,8 @@ type Match = {
 
 type PredictionMap = Record<string, PredictionValue>;
 
+type WeekFilter = number | "all" | null;
+
 type UserProfile = {
   selectedTheme: string;
 };
@@ -52,6 +54,7 @@ export default function PredictionsPage() {
   const [predictions, setPredictions] = useState<PredictionMap>({});
   const [savedPredictions, setSavedPredictions] =
     useState<PredictionMap>({});
+  const [selectedWeek, setSelectedWeek] = useState<WeekFilter>(null);
 
   const [loading, setLoading] = useState(true);
   const [savingMatchId, setSavingMatchId] = useState<string | null>(null);
@@ -170,6 +173,21 @@ export default function PredictionsPage() {
     return unsubscribeMatches;
   }, [user]);
 
+  useEffect(() => {
+    if (loading || matches.length === 0) return;
+
+    const weeks = getWeekNumbers(matches);
+    const firstOpenWeek = matches.find(
+      (match) => !isPredictionClosed(match) && !savedPredictions[match.id],
+    )?.week;
+    const fallbackWeek = firstOpenWeek ?? weeks.at(-1) ?? null;
+
+    setSelectedWeek((current) => {
+      if (current === "all") return current;
+      return current !== null && weeks.includes(current) ? current : fallbackWeek;
+    });
+  }, [loading, matches, savedPredictions]);
+
   const activeTheme = useMemo(() => {
     return getThemeById(profile?.selectedTheme);
   }, [profile?.selectedTheme]);
@@ -244,7 +262,13 @@ export default function PredictionsPage() {
     );
   }
 
-  const groupedMatches = groupMatchesByWeek(matches);
+  const weekNumbers = getWeekNumbers(matches);
+  const activeWeek = selectedWeek ?? weekNumbers.at(-1) ?? null;
+  const visibleMatches =
+    activeWeek === "all" || activeWeek === null
+      ? matches
+      : matches.filter((match) => match.week === activeWeek);
+  const groupedMatches = groupMatchesByWeek(visibleMatches);
 
   return (
     <main
@@ -300,6 +324,58 @@ export default function PredictionsPage() {
           >
             {message}
           </div>
+        )}
+
+        {matches.length > 0 && (
+          <section
+            className={`mb-6 rounded-2xl border p-4 ${activeTheme.secondaryCardClass}`}
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className={`font-black ${activeTheme.textClass}`}>Haftayı seç</p>
+                <p className={`mt-1 text-sm ${activeTheme.mutedTextClass}`}>
+                  Sadece seçtiğin haftanın maçları gösterilir.
+                </p>
+              </div>
+              <span
+                className={`w-fit rounded-full px-3 py-1 text-xs font-black ${activeTheme.badgeClass}`}
+              >
+                {visibleMatches.length} maç
+              </span>
+            </div>
+
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              {weekNumbers.map((week) => {
+                const isActive = activeWeek === week;
+
+                return (
+                  <button
+                    key={week}
+                    type="button"
+                    onClick={() => setSelectedWeek(week)}
+                    className={`shrink-0 rounded-xl px-4 py-2 text-sm font-black transition ${
+                      isActive
+                        ? activeTheme.primaryButtonClass
+                        : activeTheme.secondaryButtonClass
+                    }`}
+                  >
+                    {week}. Hafta
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setSelectedWeek("all")}
+                className={`shrink-0 rounded-xl px-4 py-2 text-sm font-black transition ${
+                  activeWeek === "all"
+                    ? activeTheme.primaryButtonClass
+                    : activeTheme.secondaryButtonClass
+                }`}
+              >
+                Tüm Haftalar
+              </button>
+            </div>
+          </section>
         )}
 
         {matches.length === 0 ? (
@@ -567,6 +643,12 @@ function groupMatchesByWeek(
       return groups;
     },
     {}
+  );
+}
+
+function getWeekNumbers(matches: Match[]): number[] {
+  return [...new Set(matches.map((match) => match.week))].sort(
+    (first, second) => first - second,
   );
 }
 
