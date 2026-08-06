@@ -6,6 +6,7 @@ import { onAuthStateChanged, type User } from "firebase/auth";
 import { collection, doc, onSnapshot } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import HittiteIcon from "@/components/HittiteIcon";
+import PlayerPortrait from "@/components/PlayerPortrait";
 import TeamCrest from "@/components/TeamCrest";
 import { auth, db } from "@/lib/firebase";
 import { DEFAULT_SEASON_ID } from "@/lib/season";
@@ -228,6 +229,8 @@ export default function LeagueTablePage() {
     () => createPlayerLeaderboard(goalEvents, "assister"),
     [goalEvents],
   );
+  const isSeasonUnstarted =
+    standings.length > 0 && standings.every((standing) => standing.played === 0);
 
   if (!currentUser) {
     return (
@@ -312,6 +315,23 @@ export default function LeagueTablePage() {
           </div>
         )}
 
+        {isSeasonUnstarted && (
+          <section
+            className={`mt-5 flex gap-3 rounded-2xl border p-4 ${theme.secondaryCardClass}`}
+          >
+            <HittiteIcon name="clock" size="sm" />
+            <div>
+              <p className={`font-black ${theme.textClass}`}>Sezon baÅŸlangÄ±Ã§ sÄ±ralamasÄ±</p>
+              <p className={`mt-1 text-sm ${theme.mutedTextClass}`}>
+                HenÃ¼z resmÃ® lig maÃ§Ä± oynanmadÄ±ÄŸÄ± iÃ§in tÃ¼m takÄ±mlar 0 puanda.
+                Bu geÃ§ici dizi, veri saÄŸlayÄ±cÄ±sÄ± ESPNâ€™in yayÄ±nladÄ±ÄŸÄ± baÅŸlangÄ±Ã§
+                sÄ±rasÄ±dÄ±r; ilk maÃ§tan sonra resmÃ® puan ve lig eÅŸitlik kurallarÄ±na
+                gÃ¶re otomatik gÃ¼ncellenir.
+              </p>
+            </div>
+          </section>
+        )}
+
         {loading ? (
           <div
             className={`mt-5 flex min-h-80 items-center justify-center rounded-3xl border text-center ${theme.cardClass} ${theme.mutedTextClass}`}
@@ -350,7 +370,7 @@ export default function LeagueTablePage() {
                   {standings.map((standing) => (
                     <tr
                       key={standing.team}
-                      className={`border-b last:border-b-0 ${theme.borderClass} ${getStandingHighlight(standing.position)}`}
+                      className={`border-b last:border-b-0 ${theme.borderClass} ${isSeasonUnstarted ? "" : getStandingHighlight(standing.position)}`}
                     >
                       <td className="px-4 py-3 text-center font-black">
                         <span className={theme.titleClass}>{standing.position}</span>
@@ -362,7 +382,7 @@ export default function LeagueTablePage() {
                             <p className={`truncate font-black ${theme.textClass}`}>
                               {standing.team}
                             </p>
-                            {standing.note && (
+                            {!isSeasonUnstarted && standing.note && (
                               <p className={`mt-0.5 truncate text-xs ${theme.mutedTextClass}`}>
                                 {translateStandingNote(standing.note)}
                               </p>
@@ -464,7 +484,11 @@ function PlayerLeaderboard({
               <span className={`w-5 text-center font-black ${theme.titleClass}`}>
                 {index + 1}
               </span>
-              <TeamCrest team={player.team} size="sm" />
+              <PlayerPortrait
+                name={player.name}
+                team={player.team}
+                className="h-9 w-9"
+              />
               <div className="min-w-0 flex-1">
                 <p className={`truncate font-black ${theme.textClass}`}>{player.name}</p>
                 <p className={`mt-0.5 truncate text-xs ${theme.mutedTextClass}`}>
