@@ -81,7 +81,6 @@ type ImportedMatchResult = {
   awayScore: number;
   goalEvents: GoalEventInput[];
 };
-
 type DeletableUser = {
   uid: string;
   username: string;
