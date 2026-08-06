@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import ProfileAvatar from "@/components/ProfileAvatar";
 import HittiteIcon from "@/components/HittiteIcon";
 import { auth } from "@/lib/firebase";
@@ -33,16 +33,26 @@ export default function MatchChat({
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const requestInFlight = useRef(false);
 
   const loadMessages = useCallback(
     async (showLoading = false) => {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user) {
+        if (showLoading) setLoading(false);
+        return;
+      }
+
+      if (requestInFlight.current) return;
+
+      requestInFlight.current = true;
 
       if (showLoading) setLoading(true);
 
       try {
         const idToken = await user.getIdToken();
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 10_000);
         const response = await fetch(
           `/api/match-chat?matchId=${encodeURIComponent(matchId)}`,
           {
@@ -50,8 +60,10 @@ export default function MatchChat({
               Authorization: `Bearer ${idToken}`,
             },
             cache: "no-store",
+            signal: controller.signal,
           },
         );
+        window.clearTimeout(timeout);
         const data = await response.json();
 
         if (!response.ok) {
@@ -63,11 +75,14 @@ export default function MatchChat({
       } catch (error) {
         console.error(error);
         setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "Mesajlar alınamadı.",
+          error instanceof DOMException && error.name === "AbortError"
+            ? "Sohbet zamanında yanıt vermedi. Tekrar deneyebilirsin."
+            : error instanceof Error
+              ? error.message
+              : "Mesajlar alınamadı.",
         );
       } finally {
+        requestInFlight.current = false;
         if (showLoading) setLoading(false);
       }
     },
@@ -77,16 +92,13 @@ export default function MatchChat({
   useEffect(() => {
     if (!open) return;
 
-    const initialLoadTimer = window.setTimeout(() => {
-      void loadMessages(false);
-    }, 0);
+    void loadMessages(true);
 
     const refreshTimer = window.setInterval(() => {
       void loadMessages(false);
     }, 15_000);
 
     return () => {
-      window.clearTimeout(initialLoadTimer);
       window.clearInterval(refreshTimer);
     };
   }, [loadMessages, open]);
@@ -174,7 +186,6 @@ export default function MatchChat({
       <button
         type="button"
         onClick={() => {
-          if (!open) setLoading(true);
           setOpen((current) => !current);
         }}
         aria-expanded={open}
@@ -213,6 +224,17 @@ export default function MatchChat({
               <p className={`py-6 text-center text-sm ${theme.mutedTextClass}`}>
                 Muhabbet yükleniyor...
               </p>
+            ) : errorMessage ? (
+              <div className={`rounded-xl border p-4 text-center text-sm ${theme.cardClass}`}>
+                <p className="text-red-400">{errorMessage}</p>
+                <button
+                  type="button"
+                  onClick={() => void loadMessages(true)}
+                  className={`mt-3 rounded-lg px-3 py-2 text-xs font-black ${theme.secondaryButtonClass}`}
+                >
+                  Tekrar Dene
+                </button>
+              </div>
             ) : messages.length === 0 ? (
               <p className={`py-6 text-center text-sm ${theme.mutedTextClass}`}>
                 İlk sözü sen söyle.
