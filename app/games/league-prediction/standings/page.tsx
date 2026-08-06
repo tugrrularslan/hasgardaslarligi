@@ -1,11 +1,5 @@
-import GameNavigation from "@/components/GameNavigation";
+import { redirect } from "next/navigation";
 
-export default function StandingsPage() {
-  return (
-    <main>
-      <GameNavigation />
-
-      {/* mevcut puan durumu içeriğin */}
-    </main>
-  );
+export default function LeaguePredictionStandingsPage() {
+  redirect("/standings");
 }

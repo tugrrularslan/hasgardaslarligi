@@ -11,7 +11,7 @@ const links: Array<{
   icon: HittiteIconName;
 }> = [
   { href: "/games/kahin/predictions", label: "Tahminler", icon: "rules" },
-  { href: "/games/kahin/standings", label: "Puan Durumu", icon: "trophy" },
+  { href: "/games/kahin/standings", label: "Sıralama", icon: "trophy" },
   { href: "/games/kahin/rules", label: "Kurallar", icon: "record" },
 ];
 

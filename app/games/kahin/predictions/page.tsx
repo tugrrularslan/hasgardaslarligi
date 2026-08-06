@@ -13,6 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import HittiteIcon from "@/components/HittiteIcon";
 import KahinNavigation from "@/components/KahinNavigation";
+import TeamCrest from "@/components/TeamCrest";
 import { auth, db } from "@/lib/firebase";
 import {
   DEFAULT_KAHIN_SETTINGS,
@@ -301,7 +302,10 @@ export default function KahinPredictionsPage() {
                   <span className="hg-title text-center text-lg font-black">
                     {index + 1}
                   </span>
-                  <span className="truncate font-black">{team}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <TeamCrest team={team} size="sm" />
+                    <span className="truncate font-black">{team}</span>
+                  </span>
                   <span className="flex gap-1">
                     <button
                       type="button"

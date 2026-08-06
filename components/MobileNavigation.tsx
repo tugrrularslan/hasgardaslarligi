@@ -12,7 +12,7 @@ type NavigationItem = {
 
 const leagueItems: NavigationItem[] = [
   { href: "/predictions", label: "Tahminler", icon: "ball" },
-  { href: "/standings", label: "Puan", icon: "trophy" },
+  { href: "/standings", label: "Sıralama", icon: "trophy" },
   { href: "/statistics", label: "İstatistik", icon: "chart" },
   { href: "/games/league-prediction/tablet", label: "Tablet", icon: "record" },
   { href: "/games/league-prediction/rules", label: "Kurallar", icon: "rules" },
@@ -20,7 +20,7 @@ const leagueItems: NavigationItem[] = [
 
 const kahinItems: NavigationItem[] = [
   { href: "/games/kahin/predictions", label: "Tahminler", icon: "rules" },
-  { href: "/games/kahin/standings", label: "Puan", icon: "trophy" },
+  { href: "/games/kahin/standings", label: "Sıralama", icon: "trophy" },
   { href: "/games/kahin/rules", label: "Kurallar", icon: "record" },
 ];
 

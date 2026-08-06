@@ -9,6 +9,7 @@ export type GameDefinition = {
   status: "active" | "coming-soon";
   icon: string;
   href: string;
+  rankingHref: string;
 };
 
 export const games: GameDefinition[] = [
@@ -22,6 +23,7 @@ export const games: GameDefinition[] = [
     status: "active",
     icon: "✥",
     href: "/games/league-prediction",
+    rankingHref: "/standings",
   },
   {
     id: "second-game",
@@ -33,6 +35,7 @@ export const games: GameDefinition[] = [
     status: "active",
     icon: "☼",
     href: "/games/kahin",
+    rankingHref: "/games/kahin/standings",
   },
 ];
 

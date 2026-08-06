@@ -11,7 +11,7 @@ const links: Array<{
   icon: HittiteIconName;
 }> = [
   { href: "/predictions", label: "Tahminler", icon: "ball" },
-  { href: "/standings", label: "Puan Durumu", icon: "trophy" },
+  { href: "/standings", label: "Sıralama", icon: "trophy" },
   { href: "/statistics", label: "İstatistikler", icon: "chart" },
   {
     href: "/games/league-prediction/tablet",

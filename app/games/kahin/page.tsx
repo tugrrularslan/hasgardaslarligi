@@ -13,7 +13,7 @@ const sections = [
   {
     href: "/games/kahin/standings",
     icon: "trophy" as const,
-    title: "Puan Durumu",
+    title: "Sıralama",
     description:
       "Kahinlerin puanlarını, tam sıra isabetlerini ve özel tahmin başarılarını karşılaştır.",
   },

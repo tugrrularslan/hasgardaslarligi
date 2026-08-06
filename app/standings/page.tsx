@@ -239,7 +239,7 @@ export default function StandingsPage() {
       },
       (error) => {
         console.error(error);
-        setMessage("Puan durumu alınamadı.");
+        setMessage("Sıralama alınamadı.");
         setLoading(false);
       }
     );
@@ -296,7 +296,7 @@ export default function StandingsPage() {
   if (loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
-        Puan durumu yükleniyor...
+        Sıralama yükleniyor...
       </main>
     );
   }
@@ -325,13 +325,13 @@ export default function StandingsPage() {
                 className={`mt-1 flex items-center gap-3 text-2xl font-black sm:text-3xl lg:text-4xl ${activeTheme.titleClass}`}
               >
                 <HittiteIcon name="trophy" size="lg" />
-                Puan Durumu
+                Gardaş 1X2 Sıralaması
               </h1>
 
               <p
                 className={`mt-2 ${activeTheme.mutedTextClass}`}
               >
-                {activeSeasonName} puanları gösteriliyor.
+                {activeSeasonName} sıralaması gösteriliyor.
               </p>
             </div>
 
@@ -403,7 +403,7 @@ export default function StandingsPage() {
           <div
             className={`rounded-3xl border border-dashed p-12 text-center ${activeTheme.cardClass} ${activeTheme.mutedTextClass}`}
           >
-            Henüz puan durumunda oyuncu yok.
+            Henüz sıralamada oyuncu yok.
           </div>
         ) : (
           <>

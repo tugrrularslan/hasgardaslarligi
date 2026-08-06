@@ -18,7 +18,7 @@ const gameSections: Array<{
   {
     href: "/standings",
     icon: "trophy",
-    title: "Puan Durumu",
+    title: "Sıralama",
     description:
       "Gardaş 1X2 sezon sıralamasını ve oyuncuların puanlarını görüntüle.",
   },
@@ -64,7 +64,7 @@ export default function LeaguePredictionPage() {
               </h1>
 
               <p className="mt-3 max-w-2xl text-zinc-300">
-                Tahminlerini yap, puan durumunu takip et ve istatistiklerini
+                Tahminlerini yap, sıralamanı takip et ve istatistiklerini
                 incele.
               </p>
             </div>

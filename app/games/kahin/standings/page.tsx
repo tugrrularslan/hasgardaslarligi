@@ -120,7 +120,7 @@ export default function KahinStandingsPage() {
       },
       (error) => {
         console.error(error);
-        setMessage("Kahin puan durumu alınamadı.");
+        setMessage("Kahin sıralaması alınamadı.");
         setLoading(false);
       },
     );
@@ -230,7 +230,7 @@ export default function KahinStandingsPage() {
               Henüz mühürlenmiş kehanet yok
             </h2>
             <p className="hg-muted mt-2">
-              İlk kehanet kaydedildiğinde puan durumu burada başlayacak.
+              İlk kehanet kaydedildiğinde sıralama burada başlayacak.
             </p>
           </section>
         ) : (

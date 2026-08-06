@@ -19,7 +19,7 @@ export default function RankingsPage() {
             Sıralamalar
           </h1>
           <p className="mt-4 max-w-3xl text-stone-300">
-            Her oyunun puan durumu kendi sezon ve kurallarıyla ayrı tutulur.
+            Her oyunun sıralaması kendi sezon ve kurallarıyla ayrı tutulur.
           </p>
         </header>
 
@@ -27,7 +27,7 @@ export default function RankingsPage() {
           {activeGames.map((game) => (
             <Link
               key={game.id}
-              href={`${game.href}/standings`}
+              href={game.rankingHref}
               className="rounded-2xl border border-stone-700/80 bg-black/30 p-5 transition hover:border-amber-300/40 hover:bg-black/45"
             >
               <HittiteIcon
@@ -35,7 +35,7 @@ export default function RankingsPage() {
                 size="lg"
               />
               <h2 className="mt-4 text-xl font-black text-amber-100">{game.name}</h2>
-              <p className="mt-2 text-stone-400">Güncel sezon puan durumunu görüntüle.</p>
+              <p className="mt-2 text-stone-400">Güncel sezon sıralamasını görüntüle.</p>
             </Link>
           ))}
         </section>

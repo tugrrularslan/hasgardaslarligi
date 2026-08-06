@@ -15,17 +15,16 @@ import {
   serverTimestamp,
   setDoc,
 } from "firebase/firestore";
-import Link from "next/link";
 
 import { auth, db } from "@/lib/firebase";
 import ProfileAvatar from "@/components/ProfileAvatar";
-import SeasonLabel from "@/components/SeasonLabel";
 import HittiteIcon from "@/components/HittiteIcon";
+import HomeDashboard from "@/components/HomeDashboard";
 import {
   DEFAULT_AVATAR,
   REGISTRATION_AVATARS,
 } from "@/lib/avatars";
-import { getThemeById, type AppTheme } from "@/lib/themes";
+import { getThemeById } from "@/lib/themes";
 
 type PageMode = "login" | "register";
 
@@ -361,141 +360,18 @@ export default function HomePage() {
 
   if (user) {
     return (
-      <main
-        className={`min-h-screen px-4 py-8 transition-colors duration-300 sm:px-6 sm:py-12 ${activeTheme.pageClass}`}
-      >
-        <div
-          className={`mx-auto max-w-6xl rounded-3xl border p-5 shadow-2xl backdrop-blur-md sm:p-8 ${activeTheme.cardClass}`}
-        >
-          <header className="text-center">
-            <div className="mx-auto h-24 w-24 text-6xl sm:h-28 sm:w-28 sm:text-7xl">
-              <ProfileAvatar
-                avatar={profile?.avatar}
-                alt={`${profile?.username ?? "Kullanıcı"} profil avatarı`}
-                priority
-                className="h-full w-full rounded-full shadow-2xl"
-              />
-            </div>
-
-            <p
-              className={`mt-4 text-sm font-bold uppercase tracking-[0.25em] ${activeTheme.mutedTextClass}`}
-            >
-              Has Gardaşlar
-            </p>
-
-            <SeasonLabel
-              className={
-                activeTheme.mutedTextClass
-              }
-            />
-
-            <h1
-              className={`mt-3 text-3xl font-black sm:text-4xl ${activeTheme.titleClass}`}
-            >
-              Hoş geldin,{" "}
-              {profile?.username ||
-                user.email ||
-                "Gardaş"}
-            </h1>
-
-            <p
-              className={`mt-3 ${activeTheme.mutedTextClass}`}
-            >
-              Oyunu seç, tahminini yap ve
-              zirveye çık.
-            </p>
-          </header>
-
-          <section className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard
-              title="Toplam Puan"
-              value={
-                profile?.totalPoints ?? 0
-              }
-              theme={activeTheme}
-            />
-
-            <StatCard
-              title="Doğru Tahmin"
-              value={
-                profile?.correctPredictions ??
-                0
-              }
-              theme={activeTheme}
-            />
-
-            <StatCard
-              title="Haftalık Zafer"
-              value={
-                profile?.weeklyWins ?? 0
-              }
-              theme={activeTheme}
-            />
-
-            <StatCard
-              title="Aktif Tema"
-              value={activeTheme.name}
-              theme={activeTheme}
-            />
-          </section>
-
-          <section className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Link
-              href="/games"
-              className={`hg-icon-label min-h-[120px] rounded-2xl px-6 py-5 text-center text-xl font-black transition hover:-translate-y-1 ${activeTheme.primaryButtonClass}`}
-            >
-              <HittiteIcon name="game" size="lg" />
-              Oyunlar
-            </Link>
-
-            <Link
-              href="/profile"
-              className={`hg-icon-label min-h-[120px] rounded-2xl px-6 py-5 text-center text-xl font-black transition hover:-translate-y-1 ${activeTheme.secondaryButtonClass}`}
-            >
-              <HittiteIcon name="user" size="lg" />
-              Profilim
-            </Link>
-          </section>
-
-          {profile?.isAdmin && (
-            <section className="mt-6 space-y-3">
-              <div
-                className={`rounded-2xl border p-4 text-center font-bold ${activeTheme.secondaryCardClass} ${activeTheme.textClass}`}
-              >
-                <span className="hg-icon-label">
-                  <HittiteIcon name="crown" size="sm" />
-                  Yönetici hesabıyla giriş yaptın
-                </span>
-              </div>
-
-              <Link
-                href="/admin"
-                className={`hg-icon-label w-full rounded-2xl px-6 py-4 text-center text-lg font-black transition hover:-translate-y-1 ${activeTheme.primaryButtonClass}`}
-              >
-                <HittiteIcon name="crown" size="sm" />
-                Admin Paneline Git
-              </Link>
-            </section>
-          )}
-
-          {message && (
-            <div
-              className={`mt-6 rounded-xl border p-4 text-center text-sm ${activeTheme.secondaryCardClass} ${activeTheme.textClass}`}
-            >
-              {message}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className={`hg-icon-label mt-8 w-full rounded-2xl px-6 py-4 text-lg font-black transition hover:-translate-y-1 ${activeTheme.secondaryButtonClass}`}
-          >
-            <HittiteIcon name="exit" size="sm" />
-            Çıkış Yap
-          </button>
-        </div>
-      </main>
+      <HomeDashboard
+        userId={user.uid}
+        username={profile?.username || user.email || "Gardaş"}
+        avatar={profile?.avatar}
+        totalPoints={profile?.totalPoints ?? 0}
+        correctPredictions={profile?.correctPredictions ?? 0}
+        weeklyWins={profile?.weeklyWins ?? 0}
+        isAdmin={profile?.isAdmin === true}
+        theme={activeTheme}
+        message={message}
+        onLogout={handleLogout}
+      />
     );
   }
 
@@ -698,34 +574,6 @@ export default function HomePage() {
         </form>
       </div>
     </main>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  theme,
-}: {
-  title: string;
-  value: string | number;
-  theme: AppTheme;
-}) {
-  return (
-    <div
-      className={`rounded-xl border p-4 text-center ${theme.secondaryCardClass}`}
-    >
-      <div
-        className={`text-xl font-black ${theme.titleClass}`}
-      >
-        {value}
-      </div>
-
-      <div
-        className={`mt-1 text-xs ${theme.mutedTextClass}`}
-      >
-        {title}
-      </div>
-    </div>
   );
 }
 

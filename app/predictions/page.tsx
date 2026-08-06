@@ -20,6 +20,7 @@ import { auth, db } from "@/lib/firebase";
 import HittiteIcon from "@/components/HittiteIcon";
 import GameNavigation from "@/components/GameNavigation";
 import MatchChat from "@/components/MatchChat";
+import TeamCrest from "@/components/TeamCrest";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
 const CURRENT_SEASON = "2026–2027 Sezonu";
@@ -351,14 +352,16 @@ export default function PredictionsPage() {
                           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                               <div
-                                className={`break-words text-center text-lg font-black sm:text-xl md:text-left lg:text-2xl ${activeTheme.textClass}`}
+                                className={`flex flex-wrap items-center justify-center gap-2 text-center text-lg font-black sm:text-xl md:justify-start lg:text-2xl ${activeTheme.textClass}`}
                               >
+                                <TeamCrest team={match.homeTeam} size="md" />
                                 {match.homeTeam}
                                 <span
-                                  className={`mx-3 ${activeTheme.mutedTextClass}`}
+                                  className={activeTheme.mutedTextClass}
                                 >
                                   —
                                 </span>
+                                <TeamCrest team={match.awayTeam} size="md" />
                                 {match.awayTeam}
                               </div>
 
@@ -379,6 +382,7 @@ export default function PredictionsPage() {
                             <PredictionButton
                               label="1"
                               description={match.homeTeam}
+                              team={match.homeTeam}
                               active={selectedPrediction === "1"}
                               disabled={closed}
                               theme={activeTheme}
@@ -401,6 +405,7 @@ export default function PredictionsPage() {
                             <PredictionButton
                               label="2"
                               description={match.awayTeam}
+                              team={match.awayTeam}
                               active={selectedPrediction === "2"}
                               disabled={closed}
                               theme={activeTheme}
@@ -461,6 +466,7 @@ export default function PredictionsPage() {
 function PredictionButton({
   label,
   description,
+  team,
   active,
   disabled,
   theme,
@@ -468,6 +474,7 @@ function PredictionButton({
 }: {
   label: PredictionValue;
   description: string;
+  team?: string;
   active: boolean;
   disabled: boolean;
   theme: AppTheme;
@@ -486,8 +493,10 @@ function PredictionButton({
     >
       <div className="text-3xl font-black">{label}</div>
 
+      {team && <TeamCrest team={team} size="sm" className="mt-2" />}
+
       <div
-        className={`mt-1 truncate text-sm ${
+        className={`${team ? "mt-2" : "mt-1"} truncate text-sm ${
           active ? "opacity-70" : theme.mutedTextClass
         }`}
       >

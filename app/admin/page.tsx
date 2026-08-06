@@ -29,6 +29,18 @@ import { getSeasonResetConfirmation } from "@/lib/admin-reset";
 
 type MatchResult = "1" | "X" | "2";
 
+type GoalEvent = {
+  team: string;
+  scorer: string;
+  assister?: string | null;
+};
+
+type GoalEventInput = {
+  side: "home" | "away";
+  scorer: string;
+  assister: string;
+};
+
 type NotificationTarget =
   | "/"
   | "/predictions"
@@ -49,6 +61,7 @@ type Match = {
   homeScore: number | null;
   awayScore: number | null;
   result: MatchResult | null;
+  goalEvents?: GoalEvent[];
   pointsCalculated?: boolean;
 };
 
@@ -59,6 +72,15 @@ type ScoreInputs = Record<
     away: string;
   }
 >;
+
+type GoalEventInputs = Record<string, GoalEventInput[]>;
+
+type ImportedMatchResult = {
+  matchId: string;
+  homeScore: number;
+  awayScore: number;
+  goalEvents: GoalEventInput[];
+};
 
 type DeletableUser = {
   uid: string;
@@ -79,6 +101,7 @@ export default function AdminPage() {
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [scoreInputs, setScoreInputs] = useState<ScoreInputs>({});
+  const [goalEventInputs, setGoalEventInputs] = useState<GoalEventInputs>({});
 
   const [savingMatch, setSavingMatch] = useState(false);
   const [publishingWeek, setPublishingWeek] = useState(false);
@@ -86,6 +109,7 @@ export default function AdminPage() {
   const [savingResultId, setSavingResultId] = useState<string | null>(
     null
   );
+  const [syncingResults, setSyncingResults] = useState(false);
   const [deletingMatchId, setDeletingMatchId] = useState<
     string | null
   >(null);
@@ -190,6 +214,23 @@ export default function AdminPage() {
                   ? String(match.awayScore)
                   : "",
             };
+          }
+
+          return next;
+        });
+
+        setGoalEventInputs((current) => {
+          const next: GoalEventInputs = {};
+
+          for (const match of matchList) {
+            const existing = current[match.id];
+            const loadedEvents = sanitizeGoalEvents(match.goalEvents, match);
+
+            next[match.id] = reconcileGoalEventInputs(
+              existing ?? loadedEvents,
+              typeof match.homeScore === "number" ? match.homeScore : 0,
+              typeof match.awayScore === "number" ? match.awayScore : 0,
+            );
           }
 
           return next;
@@ -623,6 +664,85 @@ export default function AdminPage() {
       );
     } finally {
       setSavingMatch(false);
+    }
+  }
+
+  async function handleFetchMatchResults() {
+    if (!user) {
+      setMessage("Sonuçları getirmek için yeniden giriş yap.");
+      return;
+    }
+
+    setSyncingResults(true);
+    setMessage("");
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/admin/fetch-match-results", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        checkedMatchCount?: number;
+        results?: ImportedMatchResult[];
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? "Otomatik sonuçlar alınamadı.");
+      }
+
+      const results = Array.isArray(data.results) ? data.results : [];
+
+      if (results.length === 0) {
+        setMessage(
+          `${data.checkedMatchCount ?? 0} planlanmış maç kontrol edildi; tamamlanmış sonuç bulunamadı.`,
+        );
+        return;
+      }
+
+      setScoreInputs((current) => {
+        const next = { ...current };
+
+        for (const result of results) {
+          next[result.matchId] = {
+            home: String(result.homeScore),
+            away: String(result.awayScore),
+          };
+        }
+
+        return next;
+      });
+
+      setGoalEventInputs((current) => {
+        const next = { ...current };
+
+        for (const result of results) {
+          next[result.matchId] = reconcileGoalEventInputs(
+            result.goalEvents,
+            result.homeScore,
+            result.awayScore,
+          );
+        }
+
+        return next;
+      });
+
+      setMessage(
+        `${results.length} maçın skoru ve golcüleri otomatik getirildi. Asistleri tamamlayıp sonucu kaydet.`,
+      );
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Otomatik sonuçlar alınamadı.",
+      );
+    } finally {
+      setSyncingResults(false);
     }
   }
 
@@ -1226,14 +1346,43 @@ export default function AdminPage() {
       return;
     }
 
+    const nextScore = {
+      home: scoreInputs[matchId]?.home ?? "",
+      away: scoreInputs[matchId]?.away ?? "",
+      [side]: value,
+    };
+
     setScoreInputs((current) => ({
       ...current,
-      [matchId]: {
-        home: current[matchId]?.home ?? "",
-        away: current[matchId]?.away ?? "",
-        [side]: value,
-      },
+      [matchId]: nextScore,
     }));
+
+    setGoalEventInputs((current) => ({
+      ...current,
+      [matchId]: reconcileGoalEventInputs(
+        current[matchId] ?? [],
+        scoreValue(nextScore.home),
+        scoreValue(nextScore.away),
+      ),
+    }));
+  }
+
+  function handleGoalEventChange(
+    matchId: string,
+    index: number,
+    field: "scorer" | "assister",
+    value: string,
+  ) {
+    setGoalEventInputs((current) => {
+      const events = current[matchId] ?? [];
+
+      return {
+        ...current,
+        [matchId]: events.map((event, eventIndex) =>
+          eventIndex === index ? { ...event, [field]: value } : event,
+        ),
+      };
+    });
   }
 
   async function handleSaveResult(match: Match) {
@@ -1254,6 +1403,21 @@ export default function AdminPage() {
       awayScore < 0
     ) {
       setMessage("Skorlar 0 veya daha büyük tam sayı olmalı.");
+      return;
+    }
+
+    const goalEvents = goalEventInputs[match.id] ?? [];
+    const expectedGoalCount = homeScore + awayScore;
+
+    if (
+      goalEvents.length !== expectedGoalCount ||
+      goalEvents.some(
+        (event) => !event.scorer.trim() || !event.assister.trim(),
+      )
+    ) {
+      setMessage(
+        "Skora karşılık gelen her gol için golü atan ve asist yapan oyuncuyu gir.",
+      );
       return;
     }
 
@@ -1280,6 +1444,11 @@ export default function AdminPage() {
         homeScore,
         awayScore,
         result,
+        goalEvents: goalEvents.map((event) => ({
+          team: event.side === "home" ? match.homeTeam : match.awayTeam,
+          scorer: event.scorer.trim(),
+          assister: event.assister.trim(),
+        })),
         status: "finished",
         pointsCalculated: false,
         finishedAt: serverTimestamp(),
@@ -1957,14 +2126,32 @@ export default function AdminPage() {
           </div>
 
           <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
-            <div className="mb-6">
-              <h2 className="text-xl font-black">
-                Gardaş 1X2 Maçları ve Sonuçları
-              </h2>
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-xl font-black">
+                  Gardaş 1X2 Maçları ve Sonuçları
+                </h2>
 
-              <p className="mt-1 text-sm text-zinc-400">
-                Toplam {matches.length} maç
-              </p>
+                <p className="mt-1 text-sm text-zinc-400">
+                  Toplam {matches.length} maç
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleFetchMatchResults}
+                disabled={
+                  syncingResults ||
+                  savingResultId !== null ||
+                  deletingMatchId !== null
+                }
+                className="hg-secondary hg-icon-label w-full rounded-xl border border-sky-400/35 px-4 py-3 text-sm font-black text-sky-200 transition hover:bg-sky-400/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+              >
+                <HittiteIcon name="clock" size="sm" />
+                {syncingResults
+                  ? "Sonuçlar getiriliyor..."
+                  : "Sonuçları Otomatik Getir"}
+              </button>
             </div>
 
             {matches.length === 0 ? (
@@ -1980,6 +2167,9 @@ export default function AdminPage() {
                     home: "",
                     away: "",
                   };
+                  const goalEvents = goalEventInputs[match.id] ?? [];
+                  const expectedGoalCount =
+                    scoreValue(score.home) + scoreValue(score.away);
 
                   const savingThisResult =
                     savingResultId === match.id;
@@ -2164,6 +2354,78 @@ export default function AdminPage() {
                                   : "Sonucu Kaydet"}
                             </button>
                           </div>
+
+                          {score.home !== "" && score.away !== "" && (
+                            <div className="mt-5 rounded-2xl border border-zinc-800 bg-black/20 p-4">
+                              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="font-black text-zinc-100">
+                                  Gol ve asist detayları
+                                </p>
+                                <span className="text-xs text-zinc-500">
+                                  {expectedGoalCount} gol kaydı bekleniyor
+                                </span>
+                              </div>
+
+                              <p className="mt-1 text-xs text-zinc-500">
+                                Her gol için golü atan ve asist yapan oyuncu zorunludur.
+                              </p>
+
+                              {goalEvents.length > 0 ? (
+                                <div className="mt-4 space-y-3">
+                                  {goalEvents.map((event, index) => (
+                                    <div
+                                      key={`${event.side}-${index}`}
+                                      className="grid gap-2 rounded-xl border border-zinc-800 bg-zinc-950/70 p-3 sm:grid-cols-[minmax(8rem,.7fr)_minmax(0,1fr)_minmax(0,1fr)]"
+                                    >
+                                      <span className="self-center truncate text-sm font-bold text-yellow-300">
+                                        {event.side === "home"
+                                          ? match.homeTeam
+                                          : match.awayTeam}
+                                      </span>
+                                      <input
+                                        type="text"
+                                        value={event.scorer}
+                                        onChange={(inputEvent) =>
+                                          handleGoalEventChange(
+                                            match.id,
+                                            index,
+                                            "scorer",
+                                            inputEvent.target.value,
+                                          )
+                                        }
+                                        disabled={
+                                          savingThisResult || deletingThisMatch
+                                        }
+                                        placeholder="Golü atan oyuncu"
+                                        className="w-full rounded-lg border border-zinc-700 bg-black px-3 py-2 text-sm outline-none focus:border-yellow-500 disabled:opacity-50"
+                                      />
+                                      <input
+                                        type="text"
+                                        value={event.assister}
+                                        onChange={(inputEvent) =>
+                                          handleGoalEventChange(
+                                            match.id,
+                                            index,
+                                            "assister",
+                                            inputEvent.target.value,
+                                          )
+                                        }
+                                        disabled={
+                                          savingThisResult || deletingThisMatch
+                                        }
+                                        placeholder="Asisti yapan oyuncu"
+                                        className="w-full rounded-lg border border-zinc-700 bg-black px-3 py-2 text-sm outline-none focus:border-yellow-500 disabled:opacity-50"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="mt-4 text-sm text-zinc-500">
+                                  Bu skor için oyuncu bilgisi gerekmez.
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </article>
@@ -2465,6 +2727,54 @@ function calculateResult(
   }
 
   return "X";
+}
+
+function scoreValue(value: string): number {
+  return /^\d+$/.test(value) ? Number(value) : 0;
+}
+
+function sanitizeGoalEvents(
+  value: GoalEvent[] | undefined,
+  match: Pick<Match, "homeTeam" | "awayTeam">,
+): GoalEventInput[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter(
+      (event): event is GoalEvent =>
+        Boolean(event) &&
+        typeof event.scorer === "string" &&
+        typeof event.team === "string",
+    )
+    .map((event) => ({
+      side: event.team === match.awayTeam ? "away" : "home",
+      scorer: event.scorer,
+      assister: typeof event.assister === "string" ? event.assister : "",
+    }));
+}
+
+function reconcileGoalEventInputs(
+  currentEvents: GoalEventInput[],
+  homeScore: number,
+  awayScore: number,
+): GoalEventInput[] {
+  const createEvents = (
+    side: GoalEventInput["side"],
+    count: number,
+  ): GoalEventInput[] => {
+    const existingForSide = currentEvents.filter(
+      (event) => event.side === side,
+    );
+
+    return Array.from({ length: Math.max(0, count) }, (_, index) =>
+      existingForSide[index] ?? { side, scorer: "", assister: "" },
+    );
+  };
+
+  return [
+    ...createEvents("home", homeScore),
+    ...createEvents("away", awayScore),
+  ];
 }
 
 function getResultDescription(
