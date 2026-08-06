@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import HittiteIcon from "@/components/HittiteIcon";
 import { getTeamCrestUrl } from "@/lib/team-crests";
 
@@ -26,8 +29,13 @@ export default function TeamCrest({
 }: TeamCrestProps) {
   const crestUrl = getTeamCrestUrl(team);
   const imageSize = imageSizes[size];
+  const [imageFailed, setImageFailed] = useState(false);
 
-  if (!crestUrl) {
+  useEffect(() => {
+    setImageFailed(false);
+  }, [crestUrl]);
+
+  if (!crestUrl || imageFailed) {
     return (
       <span
         role="img"
@@ -50,6 +58,7 @@ export default function TeamCrest({
         alt={`${team} amblemi`}
         loading="lazy"
         decoding="async"
+        onError={() => setImageFailed(true)}
         className="h-full w-full object-contain"
       />
     </span>
