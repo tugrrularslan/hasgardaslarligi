@@ -1847,14 +1847,28 @@ export default function AdminPage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="hg-secondary hg-icon-label rounded-xl border border-zinc-700 px-5 py-3 font-bold text-zinc-300 transition hover:border-yellow-500 hover:text-yellow-400"
-          >
-            <HittiteIcon name="home" size="sm" />
-            Ana Sayfaya Dön
-          </button>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <button
+              type="button"
+              onClick={() => void handleLoadLeaguePlayers(true)}
+              disabled={updatingPlayers}
+              className="hg-secondary hg-icon-label rounded-xl border border-zinc-700 bg-zinc-950/80 px-4 py-3 text-sm font-black text-zinc-200 transition hover:border-amber-400/60 hover:text-amber-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <HittiteIcon name="group" size="sm" />
+              {updatingPlayers
+                ? "Senkronize ediliyor..."
+                : "Futbolcu Senkronizasyonu"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="hg-secondary hg-icon-label rounded-xl border border-zinc-700 px-5 py-3 font-bold text-zinc-300 transition hover:border-yellow-500 hover:text-yellow-400"
+            >
+              <HittiteIcon name="home" size="sm" />
+              Ana Sayfaya Dön
+            </button>
+          </div>
         </header>
 
         {message && (
@@ -2048,34 +2062,6 @@ export default function AdminPage() {
           </form>
         </section>
         </CollapsiblePanel>
-
-        <section className="mb-8 rounded-3xl border border-amber-400/30 bg-zinc-950 p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-xl font-black text-amber-300">
-                Futbolcu Senkronizasyonu
-              </h2>
-              <p className="mt-2 text-sm text-zinc-400">
-                Lig takımlarının güncel futbolcu kadrolarını yeniden yükler.
-                {leaguePlayers.length > 0
-                  ? ` Şu anda ${leaguePlayers.length} futbolcu hazır.`
-                  : ""}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => void handleLoadLeaguePlayers(true)}
-              disabled={updatingPlayers}
-              className="hg-primary hg-icon-label w-full rounded-xl bg-amber-400 px-5 py-3 font-black text-black transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-            >
-              <HittiteIcon name="clock" size="sm" />
-              {updatingPlayers
-                ? "Senkronize ediliyor..."
-                : "Futbolcu Senkronizasyonu"}
-            </button>
-          </div>
-        </section>
 
         <CollapsiblePanel
           title="Gardaş 1X2 Maç Yönetimi"
