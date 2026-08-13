@@ -2049,6 +2049,34 @@ export default function AdminPage() {
         </section>
         </CollapsiblePanel>
 
+        <section className="mb-8 rounded-3xl border border-amber-400/30 bg-zinc-950 p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xl font-black text-amber-300">
+                Futbolcu Senkronizasyonu
+              </h2>
+              <p className="mt-2 text-sm text-zinc-400">
+                Lig takımlarının güncel futbolcu kadrolarını yeniden yükler.
+                {leaguePlayers.length > 0
+                  ? ` Şu anda ${leaguePlayers.length} futbolcu hazır.`
+                  : ""}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void handleLoadLeaguePlayers(true)}
+              disabled={updatingPlayers}
+              className="hg-primary hg-icon-label w-full rounded-xl bg-amber-400 px-5 py-3 font-black text-black transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              <HittiteIcon name="clock" size="sm" />
+              {updatingPlayers
+                ? "Senkronize ediliyor..."
+                : "Futbolcu Senkronizasyonu"}
+            </button>
+          </div>
+        </section>
+
         <CollapsiblePanel
           title="Gardaş 1X2 Maç Yönetimi"
           description={`${matches.length} maç • Gardaş 1X2 maç ekleme, yayınlama ve sonuç işlemleri`}
@@ -2530,28 +2558,9 @@ export default function AdminPage() {
                                 <p className="font-black text-zinc-100">
                                   Gol ve asist detayları
                                 </p>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-xs text-zinc-500">
-                                    {expectedGoalCount} gol kaydı bekleniyor
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      void handleLoadLeaguePlayers(true)
-                                    }
-                                    disabled={
-                                      updatingPlayers ||
-                                      savingThisResult ||
-                                      deletingThisMatch
-                                    }
-                                    className="hg-secondary hg-icon-label rounded-lg border border-amber-400/35 px-3 py-2 text-xs font-black text-amber-200 transition hover:bg-amber-400/10 disabled:cursor-not-allowed disabled:opacity-50"
-                                  >
-                                    <HittiteIcon name="clock" size="xs" />
-                                    {updatingPlayers
-                                      ? "Senkronize ediliyor..."
-                                      : "Futbolcu Senkronizasyonu"}
-                                  </button>
-                                </div>
+                                <span className="text-xs text-zinc-500">
+                                  {expectedGoalCount} gol kaydı bekleniyor
+                                </span>
                               </div>
 
                               <p className="mt-1 text-xs text-zinc-500">
