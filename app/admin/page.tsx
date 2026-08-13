@@ -2548,8 +2548,8 @@ export default function AdminPage() {
                                   >
                                     <HittiteIcon name="clock" size="xs" />
                                     {updatingPlayers
-                                      ? "Güncelleniyor..."
-                                      : "Oyuncuları Güncelle"}
+                                      ? "Senkronize ediliyor..."
+                                      : "Futbolcu Senkronizasyonu"}
                                   </button>
                                 </div>
                               </div>
@@ -2604,7 +2604,7 @@ export default function AdminPage() {
                                         >
                                           <option value="">
                                             {updatingPlayers
-                                              ? "Oyuncular güncelleniyor..."
+                                              ? "Futbolcular senkronize ediliyor..."
                                               : "Golü atan oyuncuyu seç"}
                                           </option>
                                           {!hasScorer && event.scorer && (
@@ -2641,7 +2641,7 @@ export default function AdminPage() {
                                         >
                                           <option value="">
                                             {updatingPlayers
-                                              ? "Oyuncular güncelleniyor..."
+                                              ? "Futbolcular senkronize ediliyor..."
                                               : "Asisti yapan oyuncuyu seç"}
                                           </option>
                                           {!hasAssister && event.assister && (
