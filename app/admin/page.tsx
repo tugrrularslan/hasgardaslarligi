@@ -28,6 +28,11 @@ import TeamCrest from "@/components/TeamCrest";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 import { getSeasonResetConfirmation } from "@/lib/admin-reset";
 import { resolveKahinTeamName } from "@/lib/kahin";
+import type {
+  LeaguePlayerRecord,
+  PlayerRosterResponse,
+  PlayerSyncReport,
+} from "@/lib/player-sync-types";
 
 type MatchResult = "1" | "X" | "2";
 
@@ -91,11 +96,6 @@ type GoalEventInputs = Record<string, GoalEventInput[]>;
 type AdminWeekFilter = number | "all" | null;
 type AdminMatchStatusFilter = "all" | "scheduled" | "finished";
 
-type LeaguePlayer = {
-  name: string;
-  team: string;
-};
-
 type ImportedMatchResult = {
   matchId: string;
   homeScore: number;
@@ -122,7 +122,9 @@ export default function AdminPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [scoreInputs, setScoreInputs] = useState<ScoreInputs>({});
   const [goalEventInputs, setGoalEventInputs] = useState<GoalEventInputs>({});
-  const [leaguePlayers, setLeaguePlayers] = useState<LeaguePlayer[]>([]);
+  const [leaguePlayers, setLeaguePlayers] = useState<LeaguePlayerRecord[]>([]);
+  const [playerSyncReport, setPlayerSyncReport] =
+    useState<PlayerSyncReport | null>(null);
   const [adminWeekFilter, setAdminWeekFilter] =
     useState<AdminWeekFilter>(null);
   const [adminMatchStatusFilter, setAdminMatchStatusFilter] =
@@ -805,25 +807,53 @@ export default function AdminPage() {
     setUpdatingPlayers(true);
 
     try {
-      const response = await fetch(
-        `/api/kahin/players${forceRefresh ? "?refresh=1" : ""}`,
-        { cache: "no-store" },
-      );
-      const data = (await response.json()) as {
-        success?: boolean;
-        players?: LeaguePlayer[];
-        error?: string;
-      };
+      let response: Response;
+
+      if (forceRefresh) {
+        if (!user) {
+          throw new Error("Senkronizasyon için yeniden giriş yap.");
+        }
+        const idToken = await user.getIdToken();
+        response = await fetch("/api/admin/sync-players", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${idToken}` },
+          cache: "no-store",
+        });
+      } else {
+        response = await fetch("/api/kahin/players", { cache: "no-store" });
+      }
+
+      const data = (await response.json()) as Partial<PlayerRosterResponse>;
+
+      if (Array.isArray(data.players)) {
+        setLeaguePlayers(data.players);
+      }
+      if (forceRefresh && data.report) {
+        setPlayerSyncReport(data.report);
+      }
 
       if (!response.ok || !data.success || !Array.isArray(data.players)) {
         throw new Error(data.error ?? "Oyuncu listesi alınamadı.");
       }
 
-      setLeaguePlayers(data.players);
-      setMessage(`${data.players.length} oyuncu güncel kadrolardan hazırlandı.`);
+      if (forceRefresh && data.report) {
+        setMessage(
+          `Senkronizasyon tamamlandı: ${data.report.addedPlayers.length} eklendi, ` +
+            `${data.report.removedPlayers.length} listeden çıktı, ` +
+            `${data.report.transferredPlayers.length} takım değişikliği bulundu. ` +
+            `${data.report.failedTeams.length} takım alınamadı. ` +
+            `Toplam ${data.players.length} futbolcu.`,
+        );
+      } else {
+        setMessage(`${data.players.length} oyuncu güncel kadrolardan hazırlandı.`);
+      }
     } catch (error) {
       console.error(error);
-      setMessage("Oyuncu listesi şu anda güncellenemedi. Lütfen tekrar dene.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Oyuncu listesi şu anda güncellenemedi. Lütfen tekrar dene.",
+      );
     } finally {
       setUpdatingPlayers(false);
     }
@@ -1886,6 +1916,156 @@ export default function AdminPage() {
           <div className="mb-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-yellow-200">
             {message}
           </div>
+        )}
+
+        {playerSyncReport && (
+          <section className="mb-6 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-black text-zinc-100">
+                    Futbolcu senkronizasyon raporu
+                  </h2>
+                  <span
+                    className={`rounded-full border px-2 py-1 text-xs font-black ${
+                      playerSyncReport.health.ok
+                        ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                        : "border-amber-400/30 bg-amber-400/10 text-amber-200"
+                    }`}
+                  >
+                    {playerSyncReport.health.ok
+                      ? "Tüm kontroller başarılı"
+                      : "Kontrol gerekli"}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {new Date(playerSyncReport.completedAt).toLocaleString(
+                    "tr-TR",
+                  )} · {playerSyncReport.playerCount} futbolcu ·{" "}
+                  {playerSyncReport.successfulTeamCount}/
+                  {playerSyncReport.health.expectedTeamCount} takım güncellendi
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setPlayerSyncReport(null)}
+                className="hg-secondary hg-icon-label rounded-lg border border-zinc-800 px-3 py-2 text-xs font-bold text-zinc-400 hover:text-white"
+              >
+                <HittiteIcon name="close" size="xs" />
+                Kapat
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[
+                ["Eklenen", playerSyncReport.addedPlayers.length, "text-emerald-300"],
+                ["Listeden çıkan", playerSyncReport.removedPlayers.length, "text-rose-300"],
+                ["Takım değiştiren", playerSyncReport.transferredPlayers.length, "text-sky-300"],
+                ["Alınamayan takım", playerSyncReport.failedTeams.length, "text-amber-300"],
+              ].map(([label, count, color]) => (
+                <div
+                  key={String(label)}
+                  className="rounded-xl border border-zinc-800 bg-black/30 p-3"
+                >
+                  <p className={`text-xl font-black ${color}`}>{count}</p>
+                  <p className="mt-1 text-xs text-zinc-500">{label}</p>
+                </div>
+              ))}
+            </div>
+
+            {playerSyncReport.health.issues.length > 0 && (
+              <div className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-sm text-amber-100">
+                {playerSyncReport.health.issues.map((issue) => (
+                  <p key={issue}>• {issue}</p>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-3 grid gap-2 lg:grid-cols-2">
+              {playerSyncReport.addedPlayers.length > 0 && (
+                <details className="rounded-xl border border-zinc-800 bg-black/20 p-3">
+                  <summary className="cursor-pointer text-sm font-black text-emerald-300">
+                    Eklenen futbolcular ({playerSyncReport.addedPlayers.length})
+                  </summary>
+                  <div className="mt-2 space-y-1 text-xs text-zinc-300">
+                    {playerSyncReport.addedPlayers.slice(0, 30).map((player) => (
+                      <p key={`${player.name}-${player.team}`}>
+                        {player.name} — {player.team}
+                      </p>
+                    ))}
+                    {playerSyncReport.addedPlayers.length > 30 && (
+                      <p className="text-zinc-500">
+                        +{playerSyncReport.addedPlayers.length - 30} futbolcu daha
+                      </p>
+                    )}
+                  </div>
+                </details>
+              )}
+
+              {playerSyncReport.removedPlayers.length > 0 && (
+                <details className="rounded-xl border border-zinc-800 bg-black/20 p-3">
+                  <summary className="cursor-pointer text-sm font-black text-rose-300">
+                    Listeden çıkan futbolcular ({playerSyncReport.removedPlayers.length})
+                  </summary>
+                  <div className="mt-2 space-y-1 text-xs text-zinc-300">
+                    {playerSyncReport.removedPlayers.slice(0, 30).map((player) => (
+                      <p key={`${player.name}-${player.team}`}>
+                        {player.name} — {player.team}
+                      </p>
+                    ))}
+                    {playerSyncReport.removedPlayers.length > 30 && (
+                      <p className="text-zinc-500">
+                        +{playerSyncReport.removedPlayers.length - 30} futbolcu daha
+                      </p>
+                    )}
+                  </div>
+                </details>
+              )}
+
+              {playerSyncReport.transferredPlayers.length > 0 && (
+                <details className="rounded-xl border border-zinc-800 bg-black/20 p-3">
+                  <summary className="cursor-pointer text-sm font-black text-sky-300">
+                    Takım değiştirenler ({playerSyncReport.transferredPlayers.length})
+                  </summary>
+                  <div className="mt-2 space-y-1 text-xs text-zinc-300">
+                    {playerSyncReport.transferredPlayers.map((player) => (
+                      <p key={`${player.name}-${player.fromTeam}-${player.toTeam}`}>
+                        {player.name}: {player.fromTeam} → {player.toTeam}
+                      </p>
+                    ))}
+                  </div>
+                </details>
+              )}
+
+              {playerSyncReport.failedTeams.length > 0 && (
+                <details className="rounded-xl border border-zinc-800 bg-black/20 p-3">
+                  <summary className="cursor-pointer text-sm font-black text-amber-300">
+                    Alınamayan takımlar ({playerSyncReport.failedTeams.length})
+                  </summary>
+                  <div className="mt-2 space-y-2 text-xs text-zinc-300">
+                    {playerSyncReport.failedTeams.map((failure) => (
+                      <p key={failure.team}>
+                        <strong>{failure.team}:</strong> {failure.reason}
+                        {failure.usedPreviousData
+                          ? " Önceki sağlam kadro korundu."
+                          : ""}
+                      </p>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+
+            {playerSyncReport.addedPlayers.length === 0 &&
+              playerSyncReport.removedPlayers.length === 0 &&
+              playerSyncReport.transferredPlayers.length === 0 &&
+              playerSyncReport.failedTeams.length === 0 && (
+                <p className="mt-3 text-sm text-zinc-400">
+                  Kadrolarda değişiklik bulunmadı.
+                </p>
+              )}
+          </section>
         )}
 
         <CollapsiblePanel
@@ -3013,9 +3193,9 @@ function scoreValue(value: string): number {
 }
 
 function getPlayersForTeam(
-  players: LeaguePlayer[],
+  players: LeaguePlayerRecord[],
   team: string,
-): LeaguePlayer[] {
+): LeaguePlayerRecord[] {
   const normalizedTeam = normalizeTeamForRoster(team);
 
   return players

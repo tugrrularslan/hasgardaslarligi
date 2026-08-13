@@ -1,71 +1,22 @@
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
+import {
+  LEAGUE_TEAM_DATA,
+  normalizeLeagueTeamName,
+  resolveLeagueTeamName,
+} from "@/lib/league-data";
+import { MANUAL_LEAGUE_PLAYERS } from "@/lib/manual-players";
 
 export const KAHIN_GAME_ID = "kahin";
 
-export const KAHIN_TEAMS = [
-  "Alanyaspor",
-  "Amed SK",
-  "Beşiktaş",
-  "Başakşehir",
-  "Çaykur Rizespor",
-  "Çorum FK",
-  "Erzurumspor FK",
-  "Eyüpspor",
-  "Fenerbahçe",
-  "Galatasaray",
-  "Gaziantep FK",
-  "Gençlerbirliği",
-  "Göztepe",
-  "Kasımpaşa",
-  "Kocaelispor",
-  "Konyaspor",
-  "Samsunspor",
-  "Trabzonspor",
-] as const;
-
-const KAHIN_TEAM_ALIASES: Record<string, (typeof KAHIN_TEAMS)[number]> = {
-  amed: "Amed SK",
-  "amed sf": "Amed SK",
-  "amed sfk": "Amed SK",
-  amedspor: "Amed SK",
-  "amed sportif faaliyetler": "Amed SK",
-  "besiktas jk": "Beşiktaş",
-  "istanbul basaksehir": "Başakşehir",
-  "istanbul basaksehir fk": "Başakşehir",
-  "istanbul bb": "Başakşehir",
-  "basaksehir fk": "Başakşehir",
-  rizespor: "Çaykur Rizespor",
-  "caykur rize spor": "Çaykur Rizespor",
-  "caykur rize": "Çaykur Rizespor",
-  corum: "Çorum FK",
-  "erzurum bb": "Erzurumspor FK",
-  erzurumspor: "Erzurumspor FK",
-  "buyuksehir belediye erzurumspor": "Erzurumspor FK",
-  "eyup spor": "Eyüpspor",
-  gaziantep: "Gaziantep FK",
-  gaziantepspor: "Gaziantep FK",
-};
+export const KAHIN_TEAMS = LEAGUE_TEAM_DATA.map((team) => team.name);
 
 export function normalizeKahinTeamName(team: string): string {
-  return team
-    .trim()
-    .toLocaleLowerCase("tr-TR")
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/ı/g, "i")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
+  return normalizeLeagueTeamName(team);
 }
 
 /** Maps provider and manually entered team names to the game's canonical names. */
 export function resolveKahinTeamName(team: string): string {
-  const normalizedTeam = normalizeKahinTeamName(team);
-
-  return (
-    KAHIN_TEAMS.find(
-      (candidate) => normalizeKahinTeamName(candidate) === normalizedTeam,
-    ) ?? KAHIN_TEAM_ALIASES[normalizedTeam] ?? team.trim()
-  );
+  return resolveLeagueTeamName(team);
 }
 
 // Kahin özel tahminlerinde herkesin aynı isimleri seçmesi için sabit aday havuzu.
@@ -144,7 +95,7 @@ export type KahinPlayer = {
 
 // Harici kadro kaynağı transferleri gecikmeli işlediğinde listeyi tamamlar.
 export const KAHIN_MANUAL_PLAYERS: KahinPlayer[] = [
-  { name: "Dušan Vlahović", team: "Beşiktaş" },
+  ...MANUAL_LEAGUE_PLAYERS,
 ];
 
 // Harici kadro servisi geçici olarak ulaşılamazsa seçim ekranı boş kalmasın.
