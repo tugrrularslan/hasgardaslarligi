@@ -22,6 +22,7 @@ import {
   KAHIN_FALLBACK_PLAYERS,
   KAHIN_TEAMS,
   mergeKahinPlayers,
+  normalizeKahinSearch,
   sanitizeKahinPrediction,
   sanitizeKahinPlayers,
   type KahinPlayer,
@@ -435,13 +436,13 @@ function PredictionInput({
 }) {
   const [search, setSearch] = useState("");
   const hasLegacyValue = value.trim() && !options.some((player) => player.name === value);
-  const normalizedSearch = search.trim().toLocaleLowerCase("tr-TR");
+  const normalizedSearch = normalizeKahinSearch(search);
   const visibleOptions = options.filter((player) => {
     if (!normalizedSearch) return true;
 
     return (
-      player.name.toLocaleLowerCase("tr-TR").includes(normalizedSearch) ||
-      player.team.toLocaleLowerCase("tr-TR").includes(normalizedSearch)
+      normalizeKahinSearch(player.name).includes(normalizedSearch) ||
+      normalizeKahinSearch(player.team).includes(normalizedSearch)
     );
   });
 

@@ -142,14 +142,31 @@ export type KahinPlayer = {
   team: string;
 };
 
+// Harici kadro kaynağı transferleri gecikmeli işlediğinde listeyi tamamlar.
+export const KAHIN_MANUAL_PLAYERS: KahinPlayer[] = [
+  { name: "Dušan Vlahović", team: "Beşiktaş" },
+];
+
 // Harici kadro servisi geçici olarak ulaşılamazsa seçim ekranı boş kalmasın.
-export const KAHIN_FALLBACK_PLAYERS: KahinPlayer[] = Array.from(
-  new Set([
-    ...KAHIN_SCORER_PLAYERS,
-    ...KAHIN_ASSIST_PLAYERS,
-    ...KAHIN_GOALKEEPERS,
-  ]),
-).map((name) => ({ name, team: "" }));
+export const KAHIN_FALLBACK_PLAYERS: KahinPlayer[] = [
+  ...Array.from(
+    new Set([
+      ...KAHIN_SCORER_PLAYERS,
+      ...KAHIN_ASSIST_PLAYERS,
+      ...KAHIN_GOALKEEPERS,
+    ]),
+  ).map((name): KahinPlayer => ({ name, team: "" })),
+  ...KAHIN_MANUAL_PLAYERS,
+];
+
+export function normalizeKahinSearch(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/ı/g, "i");
+}
 
 export type KahinPrediction = {
   leagueOrder: string[];

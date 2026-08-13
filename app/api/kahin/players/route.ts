@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveKahinTeamName } from "@/lib/kahin";
+import { KAHIN_MANUAL_PLAYERS, resolveKahinTeamName } from "@/lib/kahin";
 
 export const revalidate = 3_600;
 export const dynamic = "force-dynamic";
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     );
 
     const uniquePlayers = new Map<string, { name: string; team: string }>();
-    for (const player of rosters.flat()) {
+    for (const player of [...rosters.flat(), ...KAHIN_MANUAL_PLAYERS]) {
       const key = `${player.name.toLocaleLowerCase("tr-TR")}::${player.team.toLocaleLowerCase("tr-TR")}`;
       uniquePlayers.set(key, player);
     }

@@ -22,6 +22,7 @@ import {
   KAHIN_FALLBACK_PLAYERS,
   KAHIN_TEAMS,
   mergeKahinPlayers,
+  normalizeKahinSearch,
   sanitizeKahinPrediction,
   sanitizeLeagueOrder,
   sanitizeKahinPlayers,
@@ -132,13 +133,13 @@ export default function KahinAdminPanel({
     () => mergeKahinPlayers(officialPlayers, customPlayers),
     [customPlayers, officialPlayers],
   );
-  const normalizedPlayerSearch = playerSearch.trim().toLocaleLowerCase("tr-TR");
+  const normalizedPlayerSearch = normalizeKahinSearch(playerSearch);
   const visiblePlayers = playerOptions.filter((player) => {
     if (!normalizedPlayerSearch) return false;
 
     return (
-      player.name.toLocaleLowerCase("tr-TR").includes(normalizedPlayerSearch) ||
-      player.team.toLocaleLowerCase("tr-TR").includes(normalizedPlayerSearch)
+      normalizeKahinSearch(player.name).includes(normalizedPlayerSearch) ||
+      normalizeKahinSearch(player.team).includes(normalizedPlayerSearch)
     );
   });
 
