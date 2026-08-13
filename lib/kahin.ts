@@ -23,6 +23,51 @@ export const KAHIN_TEAMS = [
   "Trabzonspor",
 ] as const;
 
+const KAHIN_TEAM_ALIASES: Record<string, (typeof KAHIN_TEAMS)[number]> = {
+  amed: "Amed SK",
+  "amed sf": "Amed SK",
+  "amed sfk": "Amed SK",
+  amedspor: "Amed SK",
+  "amed sportif faaliyetler": "Amed SK",
+  "besiktas jk": "Beşiktaş",
+  "istanbul basaksehir": "Başakşehir",
+  "istanbul basaksehir fk": "Başakşehir",
+  "istanbul bb": "Başakşehir",
+  "basaksehir fk": "Başakşehir",
+  rizespor: "Çaykur Rizespor",
+  "caykur rize spor": "Çaykur Rizespor",
+  "caykur rize": "Çaykur Rizespor",
+  corum: "Çorum FK",
+  "erzurum bb": "Erzurumspor FK",
+  erzurumspor: "Erzurumspor FK",
+  "buyuksehir belediye erzurumspor": "Erzurumspor FK",
+  "eyup spor": "Eyüpspor",
+  gaziantep: "Gaziantep FK",
+  gaziantepspor: "Gaziantep FK",
+};
+
+export function normalizeKahinTeamName(team: string): string {
+  return team
+    .trim()
+    .toLocaleLowerCase("tr-TR")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/ı/g, "i")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/** Maps provider and manually entered team names to the game's canonical names. */
+export function resolveKahinTeamName(team: string): string {
+  const normalizedTeam = normalizeKahinTeamName(team);
+
+  return (
+    KAHIN_TEAMS.find(
+      (candidate) => normalizeKahinTeamName(candidate) === normalizedTeam,
+    ) ?? KAHIN_TEAM_ALIASES[normalizedTeam] ?? team.trim()
+  );
+}
+
 // Kahin özel tahminlerinde herkesin aynı isimleri seçmesi için sabit aday havuzu.
 // Yeni sezon başında bu listeler kod üzerinden birlikte güncellenir.
 export const KAHIN_SCORER_PLAYERS = [

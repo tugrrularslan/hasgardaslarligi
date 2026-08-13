@@ -24,8 +24,10 @@ import CollapsiblePanel from "@/components/CollapsiblePanel";
 import HittiteIcon from "@/components/HittiteIcon";
 import KahinAdminPanel from "@/components/KahinAdminPanel";
 import SeasonLabel from "@/components/SeasonLabel";
+import TeamCrest from "@/components/TeamCrest";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 import { getSeasonResetConfirmation } from "@/lib/admin-reset";
+import { resolveKahinTeamName } from "@/lib/kahin";
 
 type MatchResult = "1" | "X" | "2";
 
@@ -2090,16 +2092,19 @@ export default function AdminPage() {
                   Ev sahibi
                 </label>
 
-                <input
-                  type="text"
-                  value={homeTeam}
-                  onChange={(event) =>
-                    setHomeTeam(event.target.value)
-                  }
-                  required
-                  placeholder="Galatasaray"
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-yellow-500"
-                />
+                <div className="flex items-center gap-2">
+                  {homeTeam.trim() && <TeamCrest team={homeTeam} size="sm" />}
+                  <input
+                    type="text"
+                    value={homeTeam}
+                    onChange={(event) =>
+                      setHomeTeam(event.target.value)
+                    }
+                    required
+                    placeholder="Galatasaray"
+                    className="min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-yellow-500"
+                  />
+                </div>
               </div>
 
               <div>
@@ -2107,16 +2112,19 @@ export default function AdminPage() {
                   Deplasman
                 </label>
 
-                <input
-                  type="text"
-                  value={awayTeam}
-                  onChange={(event) =>
-                    setAwayTeam(event.target.value)
-                  }
-                  required
-                  placeholder="Fenerbahçe"
-                  className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-yellow-500"
-                />
+                <div className="flex items-center gap-2">
+                  {awayTeam.trim() && <TeamCrest team={awayTeam} size="sm" />}
+                  <input
+                    type="text"
+                    value={awayTeam}
+                    onChange={(event) =>
+                      setAwayTeam(event.target.value)
+                    }
+                    required
+                    placeholder="Fenerbahçe"
+                    className="min-w-0 flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-yellow-500"
+                  />
+                </div>
               </div>
 
               <div>
@@ -2378,21 +2386,27 @@ export default function AdminPage() {
                               </span>
                             </div>
 
-                            <div className="text-lg font-black">
-                              {match.homeTeam}
+                            <div className="flex flex-wrap items-center gap-2 text-lg font-black">
+                              <span className="flex items-center gap-2">
+                                <TeamCrest team={match.homeTeam} size="sm" />
+                                {match.homeTeam}
+                              </span>
 
                               {match.status === "finished" ? (
-                                <span className="mx-3 text-yellow-400">
+                                <span className="mx-1 text-yellow-400">
                                   {match.homeScore} -{" "}
                                   {match.awayScore}
                                 </span>
                               ) : (
-                                <span className="mx-3 text-zinc-600">
+                                <span className="mx-1 text-zinc-600">
                                   —
                                 </span>
                               )}
 
-                              {match.awayTeam}
+                              <span className="flex items-center gap-2">
+                                <TeamCrest team={match.awayTeam} size="sm" />
+                                {match.awayTeam}
+                              </span>
                             </div>
 
                             {match.result && (
@@ -2976,7 +2990,7 @@ function getPlayersForTeam(
 }
 
 function normalizeTeamForRoster(team: string): string {
-  return team
+  return resolveKahinTeamName(team)
     .trim()
     .toLocaleLowerCase("tr-TR")
     .normalize("NFD")

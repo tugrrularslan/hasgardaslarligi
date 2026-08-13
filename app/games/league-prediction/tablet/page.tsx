@@ -8,6 +8,7 @@ import BadgeArtwork from "@/components/BadgeArtwork";
 import GameNavigation from "@/components/GameNavigation";
 import HittiteIcon from "@/components/HittiteIcon";
 import ProfileAvatar from "@/components/ProfileAvatar";
+import TeamCrest from "@/components/TeamCrest";
 import { auth } from "@/lib/firebase";
 import { BADGES } from "@/lib/achievements";
 import { getThemeById } from "@/lib/themes";
@@ -380,12 +381,22 @@ function TabletContents({
         >
           {tablet.hardestMatch ? (
             <>
-              <h3 className={`text-2xl font-black ${theme.titleClass}`}>
-                {tablet.hardestMatch.homeTeam}{" "}
-                {tablet.hardestMatch.homeScore ?? "?"} —{" "}
-                {tablet.hardestMatch.awayScore ?? "?"}{" "}
-                {tablet.hardestMatch.awayTeam}
-              </h3>
+              <div
+                className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 text-lg font-black sm:text-2xl ${theme.titleClass}`}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <TeamCrest team={tablet.hardestMatch.homeTeam} size="sm" />
+                  <span className="truncate">{tablet.hardestMatch.homeTeam}</span>
+                </span>
+                <span className="whitespace-nowrap">
+                  {tablet.hardestMatch.homeScore ?? "?"} —{" "}
+                  {tablet.hardestMatch.awayScore ?? "?"}
+                </span>
+                <span className="flex min-w-0 items-center justify-end gap-2 text-right">
+                  <span className="truncate">{tablet.hardestMatch.awayTeam}</span>
+                  <TeamCrest team={tablet.hardestMatch.awayTeam} size="sm" />
+                </span>
+              </div>
               <p className={`mt-3 ${theme.textClass}`}>
                 {tablet.hardestMatch.predictionCount} tahminden yalnızca{" "}
                 {tablet.hardestMatch.correctCount} tanesi doğru.

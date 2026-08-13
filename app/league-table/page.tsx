@@ -489,8 +489,9 @@ function PlayerLeaderboard({
               />
               <div className="min-w-0 flex-1">
                 <p className={`truncate font-black ${theme.textClass}`}>{player.name}</p>
-                <p className={`mt-0.5 truncate text-xs ${theme.mutedTextClass}`}>
-                  {player.team}
+                <p className={`mt-0.5 flex items-center gap-1.5 truncate text-xs ${theme.mutedTextClass}`}>
+                  <TeamCrest team={player.team} size="xs" />
+                  <span className="truncate">{player.team}</span>
                 </p>
               </div>
               <span className={`whitespace-nowrap font-black ${theme.titleClass}`}>

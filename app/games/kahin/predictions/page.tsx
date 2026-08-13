@@ -491,19 +491,22 @@ function TeamSelect({
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-black">{label}</span>
-      <select
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border px-4 py-3 disabled:opacity-60"
-      >
-        <option value="">Takım seç</option>
-        {KAHIN_TEAMS.map((team) => (
-          <option key={team} value={team}>
-            {team}
-          </option>
-        ))}
-      </select>
+      <span className="flex items-center gap-2">
+        {value && <TeamCrest team={value} size="sm" />}
+        <select
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+          className="min-w-0 flex-1 rounded-xl border px-4 py-3 disabled:opacity-60"
+        >
+          <option value="">Takım seç</option>
+          {KAHIN_TEAMS.map((team) => (
+            <option key={team} value={team}>
+              {team}
+            </option>
+          ))}
+        </select>
+      </span>
     </label>
   );
 }

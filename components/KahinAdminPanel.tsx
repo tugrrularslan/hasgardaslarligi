@@ -14,6 +14,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import HittiteIcon from "@/components/HittiteIcon";
+import TeamCrest from "@/components/TeamCrest";
 import { db } from "@/lib/firebase";
 import {
   calculateKahinScore,
@@ -362,10 +363,13 @@ export default function KahinAdminPanel({
                 visiblePlayers.slice(0, 80).map((player) => (
                   <p
                     key={`${player.name}-${player.team}`}
-                    className="rounded-lg px-3 py-2 text-sm font-bold"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold"
                   >
-                    {player.name}
-                    {player.team ? ` — ${player.team}` : ""}
+                    {player.team && <TeamCrest team={player.team} size="xs" />}
+                    <span className="truncate">
+                      {player.name}
+                      {player.team ? ` — ${player.team}` : ""}
+                    </span>
                   </p>
                 ))
               ) : (
@@ -413,7 +417,10 @@ export default function KahinAdminPanel({
                   <span className="hg-title text-center font-black">
                     {index + 1}
                   </span>
-                  <span className="truncate font-bold">{team}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <TeamCrest team={team} size="sm" />
+                    <span className="truncate font-bold">{team}</span>
+                  </span>
                   <span className="flex gap-1">
                     <button
                       type="button"

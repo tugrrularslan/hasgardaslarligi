@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { resolveKahinTeamName } from "@/lib/kahin";
 
 export const revalidate = 3_600;
 export const dynamic = "force-dynamic";
@@ -14,8 +15,20 @@ type EspnAthlete = {
 
 function decodeName(value: string): string {
   return value
+    .replace(/&#x([\da-f]+);/gi, (_, code) =>
+      String.fromCodePoint(Number.parseInt(code, 16)),
+    )
     .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
-    .replace(/&amp;/g, "&")
+    .replace(/&(amp|apos|quot|nbsp);/g, (_, entity) => {
+      const entities: Record<string, string> = {
+        amp: "&",
+        apos: "'",
+        quot: '"',
+        nbsp: " ",
+      };
+
+      return entities[entity];
+    })
     .trim();
 }
 
@@ -45,21 +58,29 @@ export async function GET(request: NextRequest) {
 
     const rosters = await Promise.all(
       teams.map(async (team) => {
-        const rosterResponse = await fetch(
-          `https://site.api.espn.com/apis/site/v2/sports/soccer/tur.1/teams/${team.id}/roster`,
-          fetchOptions,
-        );
+        try {
+          const rosterResponse = await fetch(
+            `https://site.api.espn.com/apis/site/v2/sports/soccer/tur.1/teams/${team.id}/roster`,
+            fetchOptions,
+          );
 
-        if (!rosterResponse.ok) return [];
+          if (!rosterResponse.ok) return [];
 
-        const rosterData = (await rosterResponse.json()) as {
-          athletes?: EspnAthlete[];
-        };
+          const rosterData = (await rosterResponse.json()) as {
+            athletes?: EspnAthlete[];
+          };
 
-        return (rosterData.athletes ?? [])
-          .map((athlete) => decodeName(athlete.displayName ?? ""))
-          .filter(Boolean)
-          .map((name) => ({ name, team: team.displayName }));
+          return (rosterData.athletes ?? [])
+            .map((athlete) => decodeName(athlete.displayName ?? ""))
+            .filter(Boolean)
+            .map((name) => ({
+              name,
+              team: resolveKahinTeamName(team.displayName),
+            }));
+        } catch (error) {
+          console.error(`${team.displayName} kadrosu alınamadı:`, error);
+          return [];
+        }
       }),
     );
 

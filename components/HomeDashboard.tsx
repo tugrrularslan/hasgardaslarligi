@@ -501,9 +501,12 @@ function MissingMatchList({ matches }: { matches: MatchPreview[] }) {
   return (
     <>
       Eksik maçlar: {visibleMatches.map((match, index) => (
-        <span key={match.id}>
+        <span key={match.id} className="inline-flex items-center gap-1">
           {index > 0 && " · "}
-          {match.homeTeam} – {match.awayTeam}
+          <TeamCrest team={match.homeTeam} size="xs" />
+          {match.homeTeam} –
+          <TeamCrest team={match.awayTeam} size="xs" />
+          {match.awayTeam}
         </span>
       ))}
       {remainingCount > 0 && ` · +${remainingCount} maç daha`}
