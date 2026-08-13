@@ -6,10 +6,15 @@ export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   const authorization = request.headers.get("authorization");
-  if (
-    !process.env.CRON_SECRET ||
-    authorization !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json(
+      { success: false, error: "CRON_SECRET ortam değişkeni eksik." },
+      { status: 503 },
+    );
+  }
+
+  if (authorization !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json(
       { success: false, error: "Yetkisiz istek." },
       { status: 401 },
