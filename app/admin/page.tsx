@@ -45,8 +45,19 @@ type GoalEventInput = {
 
 type NotificationTarget =
   | "/"
+  | "/games"
+  | "/league-table"
+  | "/rankings"
   | "/predictions"
   | "/standings"
+  | "/statistics"
+  | "/games/league-prediction"
+  | "/games/league-prediction/tablet"
+  | "/games/league-prediction/rules"
+  | "/games/kahin"
+  | "/games/kahin/predictions"
+  | "/games/kahin/standings"
+  | "/games/kahin/rules"
   | "/profile"
   | "/themes"
   | "custom";
@@ -1996,11 +2007,39 @@ export default function AdminPage() {
                 }
                 className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none focus:border-blue-500"
               >
-                <option value="/">Ana Sayfa</option>
-                <option value="/predictions">Tahminler</option>
-                <option value="/standings">Puan Durumu</option>
-                <option value="/profile">Profil</option>
-                <option value="/themes">Tema Mağazası</option>
+                <optgroup label="Genel">
+                  <option value="/">Ana Sayfa</option>
+                  <option value="/games">Oyunlar</option>
+                  <option value="/league-table">Canlı Lig Puan Durumu</option>
+                  <option value="/rankings">Oyun Sıralamaları</option>
+                  <option value="/profile">Profil</option>
+                  <option value="/themes">Tema Mağazası</option>
+                </optgroup>
+
+                <optgroup label="Gardaş 1X2">
+                  <option value="/games/league-prediction">
+                    Oyun Ana Sayfası
+                  </option>
+                  <option value="/predictions">Tahminler</option>
+                  <option value="/standings">Sıralama</option>
+                  <option value="/statistics">İstatistikler</option>
+                  <option value="/games/league-prediction/tablet">
+                    Haftanın Tableti
+                  </option>
+                  <option value="/games/league-prediction/rules">
+                    Kurallar
+                  </option>
+                </optgroup>
+
+                <optgroup label="Kahin">
+                  <option value="/games/kahin">Oyun Ana Sayfası</option>
+                  <option value="/games/kahin/predictions">
+                    Sezon Tahminleri
+                  </option>
+                  <option value="/games/kahin/standings">Sıralama</option>
+                  <option value="/games/kahin/rules">Kurallar</option>
+                </optgroup>
+
                 <option value="custom">Özel site içi bağlantı</option>
               </select>
             </div>
