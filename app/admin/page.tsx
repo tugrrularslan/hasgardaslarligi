@@ -789,7 +789,7 @@ export default function AdminPage() {
       });
 
       setMessage(
-        `${results.length} maçın skoru ve golcüleri otomatik getirildi. Asistleri tamamlayıp sonucu kaydet.`,
+        `${results.length} maçın skoru ve golcüleri otomatik getirildi. Gol detaylarını kontrol edip sonucu kaydedebilirsin.`,
       );
     } catch (error) {
       console.error(error);
@@ -1525,11 +1525,11 @@ export default function AdminPage() {
     if (
       goalEvents.length !== expectedGoalCount ||
       goalEvents.some(
-        (event) => !event.scorer.trim() || !event.assister.trim(),
+        (event) => !event.scorer.trim(),
       )
     ) {
       setMessage(
-        "Skora karşılık gelen her gol için golü atan ve asist yapan oyuncuyu gir.",
+        "Skora karşılık gelen her gol için golü atan oyuncuyu gir.",
       );
       return;
     }
@@ -1560,7 +1560,7 @@ export default function AdminPage() {
         goalEvents: goalEvents.map((event) => ({
           team: event.side === "home" ? match.homeTeam : match.awayTeam,
           scorer: event.scorer.trim(),
-          assister: event.assister.trim(),
+          assister: event.assister.trim() || null,
         })),
         status: "finished",
         pointsCalculated: false,
@@ -2769,7 +2769,7 @@ export default function AdminPage() {
                               </div>
 
                               <p className="mt-1 text-xs text-zinc-500">
-                                Her gol için golü atan ve asist yapan oyuncu zorunludur.
+                                Her gol için golü atan oyuncu zorunludur; asist isteğe bağlıdır. Geçmiş bir maçtaki asisti silmek için “Asist yok” seçeneğini kullanıp sonucu güncelleyebilirsin.
                               </p>
 
                               {goalEvents.length > 0 ? (
@@ -2811,8 +2811,7 @@ export default function AdminPage() {
                                           disabled={
                                             savingThisResult ||
                                             deletingThisMatch ||
-                                            updatingPlayers ||
-                                            teamPlayers.length === 0
+                                            updatingPlayers
                                           }
                                           className="w-full rounded-lg border border-zinc-700 bg-black px-3 py-2 text-sm outline-none focus:border-yellow-500 disabled:opacity-50"
                                         >
@@ -2856,7 +2855,7 @@ export default function AdminPage() {
                                           <option value="">
                                             {updatingPlayers
                                               ? "Futbolcular senkronize ediliyor..."
-                                              : "Asisti yapan oyuncuyu seç"}
+                                              : "Asist yok"}
                                           </option>
                                           {!hasAssister && event.assister && (
                                             <option value={event.assister}>
