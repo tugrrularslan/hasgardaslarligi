@@ -9,6 +9,16 @@ type PlayerPortraitProps = {
   className?: string;
 };
 
+function initials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0] ?? "")
+    .join("")
+    .toLocaleUpperCase("tr-TR");
+}
+
 export default function PlayerPortrait({
   name,
   team,
@@ -24,7 +34,7 @@ export default function PlayerPortrait({
     setPhotoFailed(false);
 
     void fetch(
-      `/api/player-photo?name=${encodeURIComponent(name)}&team=${encodeURIComponent(team)}`,
+      `/api/player-photo?name=${encodeURIComponent(name)}&team=${encodeURIComponent(team)}&v=4`,
       { signal: controller.signal },
     )
       .then(async (response) => {
@@ -46,9 +56,9 @@ export default function PlayerPortrait({
     return (
       <span
         aria-label={`${name} fotoÄŸrafÄ±`}
-        className={`hg-card-soft inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border ${className}`}
+        className={`hg-card-soft inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full border text-[0.65rem] font-black tracking-tight ${className}`}
       >
-        <HittiteIcon name="user" size="xs" />
+        {initials(name) || <HittiteIcon name="user" size="xs" />}
       </span>
     );
   }
