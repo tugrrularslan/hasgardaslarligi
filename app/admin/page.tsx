@@ -820,7 +820,7 @@ export default function AdminPage() {
           cache: "no-store",
         });
       } else {
-        response = await fetch("/api/kahin/players", { cache: "no-store" });
+        response = await fetch("/api/players", { cache: "no-store" });
       }
 
       const data = (await response.json()) as Partial<PlayerRosterResponse>;
@@ -2906,6 +2906,7 @@ export default function AdminPage() {
               user={user}
               seasonId={seasonId}
               seasonName={seasonName}
+              onRosterChanged={setLeaguePlayers}
             />
           )}
         </CollapsiblePanel>

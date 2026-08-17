@@ -155,7 +155,6 @@ export type KahinSettings = {
   seasonId: string;
   seasonName: string;
   deadline: Date | null;
-  customPlayers: KahinPlayer[];
   resultsPublished: boolean;
 };
 
@@ -163,7 +162,6 @@ export const DEFAULT_KAHIN_SETTINGS: KahinSettings = {
   seasonId: DEFAULT_SEASON_ID,
   seasonName: DEFAULT_SEASON_NAME,
   deadline: new Date("2026-08-14T21:00:00+03:00"),
-  customPlayers: [],
   resultsPublished: false,
 };
 

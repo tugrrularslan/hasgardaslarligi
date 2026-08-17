@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import {
   collection,
@@ -30,11 +30,13 @@ import {
   type KahinPlayer,
   type KahinResults,
 } from "@/lib/kahin";
+import type { LeaguePlayerRecord } from "@/lib/player-sync-types";
 
 type KahinAdminPanelProps = {
   user: User;
   seasonId: string;
   seasonName: string;
+  onRosterChanged?: (players: LeaguePlayerRecord[]) => void;
 };
 
 function listToText(value: unknown): string {
@@ -61,6 +63,7 @@ export default function KahinAdminPanel({
   user,
   seasonId,
   seasonName,
+  onRosterChanged,
 }: KahinAdminPanelProps) {
   const [deadline, setDeadline] = useState(() =>
     DEFAULT_KAHIN_SETTINGS.deadline
@@ -76,10 +79,10 @@ export default function KahinAdminPanel({
   const [officialPlayers, setOfficialPlayers] = useState<KahinPlayer[]>(
     KAHIN_FALLBACK_PLAYERS,
   );
-  const [customPlayers, setCustomPlayers] = useState<KahinPlayer[]>([]);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [newPlayerTeam, setNewPlayerTeam] = useState("");
   const [playerSearch, setPlayerSearch] = useState("");
+  const [addingPlayer, setAddingPlayer] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [message, setMessage] = useState("");
@@ -91,7 +94,6 @@ export default function KahinAdminPanel({
       if (data.deadline instanceof Timestamp) {
         setDeadline(toDateTimeLocal(data.deadline.toDate()));
       }
-      setCustomPlayers(sanitizeKahinPlayers(data.customPlayerOptions));
       if (data.results && typeof data.results === "object") {
         const results = data.results as Record<string, unknown>;
         setFinalOrder(sanitizeLeagueOrder(results.leagueOrder));
@@ -107,9 +109,53 @@ export default function KahinAdminPanel({
   useEffect(() => {
     let active = true;
 
+    async function migrateLegacyPlayers() {
+      try {
+        const idToken = await user.getIdToken();
+        const response = await fetch("/api/admin/players", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "migrate-kahin" }),
+        });
+        const data = (await response.json()) as {
+          success?: boolean;
+          migratedCount?: number;
+          skippedCount?: number;
+          players?: LeaguePlayerRecord[];
+        };
+
+        if (!active || !response.ok || !data.success) return;
+        if (data.players?.length) {
+          setOfficialPlayers(sanitizeKahinPlayers(data.players));
+          onRosterChanged?.(data.players);
+        }
+        if (data.migratedCount || data.skippedCount) {
+          setMessage(
+            data.skippedCount
+              ? `${data.migratedCount ?? 0} eski Kahin futbolcusu ortak listeye taşındı. ${data.skippedCount} futbolcunun takımı olmadığı için ayrıca eklenmesi gerekiyor.`
+              : `${data.migratedCount} eski Kahin futbolcusu ortak listeye taşındı.`,
+          );
+        }
+      } catch (error) {
+        console.error("Eski Kahin futbolcuları taşınamadı:", error);
+      }
+    }
+
+    void migrateLegacyPlayers();
+    return () => {
+      active = false;
+    };
+  }, [onRosterChanged, user]);
+
+  useEffect(() => {
+    let active = true;
+
     async function loadOfficialPlayers() {
       try {
-        const response = await fetch("/api/kahin/players");
+        const response = await fetch("/api/players");
         const data = (await response.json()) as {
           success?: boolean;
           players?: KahinPlayer[];
@@ -129,10 +175,7 @@ export default function KahinAdminPanel({
     };
   }, []);
 
-  const playerOptions = useMemo(
-    () => mergeKahinPlayers(officialPlayers, customPlayers),
-    [customPlayers, officialPlayers],
-  );
+  const playerOptions = officialPlayers;
   const normalizedPlayerSearch = normalizeKahinSearch(playerSearch);
   const visiblePlayers = playerOptions.filter((player) => {
     if (!normalizedPlayerSearch) return false;
@@ -164,7 +207,6 @@ export default function KahinAdminPanel({
           deadline: deadline
             ? Timestamp.fromDate(new Date(deadline))
             : null,
-          customPlayerOptions: customPlayers,
           scorerOptions: deleteField(),
           assistOptions: deleteField(),
           goalkeeperOptions: deleteField(),
@@ -182,12 +224,17 @@ export default function KahinAdminPanel({
     }
   }
 
-  function addPlayer() {
+  async function addPlayer() {
     const name = newPlayerName.trim();
     const team = newPlayerTeam.trim();
 
     if (!name) {
       setMessage("Önce futbolcunun adını yaz.");
+      return;
+    }
+
+    if (!team) {
+      setMessage("Futbolcunun takımını seç.");
       return;
     }
 
@@ -197,14 +244,57 @@ export default function KahinAdminPanel({
         player.team.localeCompare(team, "tr-TR", { sensitivity: "accent" }) === 0,
     );
     if (duplicate) {
-      setMessage("Bu futbolcu zaten listede.");
+      setMessage("Bu futbolcu ortak listede zaten var.");
       return;
     }
 
-    setCustomPlayers((current) => mergeKahinPlayers(current, [{ name, team }]));
-    setNewPlayerName("");
-    setNewPlayerTeam("");
-    setMessage("Futbolcu eklendi. Kalıcı olması için Kahin ayarlarını kaydet.");
+    setAddingPlayer(true);
+    setMessage("");
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/admin/players", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, team }),
+      });
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        created?: boolean;
+        player?: LeaguePlayerRecord;
+        players?: LeaguePlayerRecord[];
+      };
+
+      if (!response.ok || !data.success || !data.player) {
+        throw new Error(data.error ?? "Futbolcu ortak listeye eklenemedi.");
+      }
+
+      const players = data.players?.length
+        ? data.players
+        : mergeKahinPlayers(officialPlayers, [data.player]);
+      setOfficialPlayers(sanitizeKahinPlayers(players));
+      onRosterChanged?.(players);
+      setNewPlayerName("");
+      setNewPlayerTeam("");
+      setMessage(
+        data.created
+          ? `${data.player.name}, ${data.player.team} kadrosuna eklendi. Kahin ve maç istatistiklerinde hemen kullanılabilir.`
+          : `${data.player.name} ortak listede zaten hazır.`,
+      );
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Futbolcu ortak listeye eklenemedi.",
+      );
+    } finally {
+      setAddingPlayer(false);
+    }
   }
 
   async function calculateResults() {
@@ -313,9 +403,9 @@ export default function KahinAdminPanel({
         <div className="hg-card-soft mt-5 rounded-2xl border p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
-              <p className="font-black">Futbolcu Havuzu</p>
+              <p className="font-black">Ortak Futbolcu Havuzu</p>
               <p className="hg-muted mt-1 text-sm">
-                2026-27 kadroları otomatik yüklenir. Listede olmayan bir futbolcuyu buradan ekleyebilirsin.
+                Bu tek liste Kahin seçimlerinde ve maçların gol/asist kayıtlarında kullanılır. Kadrolar üstteki senkronizasyon düğmesiyle güncellenir.
               </p>
             </div>
             <span className="hg-badge rounded-full px-3 py-1 text-xs font-black">
@@ -331,19 +421,25 @@ export default function KahinAdminPanel({
               placeholder="Futbolcu adı"
               className="w-full rounded-xl border px-4 py-3"
             />
-            <input
-              type="text"
+            <select
               value={newPlayerTeam}
               onChange={(event) => setNewPlayerTeam(event.target.value)}
-              placeholder="Takımı (isteğe bağlı)"
               className="w-full rounded-xl border px-4 py-3"
-            />
+            >
+              <option value="">Takım seç</option>
+              {KAHIN_TEAMS.map((team) => (
+                <option key={team} value={team}>
+                  {team}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
-              onClick={addPlayer}
-              className="hg-secondary rounded-xl px-4 py-3 font-black"
+              onClick={() => void addPlayer()}
+              disabled={addingPlayer}
+              className="hg-secondary rounded-xl px-4 py-3 font-black disabled:opacity-50"
             >
-              Futbolcu Ekle
+              {addingPlayer ? "Ekleniyor..." : "Ortak Listeye Ekle"}
             </button>
           </div>
 

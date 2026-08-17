@@ -21,7 +21,6 @@ import {
   isKahinPredictionComplete,
   KAHIN_FALLBACK_PLAYERS,
   KAHIN_TEAMS,
-  mergeKahinPlayers,
   normalizeKahinSearch,
   sanitizeKahinPrediction,
   sanitizeKahinPlayers,
@@ -58,7 +57,7 @@ export default function KahinPredictionsPage() {
 
     async function loadOfficialPlayers() {
       try {
-        const response = await fetch("/api/kahin/players");
+        const response = await fetch("/api/players");
         const data = (await response.json()) as {
           success?: boolean;
           players?: KahinPlayer[];
@@ -134,7 +133,6 @@ export default function KahinPredictionsPage() {
                 ? data.seasonName
                 : DEFAULT_KAHIN_SETTINGS.seasonName,
             deadline,
-            customPlayers: sanitizeKahinPlayers(data.customPlayerOptions),
             resultsPublished: data.resultsPublished === true,
           });
           setLoading(false);
@@ -173,10 +171,7 @@ export default function KahinPredictionsPage() {
     () => isKahinPredictionComplete(prediction),
     [prediction],
   );
-  const playerOptions = useMemo(
-    () => mergeKahinPlayers(officialPlayers, settings.customPlayers),
-    [officialPlayers, settings.customPlayers],
-  );
+  const playerOptions = officialPlayers;
 
   function updateField<K extends keyof KahinPrediction>(
     field: K,

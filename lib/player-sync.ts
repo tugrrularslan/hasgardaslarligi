@@ -2,6 +2,7 @@ import "server-only";
 
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
 import {
   KAHIN_MANUAL_PLAYERS,
@@ -91,14 +92,70 @@ function sortPlayers(players: LeaguePlayerRecord[]): LeaguePlayerRecord[] {
 
 function applyManualOverrides(
   players: LeaguePlayerRecord[],
+  manualPlayers: LeaguePlayerRecord[],
 ): LeaguePlayerRecord[] {
   const manualNames = new Set(
-    KAHIN_MANUAL_PLAYERS.map((player) => normalizePlayerName(player.name)),
+    manualPlayers.map((player) => normalizePlayerName(player.name)),
   );
   return mergeKahinPlayers(
     players.filter((player) => !manualNames.has(normalizePlayerName(player.name))),
-    KAHIN_MANUAL_PLAYERS,
+    manualPlayers,
   );
+}
+
+function readCustomManualPlayers(value: unknown): LeaguePlayerRecord[] {
+  return sanitizeKahinPlayers(value).flatMap((player): LeaguePlayerRecord[] => {
+    const team = resolveKahinTeamName(player.team);
+    return KAHIN_TEAM_SET.has(team) ? [{ name: player.name, team }] : [];
+  });
+}
+
+function getConfiguredManualPlayers(value: unknown): LeaguePlayerRecord[] {
+  const bundledNames = new Set(
+    KAHIN_MANUAL_PLAYERS.map((player) => normalizePlayerName(player.name)),
+  );
+
+  return mergeKahinPlayers(
+    KAHIN_MANUAL_PLAYERS,
+    readCustomManualPlayers(value).filter(
+      (player) => !bundledNames.has(normalizePlayerName(player.name)),
+    ),
+  );
+}
+
+function normalizeManualPlayer(
+  value: Pick<LeaguePlayerRecord, "name" | "team">,
+): LeaguePlayerRecord {
+  const name = value.name.trim();
+  const team = resolveKahinTeamName(value.team);
+
+  if (!name) {
+    throw new Error("Futbolcu adı boş olamaz.");
+  }
+  if (name.length > 100) {
+    throw new Error("Futbolcu adı en fazla 100 karakter olabilir.");
+  }
+  if (!KAHIN_TEAM_SET.has(team)) {
+    throw new Error("Futbolcu için ligdeki geçerli bir takım seç.");
+  }
+
+  return { name, team };
+}
+
+function mergeCustomManualPlayers(
+  current: LeaguePlayerRecord[],
+  additions: LeaguePlayerRecord[],
+): LeaguePlayerRecord[] {
+  const playersByName = new Map<string, LeaguePlayerRecord>();
+
+  for (const player of current) {
+    playersByName.set(normalizePlayerName(player.name), player);
+  }
+  for (const player of additions) {
+    playersByName.set(normalizePlayerName(player.name), player);
+  }
+
+  return sortPlayers([...playersByName.values()]);
 }
 
 async function fetchProviderRosters(): Promise<ProviderRosterResult> {
@@ -327,10 +384,18 @@ function buildHealth(
   };
 }
 
-function readStoredPlayers(value: unknown): LeaguePlayerRecord[] {
-  return sanitizeKahinPlayers(value).filter((player) =>
-    KAHIN_TEAM_SET.has(resolveKahinTeamName(player.team)),
+function readStoredPlayers(
+  value: unknown,
+  manualPlayers: LeaguePlayerRecord[],
+): LeaguePlayerRecord[] {
+  const storedPlayers = sanitizeKahinPlayers(value).flatMap(
+    (player): LeaguePlayerRecord[] => {
+      const team = resolveKahinTeamName(player.team);
+      return KAHIN_TEAM_SET.has(team) ? [{ name: player.name, team }] : [];
+    },
   );
+
+  return applyManualOverrides(storedPlayers, manualPlayers);
 }
 
 function isPlayerSyncReport(value: unknown): value is PlayerSyncReport {
@@ -351,8 +416,18 @@ export async function getStoredPlayerRoster(): Promise<PlayerRosterResponse | nu
   if (!snapshot.exists) return null;
 
   const data = snapshot.data() ?? {};
-  const players = readStoredPlayers(data.players);
-  if (players.length === 0) return null;
+  const storedPlayers = sanitizeKahinPlayers(data.players).flatMap(
+    (player): LeaguePlayerRecord[] => {
+      const team = resolveKahinTeamName(player.team);
+      return KAHIN_TEAM_SET.has(team) ? [{ name: player.name, team }] : [];
+    },
+  );
+  if (storedPlayers.length === 0) return null;
+
+  const players = readStoredPlayers(
+    storedPlayers,
+    getConfiguredManualPlayers(data.manualPlayers),
+  );
 
   return {
     success: true,
@@ -371,6 +446,10 @@ export async function syncPlayerRoster(
   const startedAt = new Date().toISOString();
   const previousRoster = await getStoredPlayerRoster();
   const previousPlayers = previousRoster?.players ?? [];
+  const manualSnapshot = await PLAYER_ROSTER_DOCUMENT.get();
+  const manualPlayers = getConfiguredManualPlayers(
+    manualSnapshot.data()?.manualPlayers,
+  );
   const provider = await fetchProviderRosters();
   const failedTeams: FailedTeamSync[] = [];
   const fetchedPlayers: LeaguePlayerRecord[] = [];
@@ -396,7 +475,10 @@ export async function syncPlayerRoster(
     });
   }
 
-  const players = applyManualOverrides(mergeKahinPlayers(fetchedPlayers));
+  const players = applyManualOverrides(
+    mergeKahinPlayers(fetchedPlayers),
+    manualPlayers,
+  );
   const changes = computeChanges(previousPlayers, players);
   const health = buildHealth(players, provider.providerTeamCount, failedTeams);
   const suspiciousRemovalLimit = Math.max(
@@ -477,4 +559,104 @@ export async function syncPlayerRoster(
       ? undefined
       : "Oyuncu verisi sağlık kontrolünden geçemedi.",
   };
+}
+
+export async function addManualLeaguePlayer(
+  value: Pick<LeaguePlayerRecord, "name" | "team">,
+): Promise<{ player: LeaguePlayerRecord; created: boolean }> {
+  const player = normalizeManualPlayer(value);
+  const bundledPlayer = KAHIN_MANUAL_PLAYERS.find(
+    (item) => normalizePlayerName(item.name) === normalizePlayerName(player.name),
+  );
+
+  if (bundledPlayer) {
+    return {
+      player: { name: bundledPlayer.name, team: bundledPlayer.team },
+      created: false,
+    };
+  }
+
+  return adminDb.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(PLAYER_ROSTER_DOCUMENT);
+    const current = readCustomManualPlayers(snapshot.data()?.manualPlayers);
+    const existing = current.find(
+      (item) => normalizePlayerName(item.name) === normalizePlayerName(player.name),
+    );
+
+    if (existing && existing.team === player.team) {
+      return { player: existing, created: false };
+    }
+
+    transaction.set(
+      PLAYER_ROSTER_DOCUMENT,
+      {
+        manualPlayers: mergeCustomManualPlayers(
+          current.filter(
+            (item) =>
+              normalizePlayerName(item.name) !== normalizePlayerName(player.name),
+          ),
+          [player],
+        ),
+        manualPlayersUpdatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    return { player, created: true };
+  });
+}
+
+export async function migrateLegacyKahinPlayers(): Promise<{
+  migratedCount: number;
+  skippedCount: number;
+}> {
+  const legacySettings = adminDb.collection("settings").doc("kahin");
+
+  return adminDb.runTransaction(async (transaction) => {
+    const [rosterSnapshot, settingsSnapshot] = await Promise.all([
+      transaction.get(PLAYER_ROSTER_DOCUMENT),
+      transaction.get(legacySettings),
+    ]);
+    const legacyPlayers = sanitizeKahinPlayers(
+      settingsSnapshot.data()?.customPlayerOptions,
+    );
+    if (legacyPlayers.length === 0) {
+      return { migratedCount: 0, skippedCount: 0 };
+    }
+
+    const validPlayers: LeaguePlayerRecord[] = [];
+    let skippedCount = 0;
+    for (const legacyPlayer of legacyPlayers) {
+      try {
+        validPlayers.push(normalizeManualPlayer(legacyPlayer));
+      } catch {
+        skippedCount += 1;
+      }
+    }
+
+    const current = readCustomManualPlayers(
+      rosterSnapshot.data()?.manualPlayers,
+    );
+    const next = mergeCustomManualPlayers(current, validPlayers);
+    const migratedCount = next.length - current.length;
+
+    transaction.set(
+      PLAYER_ROSTER_DOCUMENT,
+      {
+        manualPlayers: next,
+        manualPlayersUpdatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+
+    if (skippedCount === 0) {
+      transaction.set(
+        legacySettings,
+        { customPlayerOptions: FieldValue.delete() },
+        { merge: true },
+      );
+    }
+
+    return { migratedCount, skippedCount };
+  });
 }
