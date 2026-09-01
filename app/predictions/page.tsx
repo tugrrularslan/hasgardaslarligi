@@ -35,6 +35,16 @@ type Match = {
   kickoff: Timestamp;
   predictionDeadline: Timestamp;
   status: "scheduled" | "finished";
+  homeScore: number | null;
+  awayScore: number | null;
+  goalEvents?: GoalEvent[];
+};
+
+type GoalEvent = {
+  team: string;
+  scorer: string;
+  assister?: string | null;
+  ownGoal?: boolean;
 };
 
 type PredictionMap = Record<string, PredictionValue>;
@@ -414,6 +424,7 @@ export default function PredictionsPage() {
                   <div className="space-y-4">
                     {weekMatches.map((match) => {
                       const closed = isPredictionClosed(match);
+                      const hasResult = hasMatchResult(match);
                       const selectedPrediction = predictions[match.id];
                       const savedPrediction = savedPredictions[match.id];
 
@@ -433,9 +444,15 @@ export default function PredictionsPage() {
                                 <TeamCrest team={match.homeTeam} size="md" />
                                 {match.homeTeam}
                                 <span
-                                  className={activeTheme.mutedTextClass}
+                                  className={
+                                    hasResult
+                                      ? activeTheme.titleClass
+                                      : activeTheme.mutedTextClass
+                                  }
                                 >
-                                  —
+                                  {hasResult
+                                    ? `${match.homeScore} - ${match.awayScore}`
+                                    : "—"}
                                 </span>
                                 <TeamCrest team={match.awayTeam} size="md" />
                                 {match.awayTeam}
@@ -450,9 +467,17 @@ export default function PredictionsPage() {
 
                             <StatusBadge
                               closed={closed}
+                              finished={match.status === "finished"}
                               theme={activeTheme}
                             />
                           </div>
+
+                          {hasResult && (
+                            <MatchResultDetails
+                              match={match}
+                              theme={activeTheme}
+                            />
+                          )}
 
                           <div className="grid grid-cols-3 gap-3">
                             <PredictionButton
@@ -584,11 +609,21 @@ function PredictionButton({
 
 function StatusBadge({
   closed,
+  finished,
   theme,
 }: {
   closed: boolean;
+  finished: boolean;
   theme: AppTheme;
 }) {
+  if (finished) {
+    return (
+      <span className="w-fit rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400">
+        Maç Tamamlandı
+      </span>
+    );
+  }
+
   if (closed) {
     return (
       <span className="w-fit rounded-full bg-red-500/10 px-3 py-1 text-xs font-bold text-red-400">
@@ -603,6 +638,127 @@ function StatusBadge({
     >
       Tahmin Açık
     </span>
+  );
+}
+
+function MatchResultDetails({
+  match,
+  theme,
+}: {
+  match: Match;
+  theme: AppTheme;
+}) {
+  const homeGoals = getGoalEventsForTeam(match.goalEvents, match.homeTeam);
+  const awayGoals = getGoalEventsForTeam(match.goalEvents, match.awayTeam);
+
+  return (
+    <section
+      className={`mb-5 rounded-2xl border p-4 ${theme.secondaryCardClass}`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className={`font-black ${theme.textClass}`}>Maç sonucu</p>
+        <span className={`text-lg font-black ${theme.titleClass}`}>
+          {match.homeScore} - {match.awayScore}
+        </span>
+      </div>
+
+      <p className={`mt-1 text-xs ${theme.mutedTextClass}`}>
+        Gol ve asist detayları
+      </p>
+
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <TeamGoalDetails
+          team={match.homeTeam}
+          goalEvents={homeGoals}
+          theme={theme}
+        />
+        <TeamGoalDetails
+          team={match.awayTeam}
+          goalEvents={awayGoals}
+          theme={theme}
+        />
+      </div>
+    </section>
+  );
+}
+
+function TeamGoalDetails({
+  team,
+  goalEvents,
+  theme,
+}: {
+  team: string;
+  goalEvents: GoalEvent[];
+  theme: AppTheme;
+}) {
+  return (
+    <div className={`rounded-xl border p-3 ${theme.cardClass}`}>
+      <p className={`flex items-center gap-2 text-sm font-black ${theme.textClass}`}>
+        <TeamCrest team={team} size="xs" />
+        <span className="truncate">{team}</span>
+      </p>
+
+      {goalEvents.length === 0 ? (
+        <p className={`mt-2 text-sm ${theme.mutedTextClass}`}>Gol yok</p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {goalEvents.map((goal, index) => {
+            const assister =
+              typeof goal.assister === "string" ? goal.assister.trim() : "";
+
+            return (
+              <li
+                key={`${goal.scorer}-${index}`}
+                className={`rounded-lg px-3 py-2 text-sm ${theme.secondaryCardClass}`}
+              >
+                <p className={`font-bold ${theme.textClass}`}>
+                  {goal.scorer}
+                  {goal.ownGoal && (
+                    <span className={`ml-2 text-xs font-semibold ${theme.mutedTextClass}`}>
+                      (k.k.)
+                    </span>
+                  )}
+                </p>
+                {goal.ownGoal ? (
+                  <p className={`mt-0.5 text-xs ${theme.mutedTextClass}`}>
+                    Kendi kalesine gol
+                  </p>
+                ) : (
+                  assister && (
+                    <p className={`mt-0.5 text-xs ${theme.mutedTextClass}`}>
+                      Asist: {assister}
+                    </p>
+                  )
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function hasMatchResult(match: Match): boolean {
+  return (
+    match.status === "finished" &&
+    typeof match.homeScore === "number" &&
+    typeof match.awayScore === "number"
+  );
+}
+
+function getGoalEventsForTeam(
+  goalEvents: GoalEvent[] | undefined,
+  team: string,
+): GoalEvent[] {
+  if (!Array.isArray(goalEvents)) return [];
+
+  return goalEvents.filter(
+    (goal) =>
+      Boolean(goal) &&
+      goal.team === team &&
+      typeof goal.scorer === "string" &&
+      goal.scorer.trim(),
   );
 }
 
