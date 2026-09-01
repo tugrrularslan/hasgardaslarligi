@@ -40,12 +40,14 @@ type GoalEvent = {
   team: string;
   scorer: string;
   assister?: string | null;
+  ownGoal?: boolean;
 };
 
 type GoalEventInput = {
   side: "home" | "away";
   scorer: string;
   assister: string;
+  ownGoal: boolean;
 };
 
 type NotificationTarget =
@@ -1498,6 +1500,29 @@ export default function AdminPage() {
     });
   }
 
+  function handleOwnGoalChange(
+    matchId: string,
+    index: number,
+    ownGoal: boolean,
+  ) {
+    setGoalEventInputs((current) => {
+      const events = current[matchId] ?? [];
+
+      return {
+        ...current,
+        [matchId]: events.map((event, eventIndex) =>
+          eventIndex === index
+            ? {
+                ...event,
+                ownGoal,
+                assister: ownGoal ? "" : event.assister,
+              }
+            : event,
+        ),
+      };
+    });
+  }
+
   async function handleSaveResult(match: Match) {
     const score = scoreInputs[match.id];
 
@@ -1561,6 +1586,7 @@ export default function AdminPage() {
           team: event.side === "home" ? match.homeTeam : match.awayTeam,
           scorer: event.scorer.trim(),
           assister: event.assister.trim() || null,
+          ownGoal: event.ownGoal,
         })),
         status: "finished",
         pointsCalculated: false,
@@ -2775,12 +2801,23 @@ export default function AdminPage() {
                               {goalEvents.length > 0 ? (
                                 <div className="mt-4 space-y-3">
                                   {goalEvents.map((event, index) => {
-                                    const eventTeam =
+                                    const scoringTeam =
                                       event.side === "home"
                                         ? match.homeTeam
                                         : match.awayTeam;
-                                    const teamPlayers =
+                                    const ownGoalTeam =
                                       event.side === "home"
+                                        ? match.awayTeam
+                                        : match.homeTeam;
+                                    const scorerTeam = event.ownGoal
+                                      ? ownGoalTeam
+                                      : scoringTeam;
+                                    const teamPlayers =
+                                      event.ownGoal
+                                        ? event.side === "home"
+                                          ? awayPlayers
+                                          : homePlayers
+                                        : event.side === "home"
                                         ? homePlayers
                                         : awayPlayers;
                                     const hasScorer = teamPlayers.some(
@@ -2795,9 +2832,31 @@ export default function AdminPage() {
                                         key={`${event.side}-${index}`}
                                         className="grid gap-2 rounded-xl border border-zinc-800 bg-zinc-950/70 p-3 sm:grid-cols-[minmax(8rem,.7fr)_minmax(0,1fr)_minmax(0,1fr)]"
                                       >
-                                        <span className="self-center truncate text-sm font-bold text-yellow-300">
-                                          {eventTeam}
-                                        </span>
+                                        <div className="self-center">
+                                          <span className="block truncate text-sm font-bold text-yellow-300">
+                                            {scoringTeam}
+                                          </span>
+                                          <label className="mt-1 flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
+                                            <input
+                                              type="checkbox"
+                                              checked={event.ownGoal}
+                                              onChange={(inputEvent) =>
+                                                handleOwnGoalChange(
+                                                  match.id,
+                                                  index,
+                                                  inputEvent.target.checked,
+                                                )
+                                              }
+                                              disabled={
+                                                savingThisResult ||
+                                                deletingThisMatch ||
+                                                updatingPlayers
+                                              }
+                                              className="h-4 w-4 rounded border-zinc-600 bg-black text-yellow-500 focus:ring-yellow-500 disabled:opacity-50"
+                                            />
+                                            Rakip kendi kalesine attı
+                                          </label>
+                                        </div>
                                         <select
                                           value={event.scorer}
                                           onChange={(inputEvent) =>
@@ -2818,7 +2877,9 @@ export default function AdminPage() {
                                           <option value="">
                                             {updatingPlayers
                                               ? "Futbolcular senkronize ediliyor..."
-                                              : "Golü atan oyuncuyu seç"}
+                                              : event.ownGoal
+                                                ? `${scorerTeam} oyuncusunu seç`
+                                                : "Golü atan oyuncuyu seç"}
                                           </option>
                                           {!hasScorer && event.scorer && (
                                             <option value={event.scorer}>
@@ -2848,12 +2909,15 @@ export default function AdminPage() {
                                             savingThisResult ||
                                             deletingThisMatch ||
                                             updatingPlayers ||
+                                            event.ownGoal ||
                                             teamPlayers.length === 0
                                           }
                                           className="w-full rounded-lg border border-zinc-700 bg-black px-3 py-2 text-sm outline-none focus:border-yellow-500 disabled:opacity-50"
                                         >
                                           <option value="">
-                                            {updatingPlayers
+                                            {event.ownGoal
+                                              ? "Kendi kale golünde asist olmaz"
+                                              : updatingPlayers
                                               ? "Futbolcular senkronize ediliyor..."
                                               : "Asist yok"}
                                           </option>
@@ -3238,6 +3302,7 @@ function sanitizeGoalEvents(
       side: event.team === match.awayTeam ? "away" : "home",
       scorer: event.scorer,
       assister: typeof event.assister === "string" ? event.assister : "",
+      ownGoal: event.ownGoal === true,
     }));
 }
 
@@ -3255,7 +3320,12 @@ function reconcileGoalEventInputs(
     );
 
     return Array.from({ length: Math.max(0, count) }, (_, index) =>
-      existingForSide[index] ?? { side, scorer: "", assister: "" },
+      existingForSide[index] ?? {
+        side,
+        scorer: "",
+        assister: "",
+        ownGoal: false,
+      },
     );
   };
 

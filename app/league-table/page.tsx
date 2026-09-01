@@ -41,6 +41,7 @@ type GoalEvent = {
   team: string;
   scorer: string;
   assister: string | null;
+  ownGoal: boolean;
 };
 
 type PlayerLeaderboardEntry = {
@@ -193,6 +194,7 @@ export default function LeagueTablePage() {
                   typeof goal.assister === "string" && goal.assister.trim()
                     ? goal.assister.trim()
                     : null,
+                ownGoal: goal.ownGoal === true,
               },
             ];
           });
@@ -516,6 +518,8 @@ function createPlayerLeaderboard(
   const players = new Map<string, PlayerLeaderboardEntry>();
 
   for (const goal of goalEvents) {
+    if (goal.ownGoal) continue;
+
     const name = field === "scorer" ? goal.scorer : goal.assister;
     if (!name) continue;
 
