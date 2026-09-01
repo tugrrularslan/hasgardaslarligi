@@ -1,5 +1,7 @@
 rules_version = '2';
 
+rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -90,6 +92,55 @@ service cloud.firestore {
         && (usernameFieldsUnchanged() || validOneTimeUsernameChange());
     }
 
+    function validBadgeId(value) {
+      return value == "devrik-lider"
+        || value == "gonullerin-sampiyonu"
+        || value == "ilk-kan"
+        || value == "hat-trick"
+        || value == "besibirlik"
+        || value == "gobel-ne-biliyo-la"
+        || value == "yaniyo"
+        || value == "makine"
+        || value == "esas-gobel"
+        || value == "ilk-zafer"
+        || value == "seri-sampiyon"
+        || value == "hafta-canavari"
+        || value == "sadik-gardas"
+        || value == "sezon-emektari";
+    }
+
+    function validOwnerBadgePreferenceUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "selectedBadges",
+          "activeTitle",
+          "badgesUpdatedAt",
+          "updatedAt"
+        ])
+        && request.resource.data.get("selectedBadges", []) is list
+        && request.resource.data.get("selectedBadges", []).size() <= 3
+        && request.resource.data.get("selectedBadges", []).toSet().hasOnly([
+          "devrik-lider",
+          "gonullerin-sampiyonu",
+          "ilk-kan",
+          "hat-trick",
+          "besibirlik",
+          "gobel-ne-biliyo-la",
+          "yaniyo",
+          "makine",
+          "esas-gobel",
+          "ilk-zafer",
+          "seri-sampiyon",
+          "hafta-canavari",
+          "sadik-gardas",
+          "sezon-emektari"
+        ])
+        && request.resource.data.get("activeTitle", "") is string
+        && (
+          request.resource.data.get("activeTitle", "") == ""
+          || validBadgeId(request.resource.data.get("activeTitle", ""))
+        );
+    }
+
     match /settings/{settingId} {
       allow read: if signedIn();
       allow create, update, delete: if isAdmin();
@@ -100,7 +151,11 @@ service cloud.firestore {
       allow create: if isOwner(userId)
         && request.resource.data.get("isAdmin", false) == false;
       allow update: if isAdmin()
-        || (isOwner(userId) && (validOwnerProfileUpdate() || validOwnerKahinPredictionUpdate()));
+        || (isOwner(userId) && (
+          validOwnerProfileUpdate()
+          || validOwnerBadgePreferenceUpdate()
+          || validOwnerKahinPredictionUpdate()
+        ));
       allow delete: if isAdmin();
     }
 

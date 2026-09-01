@@ -23,6 +23,9 @@ import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 import {
   getActiveTitleBadge,
   getSelectedBadgeDefinitions,
+  isValidBadgeId,
+  MAX_SELECTED_BADGES,
+  mergeUnlockedBadgeIds,
   sanitizeBadgeIds,
   sanitizeSelectedBadges,
   type BadgeDefinition,
@@ -163,6 +166,24 @@ export default function StandingsPage() {
           (userDocument) => {
             const data = userDocument.data();
 
+            // Profil sayfası bazı rozetleri kullanıcının güncel başarı
+            // verilerinden hesaplayabilir. Vitrinde seçilen geçerli rozetler
+            // henüz eski unlockedBadges alanına yazılmamış olsa bile burada
+            // görünür kalmalıdır.
+            const selectedBadgeIds = sanitizeBadgeIds(
+              data.selectedBadges,
+              MAX_SELECTED_BADGES,
+            );
+            const activeTitleId =
+              typeof data.activeTitle === "string" &&
+              isValidBadgeId(data.activeTitle)
+                ? data.activeTitle
+                : "";
+            const displayableBadges = mergeUnlockedBadgeIds(
+              data.unlockedBadges,
+              [...selectedBadgeIds, activeTitleId],
+            );
+
             const seasonStats =
               data.seasonStats && typeof data.seasonStats === "object"
                 ? data.seasonStats[activeSeasonId]
@@ -213,17 +234,16 @@ export default function StandingsPage() {
                     ? data.weeklyWins
                     : 0,
 
-              unlockedBadges: sanitizeBadgeIds(data.unlockedBadges),
+              unlockedBadges: displayableBadges,
 
               selectedBadges: sanitizeSelectedBadges(
-                data.selectedBadges,
-                sanitizeBadgeIds(data.unlockedBadges)
+                selectedBadgeIds,
+                displayableBadges,
               ),
 
               activeTitle:
-                typeof data.activeTitle === "string" &&
-                sanitizeBadgeIds(data.unlockedBadges).includes(data.activeTitle)
-                  ? data.activeTitle
+                activeTitleId && displayableBadges.includes(activeTitleId)
+                  ? activeTitleId
                   : "",
 
               createdAt:

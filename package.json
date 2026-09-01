@@ -6,6 +6,7 @@
     "dev": "next dev",
     "test": "npm run test:data-health",
     "test:data-health": "node --no-warnings --experimental-strip-types scripts/data-health-check.mjs",
+    "deploy:firestore-rules": "firebase deploy --only firestore:rules --project has-gardaslar-ligi",
     "build": "npm run test:data-health && next build --webpack",
     "start": "next start"
   },
