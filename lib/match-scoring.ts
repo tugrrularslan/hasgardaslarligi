@@ -4,6 +4,7 @@ import {
   Timestamp,
 } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
+import { getPlayerIdentityKey } from "@/lib/player-identity";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 
 export type MatchResult = "1" | "X" | "2";
@@ -211,10 +212,17 @@ function validateAndNormalizeResultInput(
       throw new AdminScoringError("Asist eden oyuncu adı çok uzun.");
     }
 
+    const scorer = event.scorer.trim();
+
     return {
       team: event.side === "home" ? homeTeam : awayTeam,
-      scorer: event.scorer.trim(),
+      scorer,
+      scorerKey: getPlayerIdentityKey(scorer),
       assister: event.ownGoal === true ? null : assister,
+      assisterKey:
+        event.ownGoal === true || !assister
+          ? null
+          : getPlayerIdentityKey(assister),
       ownGoal: event.ownGoal === true,
     };
   });

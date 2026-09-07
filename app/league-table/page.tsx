@@ -9,6 +9,7 @@ import HittiteIcon from "@/components/HittiteIcon";
 import PlayerPortrait from "@/components/PlayerPortrait";
 import TeamCrest from "@/components/TeamCrest";
 import { auth, db } from "@/lib/firebase";
+import { getPlayerIdentityKey } from "@/lib/player-identity";
 import { DEFAULT_SEASON_ID } from "@/lib/season";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
@@ -40,7 +41,9 @@ type LeagueTableResponse = {
 type GoalEvent = {
   team: string;
   scorer: string;
+  scorerKey: string;
   assister: string | null;
+  assisterKey: string | null;
   ownGoal: boolean;
 };
 
@@ -65,8 +68,9 @@ export default function LeagueTablePage() {
   const [message, setMessage] = useState("");
 
   const loadStandings = useCallback(async (initialLoad = false) => {
-    if (initialLoad) setLoading(true);
-    else setRefreshing(true);
+    // `loading` starts as true, so the initial request does not need a
+    // synchronous state update from its effect.
+    if (!initialLoad) setRefreshing(true);
 
     try {
       const response = await fetch("/api/league-standings", {
@@ -190,10 +194,15 @@ export default function LeagueTablePage() {
               {
                 team,
                 scorer,
+                scorerKey: storedOrDerivedPlayerKey(goal.scorerKey, scorer),
                 assister:
                   typeof goal.assister === "string" && goal.assister.trim()
                     ? goal.assister.trim()
                     : null,
+                assisterKey: storedOrDerivedPlayerKey(
+                  goal.assisterKey,
+                  typeof goal.assister === "string" ? goal.assister : "",
+                ),
                 ownGoal: goal.ownGoal === true,
               },
             ];
@@ -212,13 +221,18 @@ export default function LeagueTablePage() {
   }, [activeSeasonId, currentUser]);
 
   useEffect(() => {
-    void loadStandings(true);
+    const initialLoadTimer = window.setTimeout(() => {
+      void loadStandings(true);
+    }, 0);
 
     const interval = window.setInterval(() => {
       void loadStandings(false);
     }, REFRESH_INTERVAL);
 
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearTimeout(initialLoadTimer);
+      window.clearInterval(interval);
+    };
   }, [loadStandings]);
 
   const theme = useMemo(() => getThemeById(selectedTheme), [selectedTheme]);
@@ -523,7 +537,14 @@ function createPlayerLeaderboard(
     const name = field === "scorer" ? goal.scorer : goal.assister;
     if (!name) continue;
 
-    const key = `${name.toLocaleLowerCase("tr-TR")}::${goal.team.toLocaleLowerCase("tr-TR")}`;
+    // A season total follows the footballer, not their team. The previous
+    // name-and-team key split one player's tally after a transfer (or when a
+    // roster source used a harmlessly different team label).
+    const key =
+      field === "scorer"
+        ? goal.scorerKey
+        : goal.assisterKey ?? getPlayerIdentityKey(name);
+    if (!key) continue;
     const current = players.get(key);
 
     if (current) {
@@ -538,6 +559,11 @@ function createPlayerLeaderboard(
       second.total - first.total ||
       first.name.localeCompare(second.name, "tr-TR"),
   );
+}
+
+function storedOrDerivedPlayerKey(value: unknown, playerName: string) {
+  const storedKey = typeof value === "string" ? getPlayerIdentityKey(value) : "";
+  return storedKey || getPlayerIdentityKey(playerName);
 }
 
 function formatGoalDifference(value: number): string {

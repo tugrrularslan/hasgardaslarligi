@@ -8,12 +8,19 @@ import {
   resolveLeagueTeamName,
 } from "../lib/league-data.ts";
 import { MANUAL_LEAGUE_PLAYERS } from "../lib/manual-players.ts";
+import { getPlayerIdentityKey } from "../lib/player-identity.ts";
 
 const projectRoot = process.cwd();
 const expectedPngSignature = "89504e470d0a1a0a";
 const normalizedNames = new Set();
 const crestFiles = new Set();
 const aliases = new Set();
+
+assert.equal(
+  getPlayerIdentityKey("Dušan Vlahović"),
+  getPlayerIdentityKey("Dusan Vlahovic"),
+  "Aksanlı ve aksansız oyuncu isimleri aynı kimlikte birleşmeli.",
+);
 
 assert.equal(
   LEAGUE_TEAM_DATA.length,
@@ -82,12 +89,7 @@ for (const team of LEAGUE_TEAM_DATA) {
 
 const manualPlayerNames = new Set();
 for (const player of MANUAL_LEAGUE_PLAYERS) {
-  const normalizedPlayer = player.name
-    .toLocaleLowerCase("tr-TR")
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .replace(/ı/g, "i")
-    .trim();
+  const normalizedPlayer = getPlayerIdentityKey(player.name);
   assert.ok(player.name.trim(), "Manuel oyuncu adı boş olamaz.");
   assert.ok(
     !manualPlayerNames.has(normalizedPlayer),
