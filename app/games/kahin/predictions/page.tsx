@@ -440,8 +440,6 @@ export default function KahinPredictionsPage() {
                   field="topScorer"
                   reopen={transferReopens.topScorer}
                   open={isTransferReopenOpen("topScorer")}
-                  saving={savingTransferField === "topScorer"}
-                  onSave={() => void saveTransferReplacement("topScorer")}
                 />
                 <PredictionInput
                   label="Asist kralı"
@@ -454,8 +452,6 @@ export default function KahinPredictionsPage() {
                   field="topAssist"
                   reopen={transferReopens.topAssist}
                   open={isTransferReopenOpen("topAssist")}
-                  saving={savingTransferField === "topAssist"}
-                  onSave={() => void saveTransferReplacement("topAssist")}
                 />
                 <PredictionInput
                   label="En fazla clean sheet yapan kaleci"
@@ -470,8 +466,6 @@ export default function KahinPredictionsPage() {
                   field="cleanSheetKeeper"
                   reopen={transferReopens.cleanSheetKeeper}
                   open={isTransferReopenOpen("cleanSheetKeeper")}
-                  saving={savingTransferField === "cleanSheetKeeper"}
-                  onSave={() => void saveTransferReplacement("cleanSheetKeeper")}
                 />
                 <TeamSelect
                   label="En çok gol atan takım"
@@ -500,7 +494,7 @@ export default function KahinPredictionsPage() {
                   </p>
                   <p className="hg-muted text-sm">
                     {primaryTransferField
-                      ? `${getKahinPlayerPredictionLabel(primaryTransferField)} için seçimini yenileyip kaydet.`
+                      ? `${getKahinPlayerPredictionLabel(primaryTransferField)} değişikliğini Kehaneti Güncelle düğmesiyle kaydet.`
                       : complete
                       ? "Bütün alanlar hazır."
                       : "Kaydetmek için beş özel tahmini tamamla."}
@@ -526,12 +520,8 @@ export default function KahinPredictionsPage() {
                 className="hg-primary hg-icon-label mt-5 w-full rounded-xl px-5 py-3 font-black disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <HittiteIcon name="sun" size="sm" />
-                {primaryTransferField
-                  ? savingTransferField === primaryTransferField
-                    ? "Yeni Tahmin Kaydediliyor..."
-                    : `${getKahinPlayerPredictionLabel(primaryTransferField)} Tahminini Yenile`
-                  : saving
-                  ? "Mühürleniyor..."
+                {saving || savingTransferField !== null
+                  ? "Kaydediliyor..."
                   : submitted
                     ? "Kehaneti Güncelle"
                     : "Kehaneti Mühürle"}
@@ -605,14 +595,10 @@ function TransferReopenNotice({
   field,
   reopen,
   open,
-  saving,
-  onSave,
 }: {
   field: KahinPlayerPredictionKey;
   reopen: KahinTransferReopens[KahinPlayerPredictionKey] | undefined;
   open: boolean;
-  saving: boolean;
-  onSave: () => void;
 }) {
   if (!reopen || !open || !reopen.replacementDeadline) return null;
 
@@ -626,16 +612,8 @@ function TransferReopenNotice({
     <div className="rounded-xl border border-amber-500/40 bg-amber-950/15 p-4">
       <p className="font-black text-amber-200">Transfer nedeniyle bu alan açık</p>
       <p className="hg-muted mt-1 text-sm leading-6">
-        {reopen.originalSelection} Süper Lig&apos;den ayrıldığı için yalnızca {label} tahminini {deadlineText} tarihine kadar bir kez yenileyebilirsin. Diğer Kahin tahminlerin kilitli kalır.
+        {reopen.originalSelection} Süper Lig&apos;den ayrıldığı için yalnızca {label} tahminini {deadlineText} tarihine kadar bir kez yenileyebilirsin. Yeni seçimini yaptıktan sonra sayfanın altındaki Kehaneti Güncelle düğmesiyle kaydet. Diğer Kahin tahminlerin kilitli kalır.
       </p>
-      <button
-        type="button"
-        onClick={onSave}
-        disabled={saving}
-        className="hg-primary mt-4 rounded-xl px-4 py-2.5 text-sm font-black disabled:opacity-50"
-      >
-        {saving ? "Yeni Tahmin Kaydediliyor..." : `${label} Tahminini Yenile`}
-      </button>
     </div>
   );
 }
