@@ -23,6 +23,7 @@ import {
   isKahinPredictionComplete,
   KAHIN_FALLBACK_PLAYERS,
   KAHIN_GAME_ID,
+  KAHIN_PLAYER_PREDICTION_CATEGORIES,
   KAHIN_TEAMS,
   normalizeKahinSearch,
   sanitizeKahinPrediction,
@@ -202,8 +203,7 @@ export default function KahinPredictionsPage() {
         reopen.seasonId === settings.seasonId &&
         !reopen.replacementSelection &&
         reopen.replacementDeadline !== null &&
-        now < reopen.replacementDeadline &&
-        prediction[field] === reopen.originalSelection,
+        now < reopen.replacementDeadline,
     );
   }
 
@@ -211,6 +211,21 @@ export default function KahinPredictionsPage() {
     return !isLocked ||
       (isKahinPlayerPredictionKey(field) && isTransferReopenOpen(field));
   }
+
+  const openTransferFields = KAHIN_PLAYER_PREDICTION_CATEGORIES.map(
+    ({ key }) => key,
+  ).filter((field) => isTransferReopenOpen(field));
+  const primaryTransferField =
+    openTransferFields.length === 1 ? openTransferFields[0] : null;
+  const primaryTransferReopen = primaryTransferField
+    ? transferReopens[primaryTransferField]
+    : null;
+  const primaryTransferSelectionChanged = Boolean(
+    primaryTransferField &&
+      primaryTransferReopen &&
+      prediction[primaryTransferField].trim() !==
+        primaryTransferReopen.originalSelection.trim(),
+  );
 
   function updateField<K extends keyof KahinPrediction>(
     field: K,
@@ -484,7 +499,9 @@ export default function KahinPredictionsPage() {
                     {submitted ? "Kehanet kayıtlı" : "Kehaneti mühürle"}
                   </p>
                   <p className="hg-muted text-sm">
-                    {complete
+                    {primaryTransferField
+                      ? `${getKahinPlayerPredictionLabel(primaryTransferField)} için seçimini yenileyip kaydet.`
+                      : complete
                       ? "Bütün alanlar hazır."
                       : "Kaydetmek için beş özel tahmini tamamla."}
                   </p>
@@ -493,12 +510,27 @@ export default function KahinPredictionsPage() {
 
               <button
                 type="button"
-                onClick={savePrediction}
-                disabled={saving || isLocked || !complete}
+                onClick={() => {
+                  if (primaryTransferField) {
+                    void saveTransferReplacement(primaryTransferField);
+                    return;
+                  }
+
+                  void savePrediction();
+                }}
+                disabled={
+                  primaryTransferField
+                    ? savingTransferField !== null || !primaryTransferSelectionChanged
+                    : saving || isLocked || !complete
+                }
                 className="hg-primary hg-icon-label mt-5 w-full rounded-xl px-5 py-3 font-black disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <HittiteIcon name="sun" size="sm" />
-                {saving
+                {primaryTransferField
+                  ? savingTransferField === primaryTransferField
+                    ? "Yeni Tahmin Kaydediliyor..."
+                    : `${getKahinPlayerPredictionLabel(primaryTransferField)} Tahminini Yenile`
+                  : saving
                   ? "Mühürleniyor..."
                   : submitted
                     ? "Kehaneti Güncelle"
