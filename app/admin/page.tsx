@@ -1,22 +1,17 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
-  getDocs,
   onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
   Timestamp,
-  updateDoc,
-  where,
-  writeBatch,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
@@ -167,6 +162,7 @@ export default function AdminPage() {
   const [selectedUserToDelete, setSelectedUserToDelete] = useState("");
   const [deleteUserConfirmation, setDeleteUserConfirmation] = useState("");
   const [deletingUser, setDeletingUser] = useState(false);
+  const resultRequestIds = useRef<Record<string, string>>({});
 
   const resetConfirmationText = getSeasonResetConfirmation(
     seasonId.trim() || DEFAULT_SEASON_ID
@@ -1111,23 +1107,64 @@ export default function AdminPage() {
       );
     }
 
-    const activeSeasonId = seasonId.trim() || DEFAULT_SEASON_ID;
+    const requestChampion = async (preview: boolean) => {
+      const idToken = await user.getIdToken();
+      const response = await fetch(
+        "/api/admin/recalculate-weekly-champion",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({ week: weekNumber, preview }),
+        },
+      );
+      const data = await response.json();
 
-    const championReference = doc(
-      db,
-      "weeklyChampions",
-      `${activeSeasonId}_${weekNumber}`
-    );
+      if (!response.ok) {
+        throw new Error(data.error || "Haftalık şampiyon belirlenemedi.");
+      }
 
-    const championSnapshot = await getDoc(championReference);
-    const previousChampionData = championSnapshot.exists()
-      ? championSnapshot.data()
-      : null;
+      const winnerIds: string[] = Array.isArray(data.winnerIds)
+        ? data.winnerIds.filter(
+            (winnerId: unknown): winnerId is string =>
+              typeof winnerId === "string",
+          )
+        : [];
+      const winnerNameList: string[] = Array.isArray(data.winnerNames)
+        ? data.winnerNames.filter(
+            (winnerName: unknown): winnerName is string =>
+              typeof winnerName === "string",
+          )
+        : [];
 
-    const wasPreviouslyAwarded =
-      previousChampionData?.awarded === true;
+      return {
+        changed: data.changed === true,
+        skipped: data.skipped === true,
+        highestCorrectCount:
+          typeof data.highestCorrectCount === "number"
+            ? data.highestCorrectCount
+            : 0,
+        winnerNames: winnerNameList.join(", "),
+        previousWinnerNames: Array.isArray(data.previousWinnerNames)
+          ? data.previousWinnerNames
+              .filter(
+                (winnerName: unknown): winnerName is string =>
+                  typeof winnerName === "string",
+              )
+              .join(", ")
+          : "",
+        winnerProfiles: winnerIds.map((id, index) => ({
+          id,
+          username: winnerNameList[index] ?? "İsimsiz kullanıcı",
+        })),
+      };
+    };
 
-    if (onlyIfPreviouslyAwarded && !wasPreviouslyAwarded) {
+    const preview = await requestChampion(true);
+
+    if (onlyIfPreviouslyAwarded && preview.skipped) {
       return {
         cancelled: false,
         changed: false,
@@ -1137,319 +1174,32 @@ export default function AdminPage() {
       };
     }
 
-    const weekMatchesSnapshot = await getDocs(
-      query(
-        collection(db, "matches"),
-        where("week", "==", weekNumber)
-      )
-    );
-
-    if (weekMatchesSnapshot.empty) {
-      throw new Error(
-        `${weekNumber}. haftaya ait maç bulunamadı.`
-      );
-    }
-
-    const weekMatches = weekMatchesSnapshot.docs
-  .map(
-    (matchDocument) =>
-      ({
-        id: matchDocument.id,
-        ...matchDocument.data(),
-      }) as Match
-  )
-  .filter(
-    (match) =>
-      match.seasonId === activeSeasonId ||
-      (!match.seasonId && activeSeasonId === DEFAULT_SEASON_ID)
-  );
-
-    if (weekMatches.length === 0) {
-      throw new Error(
-        `${activeSeasonId} sezonunun ${weekNumber}. haftasına ait maç bulunamadı.`
-      );
-    }
-
-    const unfinishedMatches = weekMatches.filter(
-      (match) =>
-        match.status !== "finished" ||
-        match.pointsCalculated !== true
-    );
-
-    if (unfinishedMatches.length > 0) {
-      throw new Error(
-        `${weekNumber}. haftanın bütün maç sonuçlarını girip puanları hesaplamadan haftalık şampiyon belirlenemez.`
-      );
-    }
-
-    const correctCounts = new Map<string, number>();
-
-    for (const match of weekMatches) {
-      const predictionsSnapshot = await getDocs(
-        query(
-          collection(db, "predictions"),
-          where("matchId", "==", match.id)
-        )
-      );
-
-      predictionsSnapshot.forEach((predictionDocument) => {
-        const predictionData = predictionDocument.data();
-
-        if (
-          predictionData.isCorrect === true &&
-          predictionData.awardedPoints === 1 &&
-          typeof predictionData.userId === "string"
-        ) {
-          correctCounts.set(
-            predictionData.userId,
-            (correctCounts.get(predictionData.userId) ?? 0) + 1
-          );
-        }
-      });
-    }
-
-    const highestCorrectCount =
-      correctCounts.size > 0
-        ? Math.max(...Array.from(correctCounts.values()))
-        : 0;
-
-    const winnerIds =
-      highestCorrectCount > 0
-        ? Array.from(correctCounts.entries())
-            .filter(
-              ([, correctCount]) =>
-                correctCount === highestCorrectCount
-            )
-            .map(([userId]) => userId)
-            .sort()
-        : [];
-
-    const previousWinnerIds =
-      wasPreviouslyAwarded &&
-      Array.isArray(previousChampionData?.winnerIds)
-        ? previousChampionData.winnerIds
-            .filter(
-              (winnerId: unknown): winnerId is string =>
-                typeof winnerId === "string"
-            )
-            .sort()
-        : [];
-
-    const changed =
-      winnerIds.length !== previousWinnerIds.length ||
-      winnerIds.some(
-        (winnerId, index) =>
-          winnerId !== previousWinnerIds[index]
-      );
-
-    const winnerProfiles = await Promise.all(
-      winnerIds.map(async (winnerId) => {
-        const winnerSnapshot = await getDoc(
-          doc(db, "users", winnerId)
-        );
-
-        if (!winnerSnapshot.exists()) {
-          throw new Error(
-            `Kazanan kullanıcı profili bulunamadı: ${winnerId}`
-          );
-        }
-
-        const winnerData = winnerSnapshot.data();
-
-        const username =
-          typeof winnerData.username === "string" &&
-          winnerData.username.trim()
-            ? winnerData.username.trim()
-            : typeof winnerData.displayName === "string" &&
-                winnerData.displayName.trim()
-              ? winnerData.displayName.trim()
-              : typeof winnerData.email === "string" &&
-                  winnerData.email.trim()
-                ? winnerData.email.trim()
-                : "İsimsiz kullanıcı";
-
-        return {
-          id: winnerId,
-          username,
-        };
-      })
-    );
-
-    const winnerNames = winnerProfiles
-      .map((winner) => winner.username)
-      .join(", ");
-
-    if (askForConfirmation && changed) {
-      const previousWinnerNames =
-        Array.isArray(previousChampionData?.winnerNames)
-          ? previousChampionData.winnerNames
-              .filter(
-                (name: unknown): name is string =>
-                  typeof name === "string"
-              )
-              .join(", ")
-          : "";
-
+    if (askForConfirmation && preview.changed) {
       const confirmationText =
-        winnerProfiles.length > 0
-          ? `${weekNumber}. haftanın en yüksek doğru sayısı: ${highestCorrectCount}\n\nYeni kazananlar: ${winnerNames}${
-              previousWinnerNames
-                ? `\nÖnceki kazananlar: ${previousWinnerNames}`
+        preview.winnerProfiles.length > 0
+          ? `${weekNumber}. haftanın en yüksek doğru sayısı: ${preview.highestCorrectCount}\n\nYeni kazananlar: ${preview.winnerNames}${
+              preview.previousWinnerNames
+                ? `\nÖnceki kazananlar: ${preview.previousWinnerNames}`
                 : ""
             }\n\nBonusları buna göre güncellemek istiyor musun?`
           : `${weekNumber}. haftada doğru tahmin bulunamadı.${
-              previousWinnerNames
-                ? `\n\nÖnceki kazananların bonusu geri alınacak: ${previousWinnerNames}`
+              preview.previousWinnerNames
+                ? `\n\nÖnceki kazananların bonusu geri alınacak: ${preview.previousWinnerNames}`
                 : ""
             }\n\nDevam etmek istiyor musun?`;
 
       if (!window.confirm(confirmationText)) {
-        return {
-          cancelled: true,
-          changed,
-          highestCorrectCount,
-          winnerNames,
-          winnerProfiles,
-        };
+        return { cancelled: true, ...preview };
       }
     }
 
-    if (!changed) {
-      return {
-        cancelled: false,
-        changed: false,
-        highestCorrectCount,
-        winnerNames,
-        winnerProfiles,
-      };
+    if (!preview.changed) {
+      return { cancelled: false, ...preview };
     }
 
-    const affectedUserIds = Array.from(
-      new Set([...previousWinnerIds, ...winnerIds])
-    );
+    const applied = await requestChampion(false);
 
-    const affectedUsers = await Promise.all(
-      affectedUserIds.map(async (affectedUserId) => {
-        const affectedUserSnapshot = await getDoc(
-          doc(db, "users", affectedUserId)
-        );
-
-        if (!affectedUserSnapshot.exists()) {
-          throw new Error(
-            `Kullanıcı profili bulunamadı: ${affectedUserId}`
-          );
-        }
-
-        const affectedUserData = affectedUserSnapshot.data();
-
-        const existingSeasonStats =
-          affectedUserData.seasonStats &&
-          typeof affectedUserData.seasonStats === "object"
-            ? affectedUserData.seasonStats
-            : {};
-
-        const currentSeasonStats =
-          existingSeasonStats[activeSeasonId] &&
-          typeof existingSeasonStats[activeSeasonId] === "object"
-            ? existingSeasonStats[activeSeasonId]
-            : {};
-
-        const correctPredictions =
-          typeof currentSeasonStats.correctPredictions === "number"
-            ? currentSeasonStats.correctPredictions
-            : activeSeasonId === DEFAULT_SEASON_ID &&
-                typeof affectedUserData.correctPredictions === "number"
-              ? affectedUserData.correctPredictions
-              : 0;
-
-        const currentWeeklyWins =
-          typeof currentSeasonStats.weeklyWins === "number"
-            ? currentSeasonStats.weeklyWins
-            : activeSeasonId === DEFAULT_SEASON_ID &&
-                typeof affectedUserData.weeklyWins === "number"
-              ? affectedUserData.weeklyWins
-              : 0;
-
-        const hadPreviousBonus =
-          previousWinnerIds.includes(affectedUserId);
-        const receivesNewBonus =
-          winnerIds.includes(affectedUserId);
-
-        const newWeeklyWins = Math.max(
-          0,
-          currentWeeklyWins -
-            (hadPreviousBonus ? 1 : 0) +
-            (receivesNewBonus ? 1 : 0)
-        );
-
-        return {
-          id: affectedUserId,
-          correctPredictions,
-          newWeeklyWins,
-          existingSeasonStats,
-          currentSeasonStats,
-        };
-      })
-    );
-
-    const championBatch = writeBatch(db);
-
-    for (const affectedUser of affectedUsers) {
-      const totalPoints =
-        affectedUser.correctPredictions + affectedUser.newWeeklyWins;
-
-      championBatch.update(
-        doc(db, "users", affectedUser.id),
-        {
-          weeklyWins: affectedUser.newWeeklyWins,
-          correctPredictions: affectedUser.correctPredictions,
-          totalPoints,
-          seasonStats: {
-            ...affectedUser.existingSeasonStats,
-            [activeSeasonId]: {
-              ...affectedUser.currentSeasonStats,
-              correctPredictions: affectedUser.correctPredictions,
-              weeklyWins: affectedUser.newWeeklyWins,
-              totalPoints,
-            },
-          },
-          updatedAt: serverTimestamp(),
-        }
-      );
-    }
-
-    championBatch.set(
-      championReference,
-      {
-        week: weekNumber,
-        seasonId: seasonId.trim() || DEFAULT_SEASON_ID,
-        seasonName:
-          seasonName.trim() || DEFAULT_SEASON_NAME,
-        winnerIds,
-        winnerNames: winnerProfiles.map(
-          (winner) => winner.username
-        ),
-        winnerCount: winnerProfiles.length,
-        highestCorrectCount,
-        bonusPerWinner: winnerProfiles.length > 0 ? 1 : 0,
-        awarded: winnerProfiles.length > 0,
-        awardedBy: user.uid,
-        awardedAt: serverTimestamp(),
-        recalculatedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    await championBatch.commit();
-
-    return {
-      cancelled: false,
-      changed: true,
-      highestCorrectCount,
-      winnerNames,
-      winnerProfiles,
-    };
+    return { cancelled: false, ...applied };
   }
 
   function handleScoreChange(
@@ -1578,61 +1328,57 @@ export default function AdminPage() {
     setMessage("");
 
     try {
-      await updateDoc(doc(db, "matches", match.id), {
-        homeScore,
-        awayScore,
-        result,
-        goalEvents: goalEvents.map((event) => ({
-          team: event.side === "home" ? match.homeTeam : match.awayTeam,
-          scorer: event.scorer.trim(),
-          assister: event.assister.trim() || null,
-          ownGoal: event.ownGoal,
-        })),
-        status: "finished",
-        pointsCalculated: false,
-        finishedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      const checkedPredictionCount = await calculateMatchPoints(
-        match.id,
-        result
-      );
-
-      await updateDoc(doc(db, "matches", match.id), {
-        pointsCalculated: true,
-        pointsCalculatedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      let weeklyBonusMessage = "";
-
-      try {
-        const weeklyBonusResult =
-          await recalculateWeeklyChampionBonus(
-            match.week,
-            false,
-            true
-          );
-
-        if (weeklyBonusResult.changed) {
-          weeklyBonusMessage =
-            " Haftalık şampiyon bonusu da yeni sonuca göre otomatik güncellendi.";
-        }
-      } catch (weeklyBonusError) {
-        console.error(
-          "Haftalık şampiyon bonusu güncellenemedi:",
-          weeklyBonusError
-        );
-
-        weeklyBonusMessage =
-          " Maç puanları hesaplandı ancak haftalık bonus otomatik güncellenemedi.";
+      if (!user) {
+        throw new Error("Maç sonucu kaydetmek için yeniden giriş yap.");
       }
 
-      const idToken = await user?.getIdToken();
+      const idToken = await user.getIdToken();
+      const idempotencyKey =
+        resultRequestIds.current[match.id] ?? crypto.randomUUID();
+      resultRequestIds.current[match.id] = idempotencyKey;
+      const saveResponse = await fetch("/api/admin/save-match-result", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          matchId: match.id,
+          homeScore,
+          awayScore,
+          goalEvents: goalEvents.map((event) => ({
+            side: event.side,
+            scorer: event.scorer.trim(),
+            assister: event.assister.trim(),
+            ownGoal: event.ownGoal,
+          })),
+          idempotencyKey,
+        }),
+      });
+      const saveData = await saveResponse.json();
+
+      if (!saveResponse.ok) {
+        throw new Error(saveData.error || "Maç sonucu kaydedilemedi.");
+      }
+
+      delete resultRequestIds.current[match.id];
+
+      const checkedPredictionCount =
+        typeof saveData.checkedPredictionCount === "number"
+          ? saveData.checkedPredictionCount
+          : 0;
+      let weeklyBonusMessage = "";
+
+      if (saveData.weeklyChampion?.changed === true) {
+        weeklyBonusMessage =
+          " Haftalık şampiyon bonusu da yeni sonuca göre otomatik güncellendi.";
+      } else if (typeof saveData.weeklyChampionWarning === "string") {
+        weeklyBonusMessage = ` ${saveData.weeklyChampionWarning}`;
+      }
+
       let tabletNotificationMessage = "";
 
-      if (idToken) {
+      if (idToken && saveData.alreadyCalculated !== true) {
         const notificationResponse = await fetch(
           "/api/send-notification",
           {
@@ -1699,157 +1445,26 @@ export default function AdminPage() {
       }
 
       setMessage(
-        `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sonucu kaydedildi. ${checkedPredictionCount} tahmin kontrol edildi ve puanlar otomatik hesaplandı.${weeklyBonusMessage}${tabletNotificationMessage}`
+        saveData.alreadyCalculated === true
+          ? `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sonucu zaten hesaplanmıştı; gol detayları güncellendi.${tabletNotificationMessage}`
+          : `${match.homeTeam} ${homeScore} - ${awayScore} ${match.awayTeam} sonucu kaydedildi. ${checkedPredictionCount} tahmin kontrol edildi ve puanlar otomatik hesaplandı.${weeklyBonusMessage}${tabletNotificationMessage}`
       );
     } catch (error) {
-      console.error(error);
+      console.error("Maç sonucu kaydetme hatası:", error);
 
       setMessage(
-        "Maç sonucu veya puanlar kaydedilemedi. Firestore kurallarını kontrol et."
+        error instanceof Error
+          ? error.message
+          : "Maç sonucu kaydedilemedi."
       );
     } finally {
       setSavingResultId(null);
     }
   }
 
- async function calculateMatchPoints(
-  matchId: string,
-  result: MatchResult
-): Promise<number> {
-  const predictionsQuery = query(
-    collection(db, "predictions"),
-    where("matchId", "==", matchId)
-  );
-
-  const predictionSnapshot = await getDocs(predictionsQuery);
-
-  if (!predictionSnapshot.empty) {
-    const predictions = predictionSnapshot.docs;
-
-    // Firestore Security Rules nedeniyle batch'i
-    // güvenli parçalara bölüyoruz.
-    // 19 seçiyoruz çünkü admin kontrolü de
-    // güvenlik kuralında document access kullanıyor.
-    const BATCH_SIZE = 19;
-
-    for (let i = 0; i < predictions.length; i += BATCH_SIZE) {
-      const chunk = predictions.slice(i, i + BATCH_SIZE);
-
-      const predictionBatch = writeBatch(db);
-
-      chunk.forEach((predictionDocument) => {
-        const predictionData = predictionDocument.data();
-
-        const isCorrect =
-          predictionData.prediction === result;
-
-        predictionBatch.update(predictionDocument.ref, {
-          isCorrect,
-          awardedPoints: isCorrect ? 1 : 0,
-          scoredAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      });
-
-      await predictionBatch.commit();
-    }
-  }
-
-  await recalculateAllUserPoints();
-
-  return predictionSnapshot.size;
-}
-
-  async function recalculateAllUserPoints() {
-    const activeSeasonId = seasonId.trim() || DEFAULT_SEASON_ID;
-
-    const [usersSnapshot, matchesSnapshot] = await Promise.all([
-      getDocs(collection(db, "users")),
-      getDocs(collection(db, "matches")),
-    ]);
-
-    const activeSeasonMatchIds = new Set(
-      matchesSnapshot.docs
-        .filter((matchDocument) => {
-          const matchData = matchDocument.data();
-
-          return (
-            matchData.seasonId === activeSeasonId ||
-            (!matchData.seasonId &&
-              activeSeasonId === DEFAULT_SEASON_ID)
-          );
-        })
-        .map((matchDocument) => matchDocument.id)
-    );
-
-    for (const userDocument of usersSnapshot.docs) {
-      const userPredictionsQuery = query(
-        collection(db, "predictions"),
-        where("userId", "==", userDocument.id)
-      );
-
-      const userPredictionsSnapshot = await getDocs(
-        userPredictionsQuery
-      );
-
-      let correctPredictions = 0;
-
-      userPredictionsSnapshot.forEach((predictionDocument) => {
-        const predictionData = predictionDocument.data();
-
-        if (
-          typeof predictionData.matchId === "string" &&
-          activeSeasonMatchIds.has(predictionData.matchId) &&
-          predictionData.isCorrect === true &&
-          predictionData.awardedPoints === 1
-        ) {
-          correctPredictions += 1;
-        }
-      });
-
-      const userData = userDocument.data();
-      const existingSeasonStats =
-        userData.seasonStats && typeof userData.seasonStats === "object"
-          ? userData.seasonStats
-          : {};
-
-      const currentSeasonStats =
-        existingSeasonStats[activeSeasonId] &&
-        typeof existingSeasonStats[activeSeasonId] === "object"
-          ? existingSeasonStats[activeSeasonId]
-          : {};
-
-      const weeklyWins =
-        typeof currentSeasonStats.weeklyWins === "number"
-          ? currentSeasonStats.weeklyWins
-          : activeSeasonId === DEFAULT_SEASON_ID &&
-              typeof userData.weeklyWins === "number"
-            ? userData.weeklyWins
-            : 0;
-
-      const totalPoints = correctPredictions + weeklyWins;
-
-      await updateDoc(doc(db, "users", userDocument.id), {
-        correctPredictions,
-        weeklyWins,
-        totalPoints,
-        seasonStats: {
-          ...existingSeasonStats,
-          [activeSeasonId]: {
-            ...currentSeasonStats,
-            correctPredictions,
-            weeklyWins,
-            totalPoints,
-          },
-        },
-        updatedAt: serverTimestamp(),
-      });
-    }
-  }
-
   async function handleDeleteMatch(match: Match) {
     const confirmed = window.confirm(
-      `${match.homeTeam} - ${match.awayTeam} maçını silmek istediğine emin misin?\n\nBu maça ait tahminler de silinecek ve kullanıcı puanları yeniden hesaplanacak.`
+      `${match.homeTeam} - ${match.awayTeam} maçını silmek istediğine emin misin?\n\nPlanlanmış maça ait tahminler de silinecek. Puanlanmış maçlar puan ve haftalık bonus tutarlılığı için silinemez; sonucu güncellemelisin.`
     );
 
     if (!confirmed) return;
@@ -1858,35 +1473,33 @@ export default function AdminPage() {
     setMessage("");
 
     try {
-      const predictionsQuery = query(
-        collection(db, "predictions"),
-        where("matchId", "==", match.id)
-      );
-
-      const predictionSnapshot = await getDocs(predictionsQuery);
-
-      if (!predictionSnapshot.empty) {
-        const deleteBatch = writeBatch(db);
-
-        predictionSnapshot.forEach((predictionDocument) => {
-          deleteBatch.delete(predictionDocument.ref);
-        });
-
-        await deleteBatch.commit();
+      if (!user) {
+        throw new Error("Maç silmek için yeniden giriş yap.");
       }
 
-      await deleteDoc(doc(db, "matches", match.id));
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/admin/delete-match", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ matchId: match.id }),
+      });
+      const data = await response.json();
 
-      await recalculateAllUserPoints();
+      if (!response.ok) {
+        throw new Error(data.error || "Maç silinemedi.");
+      }
 
       setMessage(
-        `${match.homeTeam} - ${match.awayTeam} maçı ve bu maça ait tahminler silindi.`
+        `${match.homeTeam} - ${match.awayTeam} maçı ve bu maça ait ${data.deletedPredictionCount ?? 0} tahmin silindi.`
       );
     } catch (error) {
-      console.error(error);
+      console.error("Maç silme hatası:", error);
 
       setMessage(
-        "Maç silinemedi. Firestore kurallarını kontrol et."
+        error instanceof Error ? error.message : "Maç silinemedi."
       );
     } finally {
       setDeletingMatchId(null);
