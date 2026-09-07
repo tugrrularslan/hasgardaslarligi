@@ -20,6 +20,7 @@ import {
   calculateKahinScore,
   DEFAULT_KAHIN_SETTINGS,
   KAHIN_FALLBACK_PLAYERS,
+  KAHIN_PLAYER_PREDICTION_CATEGORIES,
   KAHIN_TEAMS,
   mergeKahinPlayers,
   normalizeKahinSearch,
@@ -28,6 +29,7 @@ import {
   sanitizeKahinPlayers,
   sanitizeStringList,
   type KahinPlayer,
+  type KahinPlayerPredictionKey,
   type KahinResults,
 } from "@/lib/kahin";
 import type { LeaguePlayerRecord } from "@/lib/player-sync-types";
@@ -37,6 +39,14 @@ type KahinAdminPanelProps = {
   seasonId: string;
   seasonName: string;
   onRosterChanged?: (players: LeaguePlayerRecord[]) => void;
+};
+
+type TransferReopenResult = {
+  affectedUserCount: number;
+  notifiedUserCount: number;
+  notificationTokenCount: number;
+  notificationFailureCount: number;
+  withoutPushTokenCount: number;
 };
 
 function listToText(value: unknown): string {
@@ -86,6 +96,17 @@ export default function KahinAdminPanel({
   const [savingSettings, setSavingSettings] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [message, setMessage] = useState("");
+  const [transferCategory, setTransferCategory] =
+    useState<KahinPlayerPredictionKey>("topScorer");
+  const [transferredPlayerName, setTransferredPlayerName] = useState("");
+  const [replacementDurationHours, setReplacementDurationHours] = useState("48");
+  const [leagueExitConfirmed, setLeagueExitConfirmed] = useState(false);
+  const [reopeningTransfer, setReopeningTransfer] = useState(false);
+  const [transferOperationId, setTransferOperationId] = useState<string | null>(
+    null,
+  );
+  const [transferResult, setTransferResult] =
+    useState<TransferReopenResult | null>(null);
 
   useEffect(() => {
     return onSnapshot(doc(db, "settings", "kahin"), (snapshot) => {
@@ -176,6 +197,11 @@ export default function KahinAdminPanel({
   }, []);
 
   const playerOptions = officialPlayers;
+  const transferPlayerNames = Array.from(
+    new Set(
+      playerOptions.map((player) => player.name.trim()).filter(Boolean),
+    ),
+  ).sort((first, second) => first.localeCompare(second, "tr-TR"));
   const normalizedPlayerSearch = normalizeKahinSearch(playerSearch);
   const visiblePlayers = playerOptions.filter((player) => {
     if (!normalizedPlayerSearch) return false;
@@ -369,6 +395,107 @@ export default function KahinAdminPanel({
     }
   }
 
+  function resetTransferOperation() {
+    setTransferOperationId(null);
+    setTransferResult(null);
+  }
+
+  function createTransferOperationId() {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return crypto.randomUUID();
+    }
+
+    return `kahin-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+  }
+
+  async function reopenTransferPrediction() {
+    const playerName = transferredPlayerName.trim();
+    const durationHours = Number(replacementDurationHours);
+
+    if (!playerName) {
+      setMessage("Transfer olan futbolcunun adını seç veya yaz.");
+      return;
+    }
+
+    if (!Number.isInteger(durationHours) || durationHours < 1 || durationHours > 168) {
+      setMessage("Yeniden seçim süresi 1 ile 168 saat arasında olmalı.");
+      return;
+    }
+
+    if (!leagueExitConfirmed) {
+      setMessage(
+        "Devam etmek için futbolcunun Süper Lig'den ayrıldığını doğrula.",
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `${playerName} için ${KAHIN_PLAYER_PREDICTION_CATEGORIES.find((category) => category.key === transferCategory)?.label ?? "seçili kategori"} tahminini ${durationHours} saatliğine yalnızca etkilenen kullanıcılara açacaksın. Süper Lig içi transferlerde bu işlem yapılmamalı. Devam edilsin mi?`,
+    );
+    if (!confirmed) return;
+
+    const operationId = transferOperationId ?? createTransferOperationId();
+    setTransferOperationId(operationId);
+    setReopeningTransfer(true);
+    setMessage("");
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/admin/reopen-kahin-transfer", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          operationId,
+          seasonId,
+          category: transferCategory,
+          playerName,
+          durationHours,
+          leagueExitConfirmed: true,
+        }),
+      });
+      const data = (await response.json()) as {
+        success?: boolean;
+        processing?: boolean;
+        error?: string;
+      } & Partial<TransferReopenResult>;
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? "Transfer istisnası uygulanamadı.");
+      }
+
+      const result = {
+        affectedUserCount: data.affectedUserCount ?? 0,
+        notifiedUserCount: data.notifiedUserCount ?? 0,
+        notificationTokenCount: data.notificationTokenCount ?? 0,
+        notificationFailureCount: data.notificationFailureCount ?? 0,
+        withoutPushTokenCount: data.withoutPushTokenCount ?? 0,
+      };
+      setTransferResult(result);
+
+      if (data.processing) {
+        setMessage("Transfer istisnası zaten işleniyor. Biraz sonra tekrar kontrol edebilirsin.");
+        return;
+      }
+
+      setMessage(
+        `${result.affectedUserCount} kullanıcının tahmini açıldı; ${result.notifiedUserCount} kullanıcıya bildirim gönderildi.`,
+      );
+      setTransferOperationId(null);
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Transfer istisnası uygulanamadı.",
+      );
+    } finally {
+      setReopeningTransfer(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {message && (
@@ -487,6 +614,119 @@ export default function KahinAdminPanel({
           <HittiteIcon name="record" size="sm" />
           {savingSettings ? "Kaydediliyor..." : "Kahin Ayarlarını Kaydet"}
         </button>
+      </section>
+
+      <section className="hg-card rounded-3xl p-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <HittiteIcon name="shield" size="lg" />
+          <div>
+            <h3 className="hg-title text-xl font-black">Transfer İstisnası</h3>
+            <p className="hg-muted text-sm">
+              Ligden ayrılan futbolcuyu seçmiş kişilere yalnızca ilgili özel tahmini bir kezliğine aç.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-amber-500/35 bg-amber-950/15 p-4">
+          <p className="font-black text-amber-200">Süper Lig içi transferlerde kullanma</p>
+          <p className="hg-muted mt-1 text-sm leading-6">
+            Futbolcu lig içinde takım değiştirdiyse Gol Kralı, Asist Kralı veya Clean Sheet Lideri olma ihtimali devam eder. Bu araç yalnızca futbolcunun Süper Lig&apos;den kalıcı olarak ayrıldığı durumlar içindir.
+          </p>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-sm font-black">Kategori</span>
+            <select
+              value={transferCategory}
+              onChange={(event) => {
+                setTransferCategory(event.target.value as KahinPlayerPredictionKey);
+                resetTransferOperation();
+              }}
+              className="w-full rounded-xl border px-4 py-3"
+            >
+              {KAHIN_PLAYER_PREDICTION_CATEGORIES.map((category) => (
+                <option key={category.key} value={category.key}>
+                  {category.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-black">Ligden ayrılan futbolcu</span>
+            <input
+              type="text"
+              list="kahin-transfer-player-options"
+              value={transferredPlayerName}
+              onChange={(event) => {
+                setTransferredPlayerName(event.target.value);
+                resetTransferOperation();
+              }}
+              placeholder="Futbolcu adı yaz veya listeden seç"
+              className="w-full rounded-xl border px-4 py-3"
+            />
+            <datalist id="kahin-transfer-player-options">
+              {transferPlayerNames.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-black">Yeniden seçim süresi</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                max="168"
+                value={replacementDurationHours}
+                onChange={(event) => {
+                  setReplacementDurationHours(event.target.value);
+                  resetTransferOperation();
+                }}
+                className="w-full rounded-xl border px-4 py-3"
+              />
+              <span className="font-bold">saat</span>
+            </div>
+            <span className="hg-muted mt-2 block text-xs">Varsayılan süre: 48 saat.</span>
+          </label>
+        </div>
+
+        <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border p-4">
+          <input
+            type="checkbox"
+            checked={leagueExitConfirmed}
+            onChange={(event) => setLeagueExitConfirmed(event.target.checked)}
+            className="mt-1 h-4 w-4"
+          />
+          <span className="text-sm font-bold leading-6">
+            Futbolcunun Süper Lig&apos;den kalıcı olarak ayrıldığını doğruluyorum; bu bir lig içi transfer değil.
+          </span>
+        </label>
+
+        <button
+          type="button"
+          onClick={() => void reopenTransferPrediction()}
+          disabled={reopeningTransfer || !leagueExitConfirmed}
+          className="hg-primary hg-icon-label mt-5 w-full rounded-xl px-5 py-3 font-black disabled:opacity-50"
+        >
+          <HittiteIcon name="shield" size="sm" />
+          {reopeningTransfer
+            ? "Transfer İstisnası Uygulanıyor..."
+            : "Transfer Nedeniyle Tahmini Aç"}
+        </button>
+
+        {transferResult && (
+          <div className="hg-card-soft mt-5 rounded-2xl border p-4 text-sm">
+            <p className="font-black">İşlem özeti</p>
+            <p className="hg-muted mt-2 leading-6">
+              {transferResult.affectedUserCount} kullanıcı etkilendi; {transferResult.notifiedUserCount} kullanıcıya tekil push bildirimi gönderildi ({transferResult.notificationTokenCount} cihaz hedeflendi).
+              {transferResult.withoutPushTokenCount > 0 && ` ${transferResult.withoutPushTokenCount} kullanıcının kayıtlı bildirim cihazı yoktu.`}
+              {transferResult.notificationFailureCount > 0 && ` ${transferResult.notificationFailureCount} bildirimin teslimi başarısız oldu.`}
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="hg-card rounded-3xl p-5 sm:p-6">

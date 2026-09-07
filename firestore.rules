@@ -1,7 +1,5 @@
 rules_version = '2';
 
-rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -49,6 +47,60 @@ service cloud.firestore {
         && kahinPredictionIsOpen()
         && request.resource.data.get("kahinSeasonId", "") == get(/databases/$(database)/documents/settings/kahin).data.seasonId
         && request.resource.data.get("kahinPrediction", null) is map;
+    }
+
+    function kahinTransferReplacementIsOpen() {
+      return exists(/databases/$(database)/documents/settings/kahin)
+        && get(/databases/$(database)/documents/settings/kahin).data.get("resultsPublished", false) != true
+        && get(/databases/$(database)/documents/settings/kahin).data.get("deadline", null) is timestamp
+        && request.time >= get(/databases/$(database)/documents/settings/kahin).data.deadline;
+    }
+
+    function validKahinTransferReplacement(category) {
+      let currentReopens = resource.data.get("kahinTransferReopens", {});
+      let requestedReopens = request.resource.data.get("kahinTransferReopens", {});
+      let currentReopen = currentReopens.get(category, {});
+      let requestedReopen = requestedReopens.get(category, {});
+      let currentPrediction = resource.data.get("kahinPrediction", {});
+      let requestedPrediction = request.resource.data.get("kahinPrediction", {});
+      return currentReopens is map
+        && requestedReopens is map
+        && currentReopen is map
+        && requestedReopen is map
+        && currentPrediction is map
+        && requestedPrediction is map
+        && requestedReopens.diff(currentReopens).affectedKeys().hasOnly([category])
+        && requestedPrediction.diff(currentPrediction).affectedKeys().hasOnly([category])
+        && currentReopen.get("category", "") == category
+        && currentReopen.get("originalSelection", "") == currentPrediction.get(category, "")
+        && currentReopen.get("replacementSelection", "") == ""
+        && currentReopen.get("replacementDeadline", null) is timestamp
+        && request.time < currentReopen.get("replacementDeadline", null)
+        && requestedReopen.diff(currentReopen).affectedKeys().hasOnly([
+          "replacementSelection",
+          "replacementSelectedAt"
+        ])
+        && requestedReopen.get("replacementSelection", "") is string
+        && requestedReopen.get("replacementSelection", "") != ""
+        && requestedReopen.get("replacementSelection", "") != currentReopen.get("originalSelection", "")
+        && requestedReopen.get("replacementSelection", "") == requestedPrediction.get(category, "")
+        && requestedReopen.get("replacementSelectedAt", null) == request.time;
+    }
+
+    function validOwnerKahinTransferReplacement() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "kahinPrediction",
+          "kahinTransferReopens",
+          "kahinUpdatedAt"
+        ])
+        && kahinTransferReplacementIsOpen()
+        && request.resource.data.get("kahinSeasonId", "") == resource.data.get("kahinSeasonId", "")
+        && request.resource.data.get("kahinSeasonId", "") == get(/databases/$(database)/documents/settings/kahin).data.seasonId
+        && (
+          validKahinTransferReplacement("topScorer")
+          || validKahinTransferReplacement("topAssist")
+          || validKahinTransferReplacement("cleanSheetKeeper")
+        );
     }
 
     function usernameChanged() {
@@ -155,6 +207,7 @@ service cloud.firestore {
           validOwnerProfileUpdate()
           || validOwnerBadgePreferenceUpdate()
           || validOwnerKahinPredictionUpdate()
+          || validOwnerKahinTransferReplacement()
         ));
       allow delete: if isAdmin();
     }
@@ -229,6 +282,14 @@ service cloud.firestore {
     match /automaticNotificationEvents/{eventId} {
       allow read: if isAdmin();
       allow create, update, delete: if isAdmin();
+    }
+
+    match /kahinTransferOperations/{operationId} {
+      allow read, create, update, delete: if isAdmin();
+
+      match /recipients/{recipientId} {
+        allow read, create, update, delete: if isAdmin();
+      }
     }
   }
 }

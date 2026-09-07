@@ -4,11 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import {
   doc,
-  getDoc,
   onSnapshot,
   serverTimestamp,
   setDoc,
   Timestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import HittiteIcon from "@/components/HittiteIcon";
@@ -18,15 +18,21 @@ import { auth, db } from "@/lib/firebase";
 import {
   DEFAULT_KAHIN_SETTINGS,
   EMPTY_KAHIN_PREDICTION,
+  getKahinPlayerPredictionLabel,
+  isKahinPlayerPredictionKey,
   isKahinPredictionComplete,
   KAHIN_FALLBACK_PLAYERS,
+  KAHIN_GAME_ID,
   KAHIN_TEAMS,
   normalizeKahinSearch,
   sanitizeKahinPrediction,
   sanitizeKahinPlayers,
+  sanitizeKahinTransferReopens,
   type KahinPlayer,
+  type KahinPlayerPredictionKey,
   type KahinPrediction,
   type KahinSettings,
+  type KahinTransferReopens,
 } from "@/lib/kahin";
 
 export default function KahinPredictionsPage() {
@@ -38,9 +44,13 @@ export default function KahinPredictionsPage() {
   const [prediction, setPrediction] = useState<KahinPrediction>(
     EMPTY_KAHIN_PREDICTION,
   );
+  const [transferReopens, setTransferReopens] =
+    useState<KahinTransferReopens>({});
   const [savedSeasonId, setSavedSeasonId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingTransferField, setSavingTransferField] =
+    useState<KahinPlayerPredictionKey | null>(null);
   const [message, setMessage] = useState("");
   const [now, setNow] = useState(() => new Date());
   const [officialPlayers, setOfficialPlayers] = useState<KahinPlayer[]>(
@@ -79,34 +89,41 @@ export default function KahinPredictionsPage() {
   }, []);
 
   useEffect(() => {
+    let unsubscribeProfile: (() => void) | null = null;
     let unsubscribeSettings: (() => void) | null = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      unsubscribeProfile?.();
+      unsubscribeProfile = null;
       unsubscribeSettings?.();
       unsubscribeSettings = null;
 
       if (!firebaseUser) {
+        setTransferReopens({});
         router.replace("/");
         return;
       }
 
       setUser(firebaseUser);
 
-      try {
-        const profileSnapshot = await getDoc(
-          doc(db, "users", firebaseUser.uid),
-        );
-        if (profileSnapshot.exists()) {
+      unsubscribeProfile = onSnapshot(
+        doc(db, "users", firebaseUser.uid),
+        (profileSnapshot) => {
+          if (!profileSnapshot.exists()) return;
           const data = profileSnapshot.data();
           setPrediction(sanitizeKahinPrediction(data.kahinPrediction));
           setSavedSeasonId(
             typeof data.kahinSeasonId === "string" ? data.kahinSeasonId : "",
           );
-        }
-      } catch (error) {
-        console.error(error);
-        setMessage("Kahin tahminlerin alınamadı.");
-      }
+          setTransferReopens(
+            sanitizeKahinTransferReopens(data.kahinTransferReopens),
+          );
+        },
+        (error) => {
+          console.error(error);
+          setMessage("Kahin tahminlerin alınamadı.");
+        },
+      );
 
       unsubscribeSettings = onSnapshot(
         doc(db, "settings", "kahin"),
@@ -147,6 +164,7 @@ export default function KahinPredictionsPage() {
 
     return () => {
       unsubscribeAuth();
+      unsubscribeProfile?.();
       unsubscribeSettings?.();
     };
   }, [router]);
@@ -172,6 +190,27 @@ export default function KahinPredictionsPage() {
     [prediction],
   );
   const playerOptions = officialPlayers;
+
+  function isTransferReopenOpen(field: KahinPlayerPredictionKey) {
+    const reopen = transferReopens[field];
+
+    return Boolean(
+      submitted &&
+        !settings.resultsPublished &&
+        reopen &&
+        reopen.gameId === KAHIN_GAME_ID &&
+        reopen.seasonId === settings.seasonId &&
+        !reopen.replacementSelection &&
+        reopen.replacementDeadline !== null &&
+        now < reopen.replacementDeadline &&
+        prediction[field] === reopen.originalSelection,
+    );
+  }
+
+  function canEditPredictionField(field: keyof KahinPrediction) {
+    return !isLocked ||
+      (isKahinPlayerPredictionKey(field) && isTransferReopenOpen(field));
+  }
 
   function updateField<K extends keyof KahinPrediction>(
     field: K,
@@ -216,6 +255,42 @@ export default function KahinPredictionsPage() {
       setMessage("Kehanet kaydedilemedi. Lütfen tekrar dene.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveTransferReplacement(field: KahinPlayerPredictionKey) {
+    const reopen = transferReopens[field];
+    const replacementSelection = prediction[field].trim();
+
+    if (!user || !reopen || !isTransferReopenOpen(field)) return;
+
+    if (!replacementSelection) {
+      setMessage("Yeni futbolcuyu seçmeden tahmini kaydedemezsin.");
+      return;
+    }
+
+    if (replacementSelection === reopen.originalSelection) {
+      setMessage("Transfer olan futbolcunun yerine farklı bir futbolcu seçmelisin.");
+      return;
+    }
+
+    setSavingTransferField(field);
+    setMessage("");
+
+    try {
+      const transferPath = `kahinTransferReopens.${field}`;
+      await updateDoc(doc(db, "users", user.uid), {
+        [`kahinPrediction.${field}`]: replacementSelection,
+        [`${transferPath}.replacementSelection`]: replacementSelection,
+        [`${transferPath}.replacementSelectedAt`]: serverTimestamp(),
+        kahinUpdatedAt: serverTimestamp(),
+      });
+      setMessage(`${getKahinPlayerPredictionLabel(field)} tahminin yenilendi ve yeniden kilitlendi.`);
+    } catch (error) {
+      console.error(error);
+      setMessage("Yeni tahmin kaydedilemedi. Lütfen tekrar dene.");
+    } finally {
+      setSavingTransferField(null);
     }
   }
 
@@ -343,24 +418,45 @@ export default function KahinPredictionsPage() {
                   label="Gol kralı"
                   value={prediction.topScorer}
                   options={playerOptions}
-                  disabled={isLocked}
+                  disabled={!canEditPredictionField("topScorer")}
                   onChange={(value) => updateField("topScorer", value)}
+                />
+                <TransferReopenNotice
+                  field="topScorer"
+                  reopen={transferReopens.topScorer}
+                  open={isTransferReopenOpen("topScorer")}
+                  saving={savingTransferField === "topScorer"}
+                  onSave={() => void saveTransferReplacement("topScorer")}
                 />
                 <PredictionInput
                   label="Asist kralı"
                   value={prediction.topAssist}
                   options={playerOptions}
-                  disabled={isLocked}
+                  disabled={!canEditPredictionField("topAssist")}
                   onChange={(value) => updateField("topAssist", value)}
+                />
+                <TransferReopenNotice
+                  field="topAssist"
+                  reopen={transferReopens.topAssist}
+                  open={isTransferReopenOpen("topAssist")}
+                  saving={savingTransferField === "topAssist"}
+                  onSave={() => void saveTransferReplacement("topAssist")}
                 />
                 <PredictionInput
                   label="En fazla clean sheet yapan kaleci"
                   value={prediction.cleanSheetKeeper}
                   options={playerOptions}
-                  disabled={isLocked}
+                  disabled={!canEditPredictionField("cleanSheetKeeper")}
                   onChange={(value) =>
                     updateField("cleanSheetKeeper", value)
                   }
+                />
+                <TransferReopenNotice
+                  field="cleanSheetKeeper"
+                  reopen={transferReopens.cleanSheetKeeper}
+                  open={isTransferReopenOpen("cleanSheetKeeper")}
+                  saving={savingTransferField === "cleanSheetKeeper"}
+                  onSave={() => void saveTransferReplacement("cleanSheetKeeper")}
                 />
                 <TeamSelect
                   label="En çok gol atan takım"
@@ -470,6 +566,45 @@ function PredictionInput({
         ))}
       </select>
     </label>
+  );
+}
+
+function TransferReopenNotice({
+  field,
+  reopen,
+  open,
+  saving,
+  onSave,
+}: {
+  field: KahinPlayerPredictionKey;
+  reopen: KahinTransferReopens[KahinPlayerPredictionKey] | undefined;
+  open: boolean;
+  saving: boolean;
+  onSave: () => void;
+}) {
+  if (!reopen || !open || !reopen.replacementDeadline) return null;
+
+  const label = getKahinPlayerPredictionLabel(field);
+  const deadlineText = reopen.replacementDeadline.toLocaleString("tr-TR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+
+  return (
+    <div className="rounded-xl border border-amber-500/40 bg-amber-950/15 p-4">
+      <p className="font-black text-amber-200">Transfer nedeniyle bu alan açık</p>
+      <p className="hg-muted mt-1 text-sm leading-6">
+        {reopen.originalSelection} Süper Lig&apos;den ayrıldığı için yalnızca {label} tahminini {deadlineText} tarihine kadar bir kez yenileyebilirsin. Diğer Kahin tahminlerin kilitli kalır.
+      </p>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        className="hg-primary mt-4 rounded-xl px-4 py-2.5 text-sm font-black disabled:opacity-50"
+      >
+        {saving ? "Yeni Tahmin Kaydediliyor..." : `${label} Tahminini Yenile`}
+      </button>
+    </div>
   );
 }
 

@@ -128,6 +128,54 @@ export type KahinPrediction = {
   bestDefenseTeam: string;
 };
 
+/** Player-based seasonal predictions that can be reopened after a league exit. */
+export const KAHIN_PLAYER_PREDICTION_CATEGORIES = [
+  { key: "topScorer", label: "Gol Kralı" },
+  { key: "topAssist", label: "Asist Kralı" },
+  { key: "cleanSheetKeeper", label: "Clean Sheet Lideri" },
+] as const;
+
+export type KahinPlayerPredictionKey =
+  (typeof KAHIN_PLAYER_PREDICTION_CATEGORIES)[number]["key"];
+
+export type KahinTransferReopen = {
+  operationId: string;
+  gameId: string;
+  seasonId: string;
+  category: KahinPlayerPredictionKey;
+  categoryLabel: string;
+  originalSelection: string;
+  replacementSelection: string;
+  transferReopenedAt: Date | null;
+  transferReopenedBy: string;
+  replacementDeadline: Date | null;
+  leagueExitConfirmed: boolean;
+  notificationEventId: string;
+  replacementSelectedAt: Date | null;
+};
+
+export type KahinTransferReopens = Partial<
+  Record<KahinPlayerPredictionKey, KahinTransferReopen>
+>;
+
+export function isKahinPlayerPredictionKey(
+  value: unknown,
+): value is KahinPlayerPredictionKey {
+  return KAHIN_PLAYER_PREDICTION_CATEGORIES.some(
+    (category) => category.key === value,
+  );
+}
+
+export function getKahinPlayerPredictionLabel(
+  key: KahinPlayerPredictionKey,
+): string {
+  return (
+    KAHIN_PLAYER_PREDICTION_CATEGORIES.find(
+      (category) => category.key === key,
+    )?.label ?? key
+  );
+}
+
 export type KahinResults = {
   leagueOrder: string[];
   topScorers: string[];
@@ -264,6 +312,87 @@ export function sanitizeKahinPrediction(value: unknown): KahinPrediction {
     bestDefenseTeam:
       typeof data.bestDefenseTeam === "string" ? data.bestDefenseTeam : "",
   };
+}
+
+function sanitizeKahinDate(value: unknown): Date | null {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value;
+  }
+
+  if (
+    value &&
+    typeof value === "object" &&
+    "toDate" in value &&
+    typeof value.toDate === "function"
+  ) {
+    const date = value.toDate();
+    return date instanceof Date && !Number.isNaN(date.getTime()) ? date : null;
+  }
+
+  return null;
+}
+
+/**
+ * Reads only the immutable audit fields and the one permitted replacement value
+ * from a user's transfer exception map. Unknown or malformed entries are ignored.
+ */
+export function sanitizeKahinTransferReopens(
+  value: unknown,
+): KahinTransferReopens {
+  if (!value || typeof value !== "object") return {};
+
+  const data = value as Record<string, unknown>;
+  const reopens: KahinTransferReopens = {};
+
+  for (const { key, label } of KAHIN_PLAYER_PREDICTION_CATEGORIES) {
+    const candidate = data[key];
+    if (!candidate || typeof candidate !== "object") continue;
+
+    const entry = candidate as Record<string, unknown>;
+    const operationId =
+      typeof entry.operationId === "string" ? entry.operationId.trim() : "";
+    const seasonId =
+      typeof entry.seasonId === "string" ? entry.seasonId.trim() : "";
+    const originalSelection =
+      typeof entry.originalSelection === "string"
+        ? entry.originalSelection.trim()
+        : "";
+    const replacementDeadline = sanitizeKahinDate(entry.replacementDeadline);
+
+    if (!operationId || !seasonId || !originalSelection || !replacementDeadline) {
+      continue;
+    }
+
+    reopens[key] = {
+      operationId,
+      gameId: typeof entry.gameId === "string" ? entry.gameId : KAHIN_GAME_ID,
+      seasonId,
+      category: key,
+      categoryLabel:
+        typeof entry.categoryLabel === "string" && entry.categoryLabel.trim()
+          ? entry.categoryLabel
+          : label,
+      originalSelection,
+      replacementSelection:
+        typeof entry.replacementSelection === "string"
+          ? entry.replacementSelection.trim()
+          : "",
+      transferReopenedAt: sanitizeKahinDate(entry.transferReopenedAt),
+      transferReopenedBy:
+        typeof entry.transferReopenedBy === "string"
+          ? entry.transferReopenedBy
+          : "",
+      replacementDeadline,
+      leagueExitConfirmed: entry.leagueExitConfirmed === true,
+      notificationEventId:
+        typeof entry.notificationEventId === "string"
+          ? entry.notificationEventId
+          : "",
+      replacementSelectedAt: sanitizeKahinDate(entry.replacementSelectedAt),
+    };
+  }
+
+  return reopens;
 }
 
 export function isKahinPredictionComplete(
