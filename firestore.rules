@@ -71,6 +71,9 @@ service cloud.firestore {
         && requestedPrediction is map
         && requestedReopens.diff(currentReopens).affectedKeys().hasOnly([category])
         && requestedPrediction.diff(currentPrediction).affectedKeys().hasOnly([category])
+        && currentReopen.get("gameId", "") == "kahin"
+        && currentReopen.get("seasonId", "") == resource.data.get("kahinSeasonId", "")
+        && currentReopen.get("seasonId", "") == get(/databases/$(database)/documents/settings/kahin).data.seasonId
         && currentReopen.get("category", "") == category
         && currentReopen.get("originalSelection", "") == currentPrediction.get(category, "")
         && currentReopen.get("replacementSelection", "") == ""

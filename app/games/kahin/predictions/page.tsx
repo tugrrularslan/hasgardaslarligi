@@ -8,7 +8,6 @@ import {
   serverTimestamp,
   setDoc,
   Timestamp,
-  updateDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import HittiteIcon from "@/components/HittiteIcon";
@@ -215,17 +214,15 @@ export default function KahinPredictionsPage() {
   const openTransferFields = KAHIN_PLAYER_PREDICTION_CATEGORIES.map(
     ({ key }) => key,
   ).filter((field) => isTransferReopenOpen(field));
-  const primaryTransferField =
-    openTransferFields.length === 1 ? openTransferFields[0] : null;
-  const primaryTransferReopen = primaryTransferField
-    ? transferReopens[primaryTransferField]
-    : null;
-  const primaryTransferSelectionChanged = Boolean(
-    primaryTransferField &&
-      primaryTransferReopen &&
-      prediction[primaryTransferField].trim() !==
-        primaryTransferReopen.originalSelection.trim(),
-  );
+  function transferSelectionChanged(field: KahinPlayerPredictionKey) {
+    const reopen = transferReopens[field];
+
+    return Boolean(
+      reopen &&
+        normalizeKahinSearch(prediction[field]) !==
+          normalizeKahinSearch(reopen.originalSelection),
+    );
+  }
 
   function updateField<K extends keyof KahinPrediction>(
     field: K,
@@ -284,7 +281,10 @@ export default function KahinPredictionsPage() {
       return;
     }
 
-    if (replacementSelection === reopen.originalSelection) {
+    if (
+      normalizeKahinSearch(replacementSelection) ===
+      normalizeKahinSearch(reopen.originalSelection)
+    ) {
       setMessage("Transfer olan futbolcunun yerine farklı bir futbolcu seçmelisin.");
       return;
     }
@@ -293,17 +293,46 @@ export default function KahinPredictionsPage() {
     setMessage("");
 
     try {
-      const transferPath = `kahinTransferReopens.${field}`;
-      await updateDoc(doc(db, "users", user.uid), {
-        [`kahinPrediction.${field}`]: replacementSelection,
-        [`${transferPath}.replacementSelection`]: replacementSelection,
-        [`${transferPath}.replacementSelectedAt`]: serverTimestamp(),
-        kahinUpdatedAt: serverTimestamp(),
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/kahin/transfer-replacement", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ field, replacementSelection }),
+      });
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? "Yeni tahmin kaydedilemedi.");
+      }
+
+      setTransferReopens((current) => {
+        const currentReopen = current[field];
+        if (!currentReopen) return current;
+
+        return {
+          ...current,
+          [field]: {
+            ...currentReopen,
+            replacementSelection,
+            replacementSelectedAt: new Date(),
+          },
+        };
       });
       setMessage(`${getKahinPlayerPredictionLabel(field)} tahminin yenilendi ve yeniden kilitlendi.`);
     } catch (error) {
       console.error(error);
-      setMessage("Yeni tahmin kaydedilemedi. Lütfen tekrar dene.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Yeni tahmin kaydedilemedi. Lütfen tekrar dene.",
+      );
     } finally {
       setSavingTransferField(null);
     }
@@ -440,6 +469,9 @@ export default function KahinPredictionsPage() {
                   field="topScorer"
                   reopen={transferReopens.topScorer}
                   open={isTransferReopenOpen("topScorer")}
+                  saving={savingTransferField !== null}
+                  selectionChanged={transferSelectionChanged("topScorer")}
+                  onSave={() => void saveTransferReplacement("topScorer")}
                 />
                 <PredictionInput
                   label="Asist kralı"
@@ -452,6 +484,9 @@ export default function KahinPredictionsPage() {
                   field="topAssist"
                   reopen={transferReopens.topAssist}
                   open={isTransferReopenOpen("topAssist")}
+                  saving={savingTransferField !== null}
+                  selectionChanged={transferSelectionChanged("topAssist")}
+                  onSave={() => void saveTransferReplacement("topAssist")}
                 />
                 <PredictionInput
                   label="En fazla clean sheet yapan kaleci"
@@ -466,6 +501,9 @@ export default function KahinPredictionsPage() {
                   field="cleanSheetKeeper"
                   reopen={transferReopens.cleanSheetKeeper}
                   open={isTransferReopenOpen("cleanSheetKeeper")}
+                  saving={savingTransferField !== null}
+                  selectionChanged={transferSelectionChanged("cleanSheetKeeper")}
+                  onSave={() => void saveTransferReplacement("cleanSheetKeeper")}
                 />
                 <TeamSelect
                   label="En çok gol atan takım"
@@ -493,8 +531,8 @@ export default function KahinPredictionsPage() {
                     {submitted ? "Kehanet kayıtlı" : "Kehaneti mühürle"}
                   </p>
                   <p className="hg-muted text-sm">
-                    {primaryTransferField
-                      ? `${getKahinPlayerPredictionLabel(primaryTransferField)} değişikliğini Kehaneti Güncelle düğmesiyle kaydet.`
+                    {openTransferFields.length > 0
+                      ? "Açılan transfer alanındaki Yeni Tahmini Kaydet düğmesini kullan. Diğer tahminlerin kilitli kalır."
                       : complete
                       ? "Bütün alanlar hazır."
                       : "Kaydetmek için beş özel tahmini tamamla."}
@@ -504,24 +542,13 @@ export default function KahinPredictionsPage() {
 
               <button
                 type="button"
-                onClick={() => {
-                  if (primaryTransferField) {
-                    void saveTransferReplacement(primaryTransferField);
-                    return;
-                  }
-
-                  void savePrediction();
-                }}
-                disabled={
-                  primaryTransferField
-                    ? savingTransferField !== null || !primaryTransferSelectionChanged
-                    : saving || isLocked || !complete
-                }
+                onClick={() => void savePrediction()}
+                disabled={saving || isLocked || !complete}
                 className="hg-primary hg-icon-label mt-5 w-full rounded-xl px-5 py-3 font-black disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <HittiteIcon name="sun" size="sm" />
-                {saving || savingTransferField !== null
-                  ? "Kaydediliyor..."
+                {saving
+                  ? "Mühürleniyor..."
                   : submitted
                     ? "Kehaneti Güncelle"
                     : "Kehaneti Mühürle"}
@@ -595,10 +622,16 @@ function TransferReopenNotice({
   field,
   reopen,
   open,
+  saving,
+  selectionChanged,
+  onSave,
 }: {
   field: KahinPlayerPredictionKey;
   reopen: KahinTransferReopens[KahinPlayerPredictionKey] | undefined;
   open: boolean;
+  saving: boolean;
+  selectionChanged: boolean;
+  onSave: () => void;
 }) {
   if (!reopen || !open || !reopen.replacementDeadline) return null;
 
@@ -612,8 +645,16 @@ function TransferReopenNotice({
     <div className="rounded-xl border border-amber-500/40 bg-amber-950/15 p-4">
       <p className="font-black text-amber-200">Transfer nedeniyle bu alan açık</p>
       <p className="hg-muted mt-1 text-sm leading-6">
-        {reopen.originalSelection} Süper Lig&apos;den ayrıldığı için yalnızca {label} tahminini {deadlineText} tarihine kadar bir kez yenileyebilirsin. Yeni seçimini yaptıktan sonra sayfanın altındaki Kehaneti Güncelle düğmesiyle kaydet. Diğer Kahin tahminlerin kilitli kalır.
+        {reopen.originalSelection} Süper Lig&apos;den ayrıldığı için yalnızca {label} tahminini {deadlineText} tarihine kadar bir kez yenileyebilirsin. Yeni seçimini yaptıktan sonra aşağıdaki düğmeyle kaydet. Diğer Kahin tahminlerin kilitli kalır.
       </p>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving || !selectionChanged}
+        className="hg-primary mt-4 rounded-xl px-4 py-2.5 text-sm font-black disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {saving ? "Yeni Tahmin Kaydediliyor..." : `${label} Tahminini Kaydet`}
+      </button>
     </div>
   );
 }
