@@ -1712,21 +1712,32 @@ export default function AdminPage() {
     }
   }
 
-  async function calculateMatchPoints(
-    matchId: string,
-    result: MatchResult
-  ): Promise<number> {
-    const predictionsQuery = query(
-      collection(db, "predictions"),
-      where("matchId", "==", matchId)
-    );
+ async function calculateMatchPoints(
+  matchId: string,
+  result: MatchResult
+): Promise<number> {
+  const predictionsQuery = query(
+    collection(db, "predictions"),
+    where("matchId", "==", matchId)
+  );
 
-    const predictionSnapshot = await getDocs(predictionsQuery);
+  const predictionSnapshot = await getDocs(predictionsQuery);
 
-    if (!predictionSnapshot.empty) {
+  if (!predictionSnapshot.empty) {
+    const predictions = predictionSnapshot.docs;
+
+    // Firestore Security Rules nedeniyle batch'i
+    // güvenli parçalara bölüyoruz.
+    // 19 seçiyoruz çünkü admin kontrolü de
+    // güvenlik kuralında document access kullanıyor.
+    const BATCH_SIZE = 19;
+
+    for (let i = 0; i < predictions.length; i += BATCH_SIZE) {
+      const chunk = predictions.slice(i, i + BATCH_SIZE);
+
       const predictionBatch = writeBatch(db);
 
-      predictionSnapshot.forEach((predictionDocument) => {
+      chunk.forEach((predictionDocument) => {
         const predictionData = predictionDocument.data();
 
         const isCorrect =
@@ -1742,11 +1753,12 @@ export default function AdminPage() {
 
       await predictionBatch.commit();
     }
-
-    await recalculateAllUserPoints();
-
-    return predictionSnapshot.size;
   }
+
+  await recalculateAllUserPoints();
+
+  return predictionSnapshot.size;
+}
 
   async function recalculateAllUserPoints() {
     const activeSeasonId = seasonId.trim() || DEFAULT_SEASON_ID;
