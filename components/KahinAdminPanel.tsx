@@ -49,6 +49,20 @@ type TransferReopenResult = {
   withoutPushTokenCount: number;
 };
 
+type TransferCandidate = {
+  name: string;
+  selectedByCount: number;
+};
+
+const EMPTY_TRANSFER_CANDIDATES: Record<
+  KahinPlayerPredictionKey,
+  TransferCandidate[]
+> = {
+  topScorer: [],
+  topAssist: [],
+  cleanSheetKeeper: [],
+};
+
 function listToText(value: unknown): string {
   return sanitizeStringList(value).join("\n");
 }
@@ -107,6 +121,9 @@ export default function KahinAdminPanel({
   );
   const [transferResult, setTransferResult] =
     useState<TransferReopenResult | null>(null);
+  const [transferCandidates, setTransferCandidates] = useState<
+    Record<KahinPlayerPredictionKey, TransferCandidate[]>
+  >(EMPTY_TRANSFER_CANDIDATES);
 
   useEffect(() => {
     return onSnapshot(doc(db, "settings", "kahin"), (snapshot) => {
@@ -126,6 +143,63 @@ export default function KahinAdminPanel({
       }
     });
   }, []);
+
+  useEffect(() => {
+    return onSnapshot(
+      collection(db, "users"),
+      (snapshot) => {
+        const counts: Record<KahinPlayerPredictionKey, Map<string, number>> = {
+          topScorer: new Map(),
+          topAssist: new Map(),
+          cleanSheetKeeper: new Map(),
+        };
+
+        snapshot.docs.forEach((userDocument) => {
+          const data = userDocument.data();
+          if (data.kahinSeasonId !== seasonId) return;
+
+          const prediction = sanitizeKahinPrediction(data.kahinPrediction);
+          KAHIN_PLAYER_PREDICTION_CATEGORIES.forEach(({ key }) => {
+            const name = prediction[key].trim();
+            if (!name) return;
+
+            counts[key].set(name, (counts[key].get(name) ?? 0) + 1);
+          });
+        });
+
+        setTransferCandidates({
+          topScorer: Array.from(counts.topScorer, ([name, selectedByCount]) => ({
+            name,
+            selectedByCount,
+          })).sort(
+            (first, second) =>
+              second.selectedByCount - first.selectedByCount ||
+              first.name.localeCompare(second.name, "tr-TR"),
+          ),
+          topAssist: Array.from(counts.topAssist, ([name, selectedByCount]) => ({
+            name,
+            selectedByCount,
+          })).sort(
+            (first, second) =>
+              second.selectedByCount - first.selectedByCount ||
+              first.name.localeCompare(second.name, "tr-TR"),
+          ),
+          cleanSheetKeeper: Array.from(
+            counts.cleanSheetKeeper,
+            ([name, selectedByCount]) => ({ name, selectedByCount }),
+          ).sort(
+            (first, second) =>
+              second.selectedByCount - first.selectedByCount ||
+              first.name.localeCompare(second.name, "tr-TR"),
+          ),
+        });
+      },
+      (error) => {
+        console.error("Kahin transfer adayları alınamadı:", error);
+        setMessage("Kahin seçimleri alınamadı.");
+      },
+    );
+  }, [seasonId]);
 
   useEffect(() => {
     let active = true;
@@ -197,11 +271,7 @@ export default function KahinAdminPanel({
   }, []);
 
   const playerOptions = officialPlayers;
-  const transferPlayerNames = Array.from(
-    new Set(
-      playerOptions.map((player) => player.name.trim()).filter(Boolean),
-    ),
-  ).sort((first, second) => first.localeCompare(second, "tr-TR"));
+  const activeTransferCandidates = transferCandidates[transferCategory];
   const normalizedPlayerSearch = normalizeKahinSearch(playerSearch);
   const visiblePlayers = playerOptions.filter((player) => {
     if (!normalizedPlayerSearch) return false;
@@ -641,6 +711,7 @@ export default function KahinAdminPanel({
               value={transferCategory}
               onChange={(event) => {
                 setTransferCategory(event.target.value as KahinPlayerPredictionKey);
+                setTransferredPlayerName("");
                 resetTransferOperation();
               }}
               className="w-full rounded-xl border px-4 py-3"
@@ -654,23 +725,32 @@ export default function KahinAdminPanel({
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-sm font-black">Ligden ayrılan futbolcu</span>
-            <input
-              type="text"
-              list="kahin-transfer-player-options"
+            <span className="mb-2 block text-sm font-black">
+              Kahin&apos;de seçilen futbolcu
+            </span>
+            <select
               value={transferredPlayerName}
               onChange={(event) => {
                 setTransferredPlayerName(event.target.value);
                 resetTransferOperation();
               }}
-              placeholder="Futbolcu adı yaz veya listeden seç"
               className="w-full rounded-xl border px-4 py-3"
-            />
-            <datalist id="kahin-transfer-player-options">
-              {transferPlayerNames.map((name) => (
-                <option key={name} value={name} />
+            >
+              <option value="">Futbolcu seç</option>
+              {activeTransferCandidates.map((candidate) => (
+                <option key={candidate.name} value={candidate.name}>
+                  {candidate.name} — {candidate.selectedByCount} kişi seçti
+                </option>
               ))}
-            </datalist>
+            </select>
+            <span className="hg-muted mt-2 block text-xs">
+              Bu listede yalnızca seçili kategoride, bu sezon Kahin tahmini yapılmış futbolcular görünür.
+            </span>
+            {activeTransferCandidates.length === 0 && (
+              <span className="mt-2 block text-xs font-bold text-amber-300">
+                Bu kategoride henüz kayıtlı Kahin seçimi yok.
+              </span>
+            )}
           </label>
 
           <label className="block">
