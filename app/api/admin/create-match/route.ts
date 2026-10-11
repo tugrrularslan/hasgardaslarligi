@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
-import { scheduleMatchReminderTasks } from "@/lib/cloud-tasks";
+import {
+  createNotificationScheduleVersion,
+  scheduleMatchReminderTasks,
+} from "@/lib/cloud-tasks";
+
+export const runtime = "nodejs";
 
 type CreateMatchBody = {
   week?: unknown;
@@ -140,6 +145,8 @@ export async function POST(request: NextRequest) {
     }
 
     matchReference = adminDb.collection("matches").doc();
+    const notificationScheduleVersion =
+      createNotificationScheduleVersion();
 
     await matchReference.set({
       week,
@@ -160,6 +167,7 @@ export async function POST(request: NextRequest) {
       predictionDeadlineReminderSent: false,
 
       notificationTasksStatus: "creating",
+      notificationScheduleVersion,
 
       createdBy: userId,
       createdAt: FieldValue.serverTimestamp(),
@@ -169,6 +177,7 @@ export async function POST(request: NextRequest) {
     const taskNames = await scheduleMatchReminderTasks({
       matchId: matchReference.id,
       kickoff: kickoffDate,
+      scheduleVersion: notificationScheduleVersion,
     });
 
     await matchReference.update({

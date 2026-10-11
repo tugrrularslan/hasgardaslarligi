@@ -1,4 +1,5 @@
 import { firebaseAdminApp } from "@/lib/firebase-admin";
+import { randomUUID } from "node:crypto";
 
 export type MatchReminderTaskType =
   | "one-hour-match-reminder"
@@ -7,6 +8,7 @@ export type MatchReminderTaskType =
 type ScheduleMatchReminderTasksInput = {
   matchId: string;
   kickoff: Date;
+  scheduleVersion: string;
 };
 
 type ScheduledTaskNames = {
@@ -67,16 +69,21 @@ async function getGoogleAccessToken(): Promise<string> {
 
 function buildTaskId(
   matchId: string,
-  reminderType: MatchReminderTaskType
+  reminderType: MatchReminderTaskType,
+  scheduleVersion: string
 ) {
   const safeMatchId = matchId.replace(/[^a-zA-Z0-9_-]/g, "-");
+  const safeScheduleVersion = scheduleVersion.replace(
+    /[^a-zA-Z0-9_-]/g,
+    "-"
+  );
 
   const suffix =
     reminderType === "one-hour-match-reminder"
       ? "one-hour"
       : "deadline";
 
-  return `${safeMatchId}-${suffix}`;
+  return `${safeMatchId}-${suffix}-${safeScheduleVersion}`;
 }
 
 function getQueuePath() {
@@ -87,11 +94,13 @@ function getQueuePath() {
 
 function getTaskName(
   matchId: string,
-  reminderType: MatchReminderTaskType
+  reminderType: MatchReminderTaskType,
+  scheduleVersion: string
 ) {
   return `${getQueuePath()}/tasks/${buildTaskId(
     matchId,
-    reminderType
+    reminderType,
+    scheduleVersion
   )}`;
 }
 
@@ -102,7 +111,8 @@ function encodeTaskBody(value: unknown) {
 async function createReminderTask(
   matchId: string,
   reminderType: MatchReminderTaskType,
-  scheduleDate: Date
+  scheduleDate: Date,
+  scheduleVersion: string
 ): Promise<string | null> {
   requireCloudTasksConfig();
 
@@ -118,7 +128,11 @@ async function createReminderTask(
   }
 
   const parent = getQueuePath();
-  const taskName = getTaskName(matchId, reminderType);
+  const taskName = getTaskName(
+    matchId,
+    reminderType,
+    scheduleVersion
+  );
   const accessToken = await getGoogleAccessToken();
 
   const response = await fetch(
@@ -143,6 +157,7 @@ async function createReminderTask(
             body: encodeTaskBody({
               matchId,
               reminderType,
+              scheduleVersion,
             }),
           },
         },
@@ -175,6 +190,7 @@ async function createReminderTask(
 export async function scheduleMatchReminderTasks({
   matchId,
   kickoff,
+  scheduleVersion,
 }: ScheduleMatchReminderTasksInput): Promise<ScheduledTaskNames> {
   /*
     Maçtan tam 1 saat önce.
@@ -191,21 +207,30 @@ export async function scheduleMatchReminderTasks({
     kickoff.getTime() - 15 * 60 * 1000
   );
 
-  const [
-    oneHourTaskName,
-    predictionDeadlineTaskName,
-  ] = await Promise.all([
-    createReminderTask(
+  let oneHourTaskName: string | null = null;
+  let predictionDeadlineTaskName: string | null = null;
+
+  try {
+    oneHourTaskName = await createReminderTask(
       matchId,
       "one-hour-match-reminder",
-      oneHourReminderDate
-    ),
-    createReminderTask(
+      oneHourReminderDate,
+      scheduleVersion
+    );
+    predictionDeadlineTaskName = await createReminderTask(
       matchId,
       "prediction-deadline-reminder",
-      predictionDeadlineReminderDate
-    ),
-  ]);
+      predictionDeadlineReminderDate,
+      scheduleVersion
+    );
+  } catch (error) {
+    await Promise.allSettled([
+      deleteCloudTask(oneHourTaskName),
+      deleteCloudTask(predictionDeadlineTaskName),
+    ]);
+
+    throw error;
+  }
 
   return {
     oneHourTaskName,
@@ -250,4 +275,8 @@ export async function deleteMatchReminderTasks(
     deleteCloudTask(taskNames.oneHourTaskName),
     deleteCloudTask(taskNames.predictionDeadlineTaskName),
   ]);
+}
+
+export function createNotificationScheduleVersion() {
+  return randomUUID();
 }

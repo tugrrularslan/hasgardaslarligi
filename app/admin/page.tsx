@@ -88,6 +88,12 @@ type ScoreInputs = Record<
   }
 >;
 
+type MatchEditInput = {
+  homeTeam: string;
+  awayTeam: string;
+  kickoff: string;
+};
+
 type GoalEventInputs = Record<string, GoalEventInput[]>;
 
 type AdminWeekFilter = number | "all" | null;
@@ -136,6 +142,15 @@ export default function AdminPage() {
   const [syncingResults, setSyncingResults] = useState(false);
   const [updatingPlayers, setUpdatingPlayers] = useState(false);
   const [deletingMatchId, setDeletingMatchId] = useState<
+    string | null
+  >(null);
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(
+    null,
+  );
+  const [matchEditInputs, setMatchEditInputs] = useState<
+    Record<string, MatchEditInput>
+  >({});
+  const [savingEditedMatchId, setSavingEditedMatchId] = useState<
     string | null
   >(null);
 
@@ -719,6 +734,107 @@ export default function AdminPage() {
       );
     } finally {
       setSavingMatch(false);
+    }
+  }
+
+  function startMatchEditing(match: Match) {
+    setMessage("");
+    setMatchEditInputs((current) => ({
+      ...current,
+      [match.id]: {
+        homeTeam: match.homeTeam,
+        awayTeam: match.awayTeam,
+        kickoff: formatDateTimeLocal(match.kickoff.toDate()),
+      },
+    }));
+    setEditingMatchId(match.id);
+  }
+
+  function cancelMatchEditing(matchId: string) {
+    setEditingMatchId((current) =>
+      current === matchId ? null : current,
+    );
+  }
+
+  async function handleSaveMatchEdit(
+    event: FormEvent<HTMLFormElement>,
+    match: Match,
+  ) {
+    event.preventDefault();
+    setMessage("");
+
+    const editInput = matchEditInputs[match.id];
+
+    if (!editInput) {
+      setMessage("Maç düzenleme bilgileri bulunamadı. Tekrar dene.");
+      return;
+    }
+
+    const cleanHomeTeam = editInput.homeTeam.trim();
+    const cleanAwayTeam = editInput.awayTeam.trim();
+    const kickoffDate = new Date(editInput.kickoff);
+
+    if (!cleanHomeTeam || !cleanAwayTeam) {
+      setMessage("Ev sahibi ve deplasman takımlarını gir.");
+      return;
+    }
+
+    if (
+      cleanHomeTeam.toLocaleLowerCase("tr-TR") ===
+      cleanAwayTeam.toLocaleLowerCase("tr-TR")
+    ) {
+      setMessage("Bir takım kendisiyle maç yapamaz.");
+      return;
+    }
+
+    if (
+      Number.isNaN(kickoffDate.getTime()) ||
+      kickoffDate.getTime() <= Date.now()
+    ) {
+      setMessage("Gelecekteki geçerli bir maç tarihi ve saati seç.");
+      return;
+    }
+
+    if (!user) {
+      setMessage("Maçı düzenlemek için yeniden giriş yap.");
+      return;
+    }
+
+    setSavingEditedMatchId(match.id);
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/admin/update-match", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          matchId: match.id,
+          homeTeam: cleanHomeTeam,
+          awayTeam: cleanAwayTeam,
+          kickoff: kickoffDate.toISOString(),
+        }),
+      });
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Maç güncellenemedi.");
+      }
+
+      setEditingMatchId(null);
+      setMessage(
+        responseData.message ||
+          "Maç güncellendi; tahminler ve puan kayıtları korundu.",
+      );
+    } catch (error) {
+      console.error("Maç güncelleme hatası:", error);
+      setMessage(
+        error instanceof Error ? error.message : "Maç güncellenemedi.",
+      );
+    } finally {
+      setSavingEditedMatchId(null);
     }
   }
 
@@ -1939,8 +2055,8 @@ export default function AdminPage() {
           icon="ball"
           className="mb-8"
         >
-        <section className="grid gap-8 lg:grid-cols-[380px_1fr]">
-          <div className="h-fit rounded-3xl border border-yellow-500/30 bg-zinc-950 p-6">
+        <section className="grid min-w-0 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:gap-8">
+          <div className="h-fit min-w-0 rounded-3xl border border-yellow-500/30 bg-zinc-950 p-4 sm:p-6">
             <h2 className="text-xl font-black text-yellow-400">
               Gardaş 1X2 Maç Ekle
             </h2>
@@ -2087,7 +2203,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6">
+          <div className="min-w-0 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6">
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-xl font-black">
@@ -2223,15 +2339,22 @@ export default function AdminPage() {
 
                   const deletingThisMatch =
                     deletingMatchId === match.id;
+                  const editingThisMatch = editingMatchId === match.id;
+                  const savingThisEdit =
+                    savingEditedMatchId === match.id;
+                  const canEditThisMatch =
+                    match.status === "scheduled" &&
+                    !match.pointsCalculated;
+                  const matchEditInput = matchEditInputs[match.id];
 
                   return (
                     <article
                       key={match.id}
-                      className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5"
+                      className="min-w-0 rounded-2xl border border-zinc-800 bg-zinc-900 p-4 sm:p-5"
                     >
                       <div className="flex flex-col gap-5">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
+                          <div className="min-w-0">
                             <div className="mb-2 flex flex-wrap items-center gap-2">
                               <span className="rounded-full bg-yellow-500/10 px-3 py-1 text-xs font-bold text-yellow-400">
                                 {match.week}. Hafta
@@ -2270,10 +2393,12 @@ export default function AdminPage() {
                               </span>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 text-lg font-black">
-                              <span className="flex items-center gap-2">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2 text-lg font-black">
+                              <span className="flex min-w-0 items-center gap-2">
                                 <TeamCrest team={match.homeTeam} size="sm" />
-                                {match.homeTeam}
+                                <span className="break-words">
+                                  {match.homeTeam}
+                                </span>
                               </span>
 
                               {match.status === "finished" ? (
@@ -2287,9 +2412,11 @@ export default function AdminPage() {
                                 </span>
                               )}
 
-                              <span className="flex items-center gap-2">
+                              <span className="flex min-w-0 items-center gap-2">
                                 <TeamCrest team={match.awayTeam} size="sm" />
-                                {match.awayTeam}
+                                <span className="break-words">
+                                  {match.awayTeam}
+                                </span>
                               </span>
                             </div>
 
@@ -2305,22 +2432,146 @@ export default function AdminPage() {
                             )}
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleDeleteMatch(match)
-                            }
-                            disabled={
-                              deletingThisMatch ||
-                              savingThisResult
-                            }
-                            className="hg-danger-outline rounded-xl border border-red-500/30 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {deletingThisMatch
-                              ? "Siliniyor..."
-                              : "Maçı Sil"}
-                          </button>
+                          <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:items-end">
+                            {canEditThisMatch && (
+                              <button
+                                type="button"
+                                onClick={() => startMatchEditing(match)}
+                                disabled={
+                                  deletingThisMatch ||
+                                  savingThisResult ||
+                                  savingThisEdit
+                                }
+                                className="hg-secondary w-full rounded-xl border border-sky-400/35 px-4 py-2 text-sm font-bold text-sky-200 transition hover:bg-sky-400/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                              >
+                                Maçı Düzenle
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMatch(match)}
+                              disabled={
+                                deletingThisMatch ||
+                                savingThisResult ||
+                                savingThisEdit
+                              }
+                              className="hg-danger-outline w-full rounded-xl border border-red-500/30 px-4 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                            >
+                              {deletingThisMatch
+                                ? "Siliniyor..."
+                                : "Maçı Sil"}
+                            </button>
+                          </div>
                         </div>
+
+                        {editingThisMatch && matchEditInput && (
+                          <form
+                            onSubmit={(event) =>
+                              handleSaveMatchEdit(event, match)
+                            }
+                            className="min-w-0 rounded-2xl border border-sky-400/30 bg-sky-400/5 p-4"
+                          >
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <h3 className="font-black text-sky-100">
+                                  Planlanmış maçı düzenle
+                                </h3>
+                                <p className="mt-1 text-xs leading-5 text-sky-100/70">
+                                  Maç kimliği ve mevcut tahminler korunur. Tahmin kapanışı yeni başlangıç saatinden 5 dakika önce ayarlanır.
+                                </p>
+                              </div>
+                              <span className="shrink-0 text-xs font-bold text-sky-200">
+                                Sadece planlanmış maç
+                              </span>
+                            </div>
+
+                            <div className="mt-4 grid min-w-0 gap-3 sm:grid-cols-2">
+                              <label className="min-w-0 text-sm font-bold text-zinc-200">
+                                Ev sahibi
+                                <input
+                                  type="text"
+                                  value={matchEditInput.homeTeam}
+                                  onChange={(event) =>
+                                    setMatchEditInputs((current) => ({
+                                      ...current,
+                                      [match.id]: {
+                                        ...matchEditInput,
+                                        homeTeam: event.target.value,
+                                      },
+                                    }))
+                                  }
+                                  disabled={savingThisEdit}
+                                  required
+                                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-700 bg-black px-4 py-3 outline-none focus:border-sky-400 disabled:opacity-50"
+                                />
+                              </label>
+                              <label className="min-w-0 text-sm font-bold text-zinc-200">
+                                Deplasman
+                                <input
+                                  type="text"
+                                  value={matchEditInput.awayTeam}
+                                  onChange={(event) =>
+                                    setMatchEditInputs((current) => ({
+                                      ...current,
+                                      [match.id]: {
+                                        ...matchEditInput,
+                                        awayTeam: event.target.value,
+                                      },
+                                    }))
+                                  }
+                                  disabled={savingThisEdit}
+                                  required
+                                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-700 bg-black px-4 py-3 outline-none focus:border-sky-400 disabled:opacity-50"
+                                />
+                              </label>
+                              <label className="min-w-0 text-sm font-bold text-zinc-200 sm:col-span-2">
+                                Maç tarihi ve saati
+                                <input
+                                  type="datetime-local"
+                                  value={matchEditInput.kickoff}
+                                  onChange={(event) =>
+                                    setMatchEditInputs((current) => ({
+                                      ...current,
+                                      [match.id]: {
+                                        ...matchEditInput,
+                                        kickoff: event.target.value,
+                                      },
+                                    }))
+                                  }
+                                  disabled={savingThisEdit}
+                                  required
+                                  className="mt-2 w-full min-w-0 rounded-xl border border-zinc-700 bg-black px-4 py-3 outline-none focus:border-sky-400 disabled:opacity-50"
+                                />
+                              </label>
+                            </div>
+
+                            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                              <button
+                                type="button"
+                                onClick={() => cancelMatchEditing(match.id)}
+                                disabled={savingThisEdit}
+                                className="hg-secondary w-full rounded-xl border border-zinc-700 px-4 py-3 text-sm font-black text-zinc-200 transition hover:bg-white/5 disabled:opacity-50 sm:w-auto"
+                              >
+                                Vazgeç
+                              </button>
+                              <button
+                                type="submit"
+                                disabled={savingThisEdit}
+                                className="hg-primary w-full rounded-xl bg-sky-400 px-4 py-3 text-sm font-black text-black transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                              >
+                                {savingThisEdit
+                                  ? "Kaydediliyor..."
+                                  : "Değişiklikleri Kaydet"}
+                              </button>
+                            </div>
+                          </form>
+                        )}
+
+                        {!canEditThisMatch && (
+                          <p className="border-t border-zinc-800 pt-4 text-xs leading-5 text-zinc-500">
+                            Sonuçlanmış maçların takım ve tarih bilgileri, tahmin ve puan tutarlılığı için değiştirilemez.
+                          </p>
+                        )}
 
                         <div className="border-t border-zinc-800 pt-4">
                           <p className="mb-1 text-sm font-bold text-zinc-300">
@@ -2332,9 +2583,9 @@ export default function AdminPage() {
                             otomatik hesaplanır.
                           </p>
 
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                            <div className="flex flex-1 items-center gap-3">
-                              <div className="flex-1">
+                          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
+                            <div className="flex min-w-0 flex-1 items-center gap-3">
+                              <div className="min-w-0 flex-1">
                                 <label className="mb-1 block truncate text-xs text-zinc-500">
                                   {match.homeTeam}
                                 </label>
@@ -2352,17 +2603,18 @@ export default function AdminPage() {
                                   }
                                   disabled={
                                     savingThisResult ||
-                                    deletingThisMatch
+                                    deletingThisMatch ||
+                                    savingThisEdit
                                   }
                                   className="w-full rounded-xl border border-zinc-700 bg-black px-4 py-3 text-center text-lg font-black outline-none focus:border-yellow-500 disabled:opacity-50"
                                 />
                               </div>
 
-                              <span className="mb-3 font-black text-zinc-500">
+                              <span className="mb-3 shrink-0 font-black text-zinc-500">
                                 -
                               </span>
 
-                              <div className="flex-1">
+                              <div className="min-w-0 flex-1">
                                 <label className="mb-1 block truncate text-xs text-zinc-500">
                                   {match.awayTeam}
                                 </label>
@@ -2380,7 +2632,8 @@ export default function AdminPage() {
                                   }
                                   disabled={
                                     savingThisResult ||
-                                    deletingThisMatch
+                                    deletingThisMatch ||
+                                    savingThisEdit
                                   }
                                   className="w-full rounded-xl border border-zinc-700 bg-black px-4 py-3 text-center text-lg font-black outline-none focus:border-yellow-500 disabled:opacity-50"
                                 />
@@ -2395,10 +2648,11 @@ export default function AdminPage() {
                               disabled={
                                 savingThisResult ||
                                 deletingThisMatch ||
+                                savingThisEdit ||
                                 score.home === "" ||
                                 score.away === ""
                               }
-                              className="hg-primary rounded-xl bg-green-500 px-5 py-3 font-black text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+                              className="hg-primary w-full rounded-xl bg-green-500 px-5 py-3 font-black text-black transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                             >
                               {savingThisResult
                                 ? "Sonuç ve puanlar kaydediliyor..."
@@ -2475,6 +2729,7 @@ export default function AdminPage() {
                                               disabled={
                                                 savingThisResult ||
                                                 deletingThisMatch ||
+                                                savingThisEdit ||
                                                 updatingPlayers
                                               }
                                               className="h-4 w-4 rounded border-zinc-600 bg-black text-yellow-500 focus:ring-yellow-500 disabled:opacity-50"
@@ -2495,6 +2750,7 @@ export default function AdminPage() {
                                           disabled={
                                             savingThisResult ||
                                             deletingThisMatch ||
+                                            savingThisEdit ||
                                             updatingPlayers
                                           }
                                           className="w-full rounded-lg border border-zinc-700 bg-black px-3 py-2 text-sm outline-none focus:border-yellow-500 disabled:opacity-50"
@@ -2533,6 +2789,7 @@ export default function AdminPage() {
                                           disabled={
                                             savingThisResult ||
                                             deletingThisMatch ||
+                                            savingThisEdit ||
                                             updatingPlayers ||
                                             event.ownGoal ||
                                             teamPlayers.length === 0
@@ -2902,6 +3159,14 @@ function normalizeTeamForRoster(team: string): string {
     .replace(/\b(istanbul|fk|sk|sfk|bb)\b/g, " ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+}
+
+function formatDateTimeLocal(date: Date) {
+  const timezoneOffset = date.getTimezoneOffset() * 60 * 1000;
+
+  return new Date(date.getTime() - timezoneOffset)
+    .toISOString()
+    .slice(0, 16);
 }
 
 function getAdminWeekNumbers(matches: Match[]): number[] {

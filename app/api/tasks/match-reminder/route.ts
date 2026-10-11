@@ -12,6 +12,7 @@ type ReminderType =
 type TaskBody = {
   matchId?: unknown;
   reminderType?: unknown;
+  scheduleVersion?: unknown;
 };
 
 type ReminderConfig = {
@@ -115,6 +116,10 @@ export async function POST(request: NextRequest) {
         : "";
 
     const reminderType = body.reminderType;
+    const scheduleVersion =
+      typeof body.scheduleVersion === "string"
+        ? body.scheduleVersion.trim()
+        : "";
 
     if (!matchId) {
       return NextResponse.json(
@@ -139,7 +144,9 @@ export async function POST(request: NextRequest) {
     config = getReminderConfig(reminderType);
     matchReference = adminDb.collection("matches").doc(matchId);
 
-    const eventId = `${matchId}_${reminderType}`;
+    const eventId = `${matchId}_${reminderType}_${
+      scheduleVersion || "legacy"
+    }`;
     eventReference = adminDb
       .collection("automaticNotificationEvents")
       .doc(eventId);
@@ -159,6 +166,23 @@ export async function POST(request: NextRequest) {
         }
 
         const matchData = matchSnapshot.data()!;
+
+        const activeScheduleVersion =
+          typeof matchData.notificationScheduleVersion === "string"
+            ? matchData.notificationScheduleVersion
+            : "";
+
+        /*
+          Maç saati güncellendiğinde eski Cloud Tasks görevi biraz daha
+          kuyruğa düşebilir. Sürüm eşleşmiyorsa bu görev eski takvime aittir
+          ve hiçbir bildirim göndermeden güvenle atlanır.
+        */
+        if (activeScheduleVersion !== scheduleVersion) {
+          return {
+            action: "stale" as const,
+            matchData,
+          };
+        }
 
         if (matchData.status !== "scheduled") {
           return {
@@ -232,6 +256,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: "Maç bulunamadığı için görev atlandı.",
+      });
+    }
+
+    if (transactionResult.action === "stale") {
+      return NextResponse.json({
+        success: true,
+        message:
+          "Bildirim görevi eski maç takvimine ait olduğu için atlandı.",
       });
     }
 
