@@ -78,6 +78,7 @@ type Match = {
   result: MatchResult | null;
   goalEvents?: GoalEvent[];
   pointsCalculated?: boolean;
+  scoringStatus?: "processing" | "failed" | "completed";
 };
 
 type ScoreInputs = Record<
@@ -789,9 +790,14 @@ export default function AdminPage() {
 
     if (
       Number.isNaN(kickoffDate.getTime()) ||
-      kickoffDate.getTime() <= Date.now()
+      (match.status === "scheduled" &&
+        kickoffDate.getTime() <= Date.now())
     ) {
-      setMessage("Gelecekteki geçerli bir maç tarihi ve saati seç.");
+      setMessage(
+        match.status === "scheduled"
+          ? "Planlanmış maç için gelecekteki geçerli bir tarih ve saat seç."
+          : "Geçerli bir maç tarihi ve saati seç.",
+      );
       return;
     }
 
@@ -2343,8 +2349,10 @@ export default function AdminPage() {
                   const savingThisEdit =
                     savingEditedMatchId === match.id;
                   const canEditThisMatch =
-                    match.status === "scheduled" &&
-                    !match.pointsCalculated;
+                    (match.status === "scheduled" ||
+                      match.status === "finished") &&
+                    match.scoringStatus !== "processing" &&
+                    match.scoringStatus !== "failed";
                   const matchEditInput = matchEditInputs[match.id];
 
                   return (
@@ -2474,14 +2482,16 @@ export default function AdminPage() {
                             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                               <div>
                                 <h3 className="font-black text-sky-100">
-                                  Planlanmış maçı düzenle
+                                  Maçı düzenle
                                 </h3>
                                 <p className="mt-1 text-xs leading-5 text-sky-100/70">
-                                  Maç kimliği ve mevcut tahminler korunur. Tahmin kapanışı yeni başlangıç saatinden 5 dakika önce ayarlanır.
+                                  Maç kimliği, skor, tahminler ve puanlar korunur. Tahmin kapanışı yeni başlangıç saatinden 5 dakika önce ayarlanır.
                                 </p>
                               </div>
                               <span className="shrink-0 text-xs font-bold text-sky-200">
-                                Sadece planlanmış maç
+                                {match.status === "finished"
+                                  ? "Sonuç korunur"
+                                  : "Planlanmış maç"}
                               </span>
                             </div>
 
@@ -2565,12 +2575,6 @@ export default function AdminPage() {
                               </button>
                             </div>
                           </form>
-                        )}
-
-                        {!canEditThisMatch && (
-                          <p className="border-t border-zinc-800 pt-4 text-xs leading-5 text-zinc-500">
-                            Sonuçlanmış maçların takım ve tarih bilgileri, tahmin ve puan tutarlılığı için değiştirilemez.
-                          </p>
                         )}
 
                         <div className="border-t border-zinc-800 pt-4">

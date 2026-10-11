@@ -44,10 +44,48 @@ function getReminderTaskNames(data: FirebaseFirestore.DocumentData) {
 
 function canEditMatch(data: FirebaseFirestore.DocumentData) {
   return (
-    data.status === "scheduled" &&
-    data.pointsCalculated !== true &&
-    data.scoringStatus !== "processing"
+    (data.status === "scheduled" || data.status === "finished") &&
+    data.scoringStatus !== "processing" &&
+    data.scoringStatus !== "failed"
   );
+}
+
+function isScheduledMatch(data: FirebaseFirestore.DocumentData) {
+  return data.status === "scheduled";
+}
+
+function renameGoalEventTeams({
+  goalEvents,
+  previousHomeTeam,
+  previousAwayTeam,
+  homeTeam,
+  awayTeam,
+}: {
+  goalEvents: unknown;
+  previousHomeTeam: string;
+  previousAwayTeam: string;
+  homeTeam: string;
+  awayTeam: string;
+}) {
+  if (!Array.isArray(goalEvents)) {
+    return goalEvents;
+  }
+
+  return goalEvents.map((goalEvent) => {
+    if (!goalEvent || typeof goalEvent !== "object") {
+      return goalEvent;
+    }
+
+    const event = goalEvent as Record<string, unknown>;
+    const team =
+      event.team === previousHomeTeam
+        ? homeTeam
+        : event.team === previousAwayTeam
+          ? awayTeam
+          : event.team;
+
+    return { ...event, team };
+  });
 }
 
 export async function POST(request: NextRequest) {
@@ -130,16 +168,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (kickoffDate.getTime() <= Date.now()) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Maç tarihi gelecekte olmalı.",
-        },
-        { status: 400 },
-      );
-    }
-
     const matchReference = adminDb.collection("matches").doc(matchId);
     const matchSnapshot = await matchReference.get();
 
@@ -155,22 +183,38 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error:
-            "Sonuçlanmış veya puanlanmakta olan maçın tarihini ya da takımlarını değiştiremezsin.",
+            "Puan hesaplanırken veya yarım kalmışken maç bilgileri değiştirilemez. Önce sonuç işlemini tamamla.",
         },
         { status: 409 },
       );
     }
 
-    const notificationScheduleVersion =
-      createNotificationScheduleVersion();
+    const initialMatchData = matchSnapshot.data() ?? {};
+    const reschedulingReminders = isScheduledMatch(initialMatchData);
 
-    newlyScheduledTasks = await scheduleMatchReminderTasks({
-      matchId,
-      kickoff: kickoffDate,
-      scheduleVersion: notificationScheduleVersion,
-    });
+    if (reschedulingReminders && kickoffDate.getTime() <= Date.now()) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Planlanmış maçın tarihi gelecekte olmalı.",
+        },
+        { status: 400 },
+      );
+    }
 
-    let previousTasks: ReminderTaskNames;
+    const notificationScheduleVersion = reschedulingReminders
+      ? createNotificationScheduleVersion()
+      : null;
+
+    if (notificationScheduleVersion) {
+      newlyScheduledTasks = await scheduleMatchReminderTasks({
+        matchId,
+        kickoff: kickoffDate,
+        scheduleVersion: notificationScheduleVersion,
+      });
+    }
+
+    let previousTasks: ReminderTaskNames | null = null;
 
     try {
       previousTasks = await adminDb.runTransaction(async (transaction) => {
@@ -184,54 +228,89 @@ export async function POST(request: NextRequest) {
 
         if (!canEditMatch(currentMatchData)) {
           throw new Error(
-            "Maç sonuçlanırken düzenleme yapılamaz. Sayfayı yenileyip tekrar dene.",
+            "Maç puanlanırken düzenleme yapılamaz. Sayfayı yenileyip tekrar dene.",
           );
         }
 
-        const existingTasks = getReminderTaskNames(currentMatchData);
+        const currentlyScheduled = isScheduledMatch(currentMatchData);
 
-        transaction.update(matchReference, {
+        if (currentlyScheduled !== reschedulingReminders) {
+          throw new Error(
+            "Maç durumu değişti. Sayfayı yenileyip tekrar dene.",
+          );
+        }
+
+        const previousHomeTeam =
+          typeof currentMatchData.homeTeam === "string"
+            ? currentMatchData.homeTeam
+            : "Ev sahibi";
+        const previousAwayTeam =
+          typeof currentMatchData.awayTeam === "string"
+            ? currentMatchData.awayTeam
+            : "Deplasman";
+        const updates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
           homeTeam,
           awayTeam,
           kickoff: Timestamp.fromDate(kickoffDate),
           predictionDeadline: Timestamp.fromDate(
             new Date(kickoffDate.getTime() - 5 * 60 * 1000),
           ),
-          notificationScheduleVersion,
-          oneHourTaskName: newlyScheduledTasks!.oneHourTaskName,
-          predictionDeadlineTaskName:
-            newlyScheduledTasks!.predictionDeadlineTaskName,
-          oneHourReminderSent: false,
-          oneHourReminderProcessing: false,
-          predictionDeadlineReminderSent: false,
-          predictionDeadlineReminderProcessing: false,
-          notificationTasksStatus: "scheduled",
-          notificationTasksScheduledAt: FieldValue.serverTimestamp(),
-          notificationTasksLastError: FieldValue.delete(),
-          notificationTasksLastErrorAt: FieldValue.delete(),
-          notificationTasksCleanupWarning: FieldValue.delete(),
           updatedBy: decodedToken.uid,
           updatedAt: FieldValue.serverTimestamp(),
-        });
+        };
 
-        return existingTasks;
+        if (Array.isArray(currentMatchData.goalEvents)) {
+          updates.goalEvents = renameGoalEventTeams({
+            goalEvents: currentMatchData.goalEvents,
+            previousHomeTeam,
+            previousAwayTeam,
+            homeTeam,
+            awayTeam,
+          });
+        }
+
+        if (currentlyScheduled) {
+          const existingTasks = getReminderTaskNames(currentMatchData);
+          updates.notificationScheduleVersion = notificationScheduleVersion;
+          updates.oneHourTaskName = newlyScheduledTasks!.oneHourTaskName;
+          updates.predictionDeadlineTaskName =
+            newlyScheduledTasks!.predictionDeadlineTaskName;
+          updates.oneHourReminderSent = false;
+          updates.oneHourReminderProcessing = false;
+          updates.predictionDeadlineReminderSent = false;
+          updates.predictionDeadlineReminderProcessing = false;
+          updates.notificationTasksStatus = "scheduled";
+          updates.notificationTasksScheduledAt = FieldValue.serverTimestamp();
+          updates.notificationTasksLastError = FieldValue.delete();
+          updates.notificationTasksLastErrorAt = FieldValue.delete();
+          updates.notificationTasksCleanupWarning = FieldValue.delete();
+
+          transaction.update(matchReference, updates);
+          return existingTasks;
+        }
+
+        transaction.update(matchReference, updates);
+
+        return null;
       });
     } catch (error) {
-      await deleteMatchReminderTasks(newlyScheduledTasks).catch(
-        (cleanupError) => {
-          console.warn(
-            "Düzenleme kaydedilemeyince yeni bildirim görevleri temizlenemedi:",
-            cleanupError,
-          );
-        },
-      );
+      if (newlyScheduledTasks) {
+        await deleteMatchReminderTasks(newlyScheduledTasks).catch(
+          (cleanupError) => {
+            console.warn(
+              "Düzenleme kaydedilemeyince yeni bildirim görevleri temizlenemedi:",
+              cleanupError,
+            );
+          },
+        );
+      }
       newlyScheduledTasks = null;
       throw error;
     }
 
-    const cleanupResults = await Promise.allSettled([
-      deleteMatchReminderTasks(previousTasks),
-    ]);
+    const cleanupResults = previousTasks
+      ? await Promise.allSettled([deleteMatchReminderTasks(previousTasks)])
+      : [];
     const taskCleanupWarning = cleanupResults.some(
       (result) => result.status === "rejected",
     );
@@ -256,9 +335,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: taskCleanupWarning
-        ? "Maç güncellendi. Eski bildirim görevi silinemedi ancak yeni zamanla uyuşmadığı için gönderim yapmayacak."
-        : "Maç güncellendi ve bildirim saatleri yeni maç saatine göre yenilendi.",
+      message: reschedulingReminders
+        ? taskCleanupWarning
+          ? "Maç güncellendi. Eski bildirim görevi silinemedi ancak yeni zamanla uyuşmadığı için gönderim yapmayacak."
+          : "Maç güncellendi ve bildirim saatleri yeni maç saatine göre yenilendi."
+        : "Sonuçlanmış maç güncellendi; skor, tahminler ve hesaplanmış puanlar korundu.",
       predictionDeadline: new Date(
         kickoffDate.getTime() - 5 * 60 * 1000,
       ).toISOString(),
