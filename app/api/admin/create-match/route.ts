@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
-import {
-  createNotificationScheduleVersion,
-  scheduleMatchReminderTasks,
-} from "@/lib/cloud-tasks";
 
 export const runtime = "nodejs";
 
@@ -27,10 +23,6 @@ function getBearerToken(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  let matchReference:
-    | FirebaseFirestore.DocumentReference
-    | null = null;
-
   try {
     const idToken = getBearerToken(request);
 
@@ -144,9 +136,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    matchReference = adminDb.collection("matches").doc();
-    const notificationScheduleVersion =
-      createNotificationScheduleVersion();
+    const matchReference = adminDb.collection("matches").doc();
 
     await matchReference.set({
       week,
@@ -165,59 +155,23 @@ export async function POST(request: NextRequest) {
 
       oneHourReminderSent: false,
       predictionDeadlineReminderSent: false,
-
-      notificationTasksStatus: "creating",
-      notificationScheduleVersion,
+      // Zamanlanmış sunucu görevi yoktur. Açık uygulamada çalışan yerel
+      // hatırlatıcı, kullanıcıya ek ücret doğurmadan en iyi çabayla uyarı verir.
+      notificationMode: "local-open-tab",
 
       createdBy: userId,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    const taskNames = await scheduleMatchReminderTasks({
-      matchId: matchReference.id,
-      kickoff: kickoffDate,
-      scheduleVersion: notificationScheduleVersion,
-    });
-
-    await matchReference.update({
-      oneHourTaskName: taskNames.oneHourTaskName,
-      predictionDeadlineTaskName:
-        taskNames.predictionDeadlineTaskName,
-      notificationTasksStatus: "scheduled",
-      notificationTasksScheduledAt:
-        FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-    });
-
     return NextResponse.json({
       success: true,
-      message: "Maç ve bildirim görevleri oluşturuldu.",
+      message:
+        "Maç oluşturuldu. Zamanlanmış ücretli bildirim görevi oluşturulmadı.",
       matchId: matchReference.id,
-      oneHourTaskName: taskNames.oneHourTaskName,
-      predictionDeadlineTaskName:
-        taskNames.predictionDeadlineTaskName,
     });
   } catch (error) {
     console.error("Maç oluşturma hatası:", error);
-
-    if (matchReference) {
-      try {
-        await matchReference.update({
-          notificationTasksStatus: "failed",
-          notificationTasksError:
-            error instanceof Error
-              ? error.message
-              : "Bilinmeyen Cloud Tasks hatası.",
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-      } catch (updateError) {
-        console.error(
-          "Maç görev hata bilgisi kaydedilemedi:",
-          updateError
-        );
-      }
-    }
 
     return NextResponse.json(
       {

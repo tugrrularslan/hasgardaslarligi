@@ -11,7 +11,6 @@ const firebaseConfig = {
   apiKey: "AIzaSyAtx-ToJxR-e_AfnjBlrydMJsXBXaCF5U0",
   authDomain: "has-gardaslar-ligi.firebaseapp.com",
   projectId: "has-gardaslar-ligi",
-  storageBucket: "has-gardaslar-ligi.firebasestorage.app",
   messagingSenderId: "833768082962",
   appId: "1:833768082962:web:139f75589ebf468f3252cb",
 };

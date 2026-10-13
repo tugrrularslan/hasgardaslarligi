@@ -23,13 +23,16 @@ import type {
 
 const ESPN_TEAMS_URL =
   "https://site.api.espn.com/apis/site/v2/sports/soccer/tur.1/teams";
-const PLAYER_ROSTER_DOCUMENT = adminDb.collection("system").doc("playerRoster");
 const MINIMUM_SAFE_PLAYER_COUNT = 180;
 const MINIMUM_SAFE_TEAM_PLAYER_COUNT = 8;
 const MAXIMUM_SAFE_REMOVAL_RATIO = 0.18;
 const KAHIN_TEAM_SET = new Set<string>(KAHIN_TEAMS);
 
 type SyncSource = PlayerSyncReport["source"];
+
+function getPlayerRosterDocument() {
+  return adminDb.collection("system").doc("playerRoster");
+}
 
 type EspnTeam = {
   id: string;
@@ -412,7 +415,7 @@ function isPlayerSyncReport(value: unknown): value is PlayerSyncReport {
 }
 
 export async function getStoredPlayerRoster(): Promise<PlayerRosterResponse | null> {
-  const snapshot = await PLAYER_ROSTER_DOCUMENT.get();
+  const snapshot = await getPlayerRosterDocument().get();
   if (!snapshot.exists) return null;
 
   const data = snapshot.data() ?? {};
@@ -446,7 +449,7 @@ export async function syncPlayerRoster(
   const startedAt = new Date().toISOString();
   const previousRoster = await getStoredPlayerRoster();
   const previousPlayers = previousRoster?.players ?? [];
-  const manualSnapshot = await PLAYER_ROSTER_DOCUMENT.get();
+  const manualSnapshot = await getPlayerRosterDocument().get();
   const manualPlayers = getConfiguredManualPlayers(
     manualSnapshot.data()?.manualPlayers,
   );
@@ -515,13 +518,14 @@ export async function syncPlayerRoster(
     failedTeams,
     health,
   };
-  const runReference = PLAYER_ROSTER_DOCUMENT.collection("runs").doc();
+  const playerRosterDocument = getPlayerRosterDocument();
+  const runReference = playerRosterDocument.collection("runs").doc();
   const batch = adminDb.batch();
   batch.set(runReference, report);
 
   if (safeToPersist) {
     batch.set(
-      PLAYER_ROSTER_DOCUMENT,
+      playerRosterDocument,
       {
         version: 1,
         players,
@@ -532,7 +536,7 @@ export async function syncPlayerRoster(
     );
   } else {
     batch.set(
-      PLAYER_ROSTER_DOCUMENT,
+      playerRosterDocument,
       { lastAttemptAt: completedAt, lastAttemptReport: report },
       { merge: true },
     );
@@ -577,7 +581,8 @@ export async function addManualLeaguePlayer(
   }
 
   return adminDb.runTransaction(async (transaction) => {
-    const snapshot = await transaction.get(PLAYER_ROSTER_DOCUMENT);
+    const playerRosterDocument = getPlayerRosterDocument();
+    const snapshot = await transaction.get(playerRosterDocument);
     const current = readCustomManualPlayers(snapshot.data()?.manualPlayers);
     const existing = current.find(
       (item) => normalizePlayerName(item.name) === normalizePlayerName(player.name),
@@ -588,7 +593,7 @@ export async function addManualLeaguePlayer(
     }
 
     transaction.set(
-      PLAYER_ROSTER_DOCUMENT,
+      playerRosterDocument,
       {
         manualPlayers: mergeCustomManualPlayers(
           current.filter(
@@ -614,7 +619,7 @@ export async function migrateLegacyKahinPlayers(): Promise<{
 
   return adminDb.runTransaction(async (transaction) => {
     const [rosterSnapshot, settingsSnapshot] = await Promise.all([
-      transaction.get(PLAYER_ROSTER_DOCUMENT),
+      transaction.get(getPlayerRosterDocument()),
       transaction.get(legacySettings),
     ]);
     const legacyPlayers = sanitizeKahinPlayers(
@@ -641,7 +646,7 @@ export async function migrateLegacyKahinPlayers(): Promise<{
     const migratedCount = next.length - current.length;
 
     transaction.set(
-      PLAYER_ROSTER_DOCUMENT,
+      getPlayerRosterDocument(),
       {
         manualPlayers: next,
         manualPlayersUpdatedAt: FieldValue.serverTimestamp(),

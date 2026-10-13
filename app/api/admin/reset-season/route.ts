@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
-import { deleteMatchReminderTasks } from "@/lib/cloud-tasks";
 import { DEFAULT_BADGE_PROGRESS } from "@/lib/achievements";
 import {
   DEFAULT_SEASON_ID,
@@ -196,35 +195,6 @@ export async function POST(request: NextRequest) {
         );
       });
 
-    const taskCleanupResults = await Promise.allSettled(
-      seasonMatches.map((matchDocument) => {
-        const matchData = matchDocument.data();
-
-        return deleteMatchReminderTasks({
-          oneHourTaskName:
-            typeof matchData.oneHourTaskName === "string"
-              ? matchData.oneHourTaskName
-              : null,
-          predictionDeadlineTaskName:
-            typeof matchData.predictionDeadlineTaskName === "string"
-              ? matchData.predictionDeadlineTaskName
-              : null,
-        });
-      })
-    );
-    const taskCleanupWarnings = taskCleanupResults.filter(
-      (result) => result.status === "rejected"
-    ).length;
-
-    taskCleanupResults.forEach((result) => {
-      if (result.status === "rejected") {
-        console.warn(
-          "Bildirim görevi silinemedi; maç silindikten sonra görev güvenli biçimde atlanacak:",
-          result.reason
-        );
-      }
-    });
-
     const writer = adminDb.bulkWriter();
 
     seasonPredictions.forEach((document) =>
@@ -316,7 +286,6 @@ export async function POST(request: NextRequest) {
         matchMessages: seasonMatchMessages.length,
       },
       resetUsers: usersSnapshot.size,
-      taskCleanupWarnings,
     });
   } catch (error) {
     console.error("Aktif sezon sıfırlama hatası:", error);

@@ -1,11 +1,6 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
-import {
-  createNotificationScheduleVersion,
-  deleteMatchReminderTasks,
-  scheduleMatchReminderTasks,
-} from "@/lib/cloud-tasks";
 
 export const runtime = "nodejs";
 
@@ -16,30 +11,12 @@ type UpdateMatchBody = {
   kickoff?: unknown;
 };
 
-type ReminderTaskNames = {
-  oneHourTaskName: string | null;
-  predictionDeadlineTaskName: string | null;
-};
-
 function getBearerToken(request: NextRequest) {
   const authorization = request.headers.get("authorization");
 
   return authorization?.startsWith("Bearer ")
     ? authorization.slice("Bearer ".length).trim()
     : null;
-}
-
-function getReminderTaskNames(data: FirebaseFirestore.DocumentData) {
-  return {
-    oneHourTaskName:
-      typeof data.oneHourTaskName === "string"
-        ? data.oneHourTaskName
-        : null,
-    predictionDeadlineTaskName:
-      typeof data.predictionDeadlineTaskName === "string"
-        ? data.predictionDeadlineTaskName
-        : null,
-  } satisfies ReminderTaskNames;
 }
 
 function canEditMatch(data: FirebaseFirestore.DocumentData) {
@@ -89,8 +66,6 @@ function renameGoalEventTeams({
 }
 
 export async function POST(request: NextRequest) {
-  let newlyScheduledTasks: ReminderTaskNames | null = null;
-
   try {
     const idToken = getBearerToken(request);
 
@@ -124,8 +99,7 @@ export async function POST(request: NextRequest) {
       typeof body.homeTeam === "string" ? body.homeTeam.trim() : "";
     const awayTeam =
       typeof body.awayTeam === "string" ? body.awayTeam.trim() : "";
-    const kickoffText =
-      typeof body.kickoff === "string" ? body.kickoff : "";
+    const kickoffText = typeof body.kickoff === "string" ? body.kickoff : "";
     const kickoffDate = new Date(kickoffText);
 
     if (!matchId || matchId.length > 200) {
@@ -178,7 +152,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!canEditMatch(matchSnapshot.data() ?? {})) {
+    const initialMatchData = matchSnapshot.data() ?? {};
+
+    if (!canEditMatch(initialMatchData)) {
       return NextResponse.json(
         {
           success: false,
@@ -189,10 +165,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const initialMatchData = matchSnapshot.data() ?? {};
-    const reschedulingReminders = isScheduledMatch(initialMatchData);
-
-    if (reschedulingReminders && kickoffDate.getTime() <= Date.now()) {
+    if (
+      isScheduledMatch(initialMatchData) &&
+      kickoffDate.getTime() <= Date.now()
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -202,22 +178,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const notificationScheduleVersion = reschedulingReminders
-      ? createNotificationScheduleVersion()
-      : null;
-
-    if (notificationScheduleVersion) {
-      newlyScheduledTasks = await scheduleMatchReminderTasks({
-        matchId,
-        kickoff: kickoffDate,
-        scheduleVersion: notificationScheduleVersion,
-      });
-    }
-
-    let previousTasks: ReminderTaskNames | null = null;
-
-    try {
-      previousTasks = await adminDb.runTransaction(async (transaction) => {
+    const scheduledMatchUpdated = await adminDb.runTransaction(
+      async (transaction) => {
         const currentMatchSnapshot = await transaction.get(matchReference);
 
         if (!currentMatchSnapshot.exists) {
@@ -233,13 +195,6 @@ export async function POST(request: NextRequest) {
         }
 
         const currentlyScheduled = isScheduledMatch(currentMatchData);
-
-        if (currentlyScheduled !== reschedulingReminders) {
-          throw new Error(
-            "Maç durumu değişti. Sayfayı yenileyip tekrar dene.",
-          );
-        }
-
         const previousHomeTeam =
           typeof currentMatchData.homeTeam === "string"
             ? currentMatchData.homeTeam
@@ -270,80 +225,25 @@ export async function POST(request: NextRequest) {
         }
 
         if (currentlyScheduled) {
-          const existingTasks = getReminderTaskNames(currentMatchData);
-          updates.notificationScheduleVersion = notificationScheduleVersion;
-          updates.oneHourTaskName = newlyScheduledTasks!.oneHourTaskName;
-          updates.predictionDeadlineTaskName =
-            newlyScheduledTasks!.predictionDeadlineTaskName;
-          updates.oneHourReminderSent = false;
-          updates.oneHourReminderProcessing = false;
-          updates.predictionDeadlineReminderSent = false;
-          updates.predictionDeadlineReminderProcessing = false;
-          updates.notificationTasksStatus = "scheduled";
-          updates.notificationTasksScheduledAt = FieldValue.serverTimestamp();
-          updates.notificationTasksLastError = FieldValue.delete();
-          updates.notificationTasksLastErrorAt = FieldValue.delete();
-          updates.notificationTasksCleanupWarning = FieldValue.delete();
-
-          transaction.update(matchReference, updates);
-          return existingTasks;
+          // Cloud Tasks yerine, yalnızca uygulama açıkken çalışan yerel
+          // hatırlatıcı kullanılacak. Eski görev adlarına dokunmuyoruz;
+          // geçişten önce kuyruk konsoldan güvenle temizlenebilir.
+          updates.notificationMode = "local-open-tab";
         }
 
         transaction.update(matchReference, updates);
-
-        return null;
-      });
-    } catch (error) {
-      if (newlyScheduledTasks) {
-        await deleteMatchReminderTasks(newlyScheduledTasks).catch(
-          (cleanupError) => {
-            console.warn(
-              "Düzenleme kaydedilemeyince yeni bildirim görevleri temizlenemedi:",
-              cleanupError,
-            );
-          },
-        );
-      }
-      newlyScheduledTasks = null;
-      throw error;
-    }
-
-    const cleanupResults = previousTasks
-      ? await Promise.allSettled([deleteMatchReminderTasks(previousTasks)])
-      : [];
-    const taskCleanupWarning = cleanupResults.some(
-      (result) => result.status === "rejected",
+        return currentlyScheduled;
+      },
     );
-
-    if (taskCleanupWarning) {
-      console.warn(
-        "Eski maç bildirim görevleri silinemedi; sürüm doğrulaması nedeniyle güvenle atlanacak.",
-      );
-      await matchReference
-        .update({
-          notificationTasksCleanupWarning:
-            "Eski bildirim görevi silinemedi; güncel zaman bilgisiyle uyuşmadığı için gönderim yapılmayacak.",
-          updatedAt: FieldValue.serverTimestamp(),
-        })
-        .catch((warningUpdateError) => {
-          console.warn(
-            "Bildirim görevi temizleme uyarısı maç kaydına yazılamadı:",
-            warningUpdateError,
-          );
-        });
-    }
 
     return NextResponse.json({
       success: true,
-      message: reschedulingReminders
-        ? taskCleanupWarning
-          ? "Maç güncellendi. Eski bildirim görevi silinemedi ancak yeni zamanla uyuşmadığı için gönderim yapmayacak."
-          : "Maç güncellendi ve bildirim saatleri yeni maç saatine göre yenilendi."
+      message: scheduledMatchUpdated
+        ? "Maç güncellendi. Zamanlanmış sunucu bildirimi kullanılmıyor; uygulama açıkken yerel hatırlatıcı çalışır."
         : "Sonuçlanmış maç güncellendi; skor, tahminler ve hesaplanmış puanlar korundu.",
       predictionDeadline: new Date(
         kickoffDate.getTime() - 5 * 60 * 1000,
       ).toISOString(),
-      taskCleanupWarning,
     });
   } catch (error) {
     console.error("Maç güncelleme API hatası:", error);

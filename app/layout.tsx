@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import NotificationInitializer from "@/components/NotificationInitializer";
+import LocalMatchReminder from "@/components/LocalMatchReminder";
 import GlobalThemeBridge from "@/components/GlobalThemeBridge";
 import MobileNavigation from "@/components/MobileNavigation";
 
@@ -34,6 +35,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <GlobalThemeBridge />
         <NotificationInitializer />
+        <LocalMatchReminder />
         {children}
         <MobileNavigation />
       </body>

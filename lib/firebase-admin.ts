@@ -1,3 +1,5 @@
+import "server-only";
+
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
@@ -33,10 +35,22 @@ function getFirebaseAdminApp() {
   });
 }
 
-const firebaseAdminApp = getFirebaseAdminApp();
+function lazyService<T extends object>(factory: () => T): T {
+  return new Proxy({} as T, {
+    get(_target, property) {
+      const service = factory();
+      const value = Reflect.get(service, property, service);
 
-export const adminAuth = getAuth(firebaseAdminApp);
-export const adminDb = getFirestore(firebaseAdminApp);
-export const adminMessaging = getMessaging(firebaseAdminApp);
+      return typeof value === "function" ? value.bind(service) : value;
+    },
+  });
+}
 
-export { firebaseAdminApp };
+// Route handlers are evaluated while `next build` collects route metadata.
+// Firebase Admin credentials belong only to the deployed runtime, so defer
+// initialization until a handler actually uses a Firebase service.
+export const adminAuth = lazyService(() => getAuth(getFirebaseAdminApp()));
+export const adminDb = lazyService(() => getFirestore(getFirebaseAdminApp()));
+export const adminMessaging = lazyService(() =>
+  getMessaging(getFirebaseAdminApp()),
+);
