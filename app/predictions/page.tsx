@@ -21,6 +21,7 @@ import HittiteIcon from "@/components/HittiteIcon";
 import GameNavigation from "@/components/GameNavigation";
 import MatchChat from "@/components/MatchChat";
 import TeamCrest from "@/components/TeamCrest";
+import WeeklyPredictionCard from "@/components/WeeklyPredictionCard";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
 const CURRENT_SEASON = "2026–2027 Sezonu";
@@ -420,6 +421,13 @@ export default function PredictionsPage() {
                       {CURRENT_SEASON}
                     </span>
                   </div>
+
+                  <WeeklyPredictionCard
+                    week={Number(week)}
+                    matches={weekMatches}
+                    predictions={savedPredictions}
+                    theme={activeTheme}
+                  />
 
                   <div className="space-y-4">
                     {weekMatches.map((match) => {
