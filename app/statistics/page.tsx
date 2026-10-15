@@ -5,13 +5,7 @@ import HittiteIcon, { type HittiteIconName } from "@/components/HittiteIcon";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  Timestamp,
-} from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import SeasonLabel from "@/components/SeasonLabel";
@@ -31,7 +25,7 @@ type UserProfile = {
 type Match = {
   id: string;
   week: number;
-  kickoff: Timestamp | null;
+  kickoff: number | null;
   result: MatchResult | null;
   status: "scheduled" | "finished";
 };
@@ -63,12 +57,6 @@ type UserStatistics = UserProfile & {
   draw: ResultBreakdown;
   awayWin: ResultBreakdown;
 };
-
-function safeNumber(value: unknown): number {
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : 0;
-}
 
 function calculateRate(correct: number, total: number): number {
   if (total <= 0) return 0;
@@ -188,127 +176,35 @@ export default function StatisticsPage() {
 
   useEffect(() => {
     if (!currentUser || checkingAccess) return;
-
-    const currentUserId = currentUser.uid;
+    const user = currentUser;
 
     async function loadStatistics() {
       setLoading(true);
       setMessage("");
 
       try {
-        const [usersSnapshot, matchesSnapshot, predictionsSnapshot] =
-          await Promise.all([
-            getDocs(collection(db, "users")),
-            getDocs(collection(db, "matches")),
-            getDocs(collection(db, "predictions")),
-          ]);
+        const idToken = await user.getIdToken();
+        const response = await fetch("/api/statistics", {
+          headers: { Authorization: `Bearer ${idToken}` },
+          cache: "no-store",
+        });
+        const data = await response.json();
 
-        const allUsers: UserProfile[] = usersSnapshot.docs.map(
-          (userDocument) => {
-            const data = userDocument.data();
+        if (!response.ok) {
+          throw new Error(data.error || "İstatistikler alınamadı.");
+        }
 
-            const username =
-              typeof data.username === "string" &&
-              data.username.trim()
-                ? data.username.trim()
-                : typeof data.displayName === "string" &&
-                    data.displayName.trim()
-                  ? data.displayName.trim()
-                  : typeof data.email === "string" &&
-                      data.email.trim()
-                    ? data.email.trim()
-                    : "İsimsiz kullanıcı";
+        const visibleUsers = Array.isArray(data.users) ? data.users as UserProfile[] : [];
+        const matchList = Array.isArray(data.matches) ? data.matches as Match[] : [];
+        const visiblePredictions = Array.isArray(data.predictions) ? data.predictions as Prediction[] : [];
+        const canViewLeague = data.isAdmin === true;
 
-            const photoURL =
-              typeof data.photoURL === "string" &&
-              data.photoURL.trim()
-                ? data.photoURL.trim()
-                : typeof data.profilePhotoURL === "string" &&
-                    data.profilePhotoURL.trim()
-                  ? data.profilePhotoURL.trim()
-                  : null;
-
-            return {
-              id: userDocument.id,
-              username,
-              photoURL,
-              correctPredictions: safeNumber(
-                data.correctPredictions
-              ),
-              weeklyWins: safeNumber(data.weeklyWins),
-              totalPoints: safeNumber(data.totalPoints),
-            };
-          }
-        );
-
-        const visibleUsers = isAdmin
-          ? allUsers
-          : allUsers.filter(
-              (profile) => profile.id === currentUserId
-            );
-
-        const matchList: Match[] = matchesSnapshot.docs.map(
-          (matchDocument) => {
-            const data = matchDocument.data();
-
-            return {
-              id: matchDocument.id,
-              week: safeNumber(data.week),
-              kickoff:
-                data.kickoff instanceof Timestamp
-                  ? data.kickoff
-                  : null,
-              result:
-                data.result === "1" ||
-                data.result === "X" ||
-                data.result === "2"
-                  ? data.result
-                  : null,
-              status:
-                data.status === "finished"
-                  ? "finished"
-                  : "scheduled",
-            };
-          }
-        );
-
-        const allPredictions: Prediction[] =
-          predictionsSnapshot.docs.map((predictionDocument) => {
-            const data = predictionDocument.data();
-
-            return {
-              id: predictionDocument.id,
-              userId:
-                typeof data.userId === "string"
-                  ? data.userId
-                  : "",
-              matchId:
-                typeof data.matchId === "string"
-                  ? data.matchId
-                  : "",
-              prediction:
-                data.prediction === "1" ||
-                data.prediction === "X" ||
-                data.prediction === "2"
-                  ? data.prediction
-                  : null,
-              isCorrect: data.isCorrect === true,
-              awardedPoints: safeNumber(data.awardedPoints),
-            };
-          });
-
-        const visiblePredictions = isAdmin
-          ? allPredictions
-          : allPredictions.filter(
-              (prediction) =>
-                prediction.userId === currentUserId
-            );
-
+        setIsAdmin(canViewLeague);
         setUsers(visibleUsers);
         setMatches(matchList);
         setPredictions(visiblePredictions);
 
-        if (isAdmin) {
+        if (canViewLeague) {
           const firstUser = [...visibleUsers].sort(
             (a, b) =>
               b.totalPoints - a.totalPoints ||
@@ -323,12 +219,12 @@ export default function StatisticsPage() {
             );
           }
         } else {
-          setSelectedUserId(currentUserId);
+          setSelectedUserId(user.uid);
         }
       } catch (error) {
         console.error(error);
         setMessage(
-          "İstatistikler yüklenemedi. Firestore kurallarını kontrol et."
+          error instanceof Error ? error.message : "İstatistikler yüklenemedi."
         );
       } finally {
         setLoading(false);
@@ -336,7 +232,7 @@ export default function StatisticsPage() {
     }
 
     void loadStatistics();
-  }, [currentUser, checkingAccess, isAdmin]);
+  }, [currentUser, checkingAccess]);
 
   const activeTheme = useMemo(
     () => getThemeById(selectedTheme),
@@ -372,7 +268,7 @@ export default function StatisticsPage() {
             kickoffTime:
               finishedMatchMap
                 .get(prediction.matchId)
-                ?.kickoff?.toMillis() ?? 0,
+                ?.kickoff ?? 0,
           }))
           .sort(
             (first, second) =>

@@ -44,8 +44,12 @@ function markAsShown(reminder: LocalReminder, kind: ReminderKind) {
   }
 }
 
+function notificationPermissionGranted() {
+  return typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted";
+}
+
 function showReminder(reminder: LocalReminder, kind: ReminderKind) {
-  if (hasAlreadyShown(reminder, kind) || Notification.permission !== "granted") {
+  if (hasAlreadyShown(reminder, kind) || !notificationPermissionGranted()) {
     return;
   }
 
@@ -113,7 +117,7 @@ export default function LocalMatchReminder() {
     let cancelled = false;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user || Notification.permission !== "granted") {
+      if (!user || !notificationPermissionGranted()) {
         return;
       }
 

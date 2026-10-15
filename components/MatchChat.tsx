@@ -92,13 +92,20 @@ export default function MatchChat({
   useEffect(() => {
     if (!open) return;
 
-    void loadMessages(true);
+    const initialLoadTimer = window.setTimeout(() => {
+      void loadMessages(true);
+    }, 0);
 
     const refreshTimer = window.setInterval(() => {
-      void loadMessages(false);
-    }, 15_000);
+      // Arka plandaki sekmeler için tekrar tekrar okuma yapma. Sohbet zaten
+      // açıldığında ve mesaj gönderildikten sonra güncellenir.
+      if (document.visibilityState === "visible") {
+        void loadMessages(false);
+      }
+    }, 60_000);
 
     return () => {
+      window.clearTimeout(initialLoadTimer);
       window.clearInterval(refreshTimer);
     };
   }, [loadMessages, open]);
@@ -216,7 +223,7 @@ export default function MatchChat({
       {open && (
         <div className={`border-t p-3 sm:p-4 ${theme.borderClass}`}>
           <p className={`mb-3 text-xs ${theme.mutedTextClass}`}>
-            {matchLabel} hakkında gardaşça konuş. Son 40 mesaj gösterilir.
+            {matchLabel} hakkında gardaşça konuş. Son 40 mesaj gösterilir; açıkken dakikada bir yenilenir.
           </p>
 
           <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
