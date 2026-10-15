@@ -54,6 +54,7 @@ type WeekFilter = number | "all" | null;
 
 type UserProfile = {
   selectedTheme: string;
+  username: string;
 };
 
 export default function PredictionsPage() {
@@ -97,7 +98,10 @@ export default function PredictionsPage() {
           userReference,
           (snapshot) => {
             if (!snapshot.exists()) {
-              setProfile({ selectedTheme: "obsidyen" });
+              setProfile({
+                selectedTheme: "obsidyen",
+                username: firebaseUser.displayName?.trim() || "Gardaş",
+              });
               return;
             }
 
@@ -108,11 +112,20 @@ export default function PredictionsPage() {
                 typeof data.selectedTheme === "string"
                   ? normalizeThemeId(data.selectedTheme)
                   : "obsidyen",
+              username:
+                typeof data.username === "string" && data.username.trim()
+                  ? data.username.trim()
+                  : typeof data.displayName === "string" && data.displayName.trim()
+                    ? data.displayName.trim()
+                    : firebaseUser.displayName?.trim() || "Gardaş",
             });
           },
           (error) => {
             console.error(error);
-            setProfile({ selectedTheme: "obsidyen" });
+            setProfile({
+              selectedTheme: "obsidyen",
+              username: firebaseUser.displayName?.trim() || "Gardaş",
+            });
             setMessage("Tema bilgisi alınamadı. Klasik tema kullanılıyor.");
           }
         );
@@ -427,6 +440,7 @@ export default function PredictionsPage() {
                     matches={weekMatches}
                     predictions={savedPredictions}
                     theme={activeTheme}
+                    ownerName={profile?.username || user?.displayName?.trim() || "Gardaş"}
                   />
 
                   <div className="space-y-4">

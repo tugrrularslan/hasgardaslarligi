@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import HittiteIcon from "@/components/HittiteIcon";
+import { getTeamCrestUrl } from "@/lib/team-crests";
 import type { AppTheme } from "@/lib/themes";
 
 type PredictionValue = "1" | "X" | "2";
@@ -42,117 +43,104 @@ function fitText(
   return `${shortened}…`;
 }
 
-async function createShareImage({
-  week,
-  lines,
-  themeId,
-}: {
+function loadCrest(source: string | null) {
+  if (!source) return Promise.resolve(null);
+
+  return new Promise<HTMLImageElement | null>((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = source;
+  });
+}
+
+async function createShareImage({ week, lines, ownerName }: {
   week: number;
   lines: CardLine[];
-  themeId: AppTheme["id"];
+  ownerName: string;
 }) {
-  const palette = {
-    obsidyen: ["#08090d", "#251a38", "#f2c763", "#f8edcf"],
-    "hitit-zeytini": ["#111708", "#3b431d", "#ddc75f", "#f3edcf"],
-    traverten: ["#f5e6c8", "#c89158", "#7f481f", "#3d2818"],
-    bazalt: ["#0a0b0d", "#402016", "#ed8640", "#f3f3f3"],
-  }[themeId];
-  const [background, accentBackground, accent, ink] = palette;
   const width = 1080;
-  const rowHeight = 88;
-  const height = Math.max(1350, 560 + lines.length * rowHeight + 170);
+  const rowHeight = 124;
+  const height = Math.max(1660, 565 + lines.length * rowHeight + 190);
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext("2d");
-
   if (!context) throw new Error("Görsel kart hazırlanamadı.");
 
-  const backgroundGradient = context.createLinearGradient(0, 0, width, height);
-  backgroundGradient.addColorStop(0, background);
-  backgroundGradient.addColorStop(0.58, accentBackground);
-  backgroundGradient.addColorStop(1, background);
-  context.fillStyle = backgroundGradient;
+  const crests = await Promise.all(lines.flatMap((line) => [
+    loadCrest(getTeamCrestUrl(line.homeTeam)),
+    loadCrest(getTeamCrestUrl(line.awayTeam)),
+  ]));
+  const background = context.createLinearGradient(0, 0, width, height);
+  background.addColorStop(0, "#07060a");
+  background.addColorStop(0.52, "#1d1028");
+  background.addColorStop(1, "#070607");
+  context.fillStyle = background;
   context.fillRect(0, 0, width, height);
-
   context.globalAlpha = 0.24;
-  context.fillStyle = accent;
-  context.beginPath();
-  context.arc(width - 30, 70, 270, 0, Math.PI * 2);
-  context.fill();
-  context.beginPath();
-  context.arc(100, height - 80, 240, 0, Math.PI * 2);
-  context.fill();
+  context.fillStyle = "#e0ad41";
+  context.beginPath(); context.arc(width - 28, 75, 275, 0, Math.PI * 2); context.fill();
+  context.fillStyle = "#7039a5";
+  context.beginPath(); context.arc(65, height - 55, 275, 0, Math.PI * 2); context.fill();
   context.globalAlpha = 1;
-
-  context.strokeStyle = `${accent}99`;
+  context.strokeStyle = "#f4ca6890";
   context.lineWidth = 3;
-  roundedRect(context, 42, 42, width - 84, height - 84, 34);
+  roundedRect(context, 28, 28, width - 56, height - 56, 42);
   context.stroke();
 
-  context.fillStyle = accent;
-  context.font = "900 25px Arial";
-  context.letterSpacing = "5px";
-  context.fillText("HAS GARDAŞLAR LİGİ", 88, 123);
-  context.letterSpacing = "0px";
-  context.fillStyle = ink;
-  context.font = "900 62px Arial";
-  context.fillText(`${week}. HAFTA`, 86, 198);
-  context.font = "700 30px Arial";
-  context.globalAlpha = 0.76;
-  context.fillText("TAHMİN KARTIM", 89, 244);
-  context.globalAlpha = 1;
-
-  context.fillStyle = `${accent}33`;
-  roundedRect(context, 780, 110, 210, 112, 24);
-  context.fill();
-  context.strokeStyle = `${accent}bb`;
-  context.lineWidth = 2;
-  context.stroke();
-  context.fillStyle = accent;
-  context.font = "900 44px Arial";
   context.textAlign = "center";
-  context.fillText(String(lines.filter((line) => line.prediction !== "—").length), 885, 160);
-  context.fillStyle = ink;
-  context.font = "800 18px Arial";
-  context.fillText(`/${lines.length} MAÇ`, 885, 194);
-  context.textAlign = "left";
+  context.fillStyle = "#f5d47c";
+  context.font = "900 22px Arial";
+  context.fillText("HAS GARDAŞLAR LİGİ", width / 2, 115);
+  context.fillStyle = "#fff2c9";
+  context.font = "900 54px Arial";
+  context.fillText(`${week}. HAFTA TAHMİN KARTI`, width / 2, 183);
+  context.fillStyle = "#e7d4a6";
+  context.font = "800 25px Arial";
+  context.fillText(`${fitText(context, ownerName, 620)} · MAÇ GÜNÜ BÜLTENİ`, width / 2, 229);
+  const line = context.createLinearGradient(310, 0, 770, 0);
+  line.addColorStop(0, "transparent"); line.addColorStop(0.5, "#e6b851"); line.addColorStop(1, "transparent");
+  context.fillStyle = line; context.fillRect(310, 261, 460, 5);
 
-  let rowTop = 315;
-  for (const [index, line] of lines.entries()) {
-    const alternating = index % 2 === 0 ? "18" : "2b";
-    context.fillStyle = `${ink}${alternating}`;
-    roundedRect(context, 76, rowTop, width - 152, 68, 18);
+  let rowTop = 305;
+  for (const [index, fixture] of lines.entries()) {
+    context.fillStyle = index % 2 === 0 ? "#ffffff18" : "#7f4aaa2a";
+    roundedRect(context, 64, rowTop, width - 128, 104, 25);
     context.fill();
-    context.fillStyle = ink;
-    context.font = "800 25px Arial";
+    context.strokeStyle = "#f3cf7961";
+    context.lineWidth = 1;
+    context.stroke();
+    const homeCrest = crests[index * 2];
+    const awayCrest = crests[index * 2 + 1];
+    if (homeCrest) context.drawImage(homeCrest, 88, rowTop + 14, 76, 76);
+    if (awayCrest) context.drawImage(awayCrest, 916, rowTop + 14, 76, 76);
+    context.fillStyle = "#fff6d8";
+    context.font = "900 25px Arial";
     context.textAlign = "right";
-    context.fillText(fitText(context, line.homeTeam, 330), 448, rowTop + 43);
-    context.textAlign = "center";
-    context.fillStyle = line.prediction === "—" ? `${ink}aa` : accent;
-    roundedRect(context, 482, rowTop + 10, 116, 48, 14);
+    context.fillText(fitText(context, fixture.homeTeam, 260), 430, rowTop + 63);
+    context.fillStyle = "#f9d978";
+    roundedRect(context, 485, rowTop + 19, 110, 65, 18);
     context.fill();
-    context.fillStyle = line.prediction === "—" ? background : background;
-    context.font = "900 30px Arial";
-    context.fillText(line.prediction, 540, rowTop + 44);
-    context.fillStyle = ink;
+    context.fillStyle = "#211303";
+    context.font = "900 35px Arial";
+    context.textAlign = "center";
+    context.fillText(fixture.prediction, 540, rowTop + 62);
+    context.fillStyle = "#fff6d8";
+    context.font = "900 25px Arial";
     context.textAlign = "left";
-    context.font = "800 25px Arial";
-    context.fillText(fitText(context, line.awayTeam, 330), 632, rowTop + 43);
+    context.fillText(fitText(context, fixture.awayTeam, 260), 650, rowTop + 63);
     rowTop += rowHeight;
   }
 
-  context.fillStyle = `${ink}cc`;
-  context.font = "700 23px Arial";
   context.textAlign = "center";
-  context.fillText("Sen de tahminini yap · hasgardaslarligi.vercel.app", width / 2, height - 105);
-  context.fillStyle = accent;
-  context.fillRect(330, height - 77, 420, 4);
-  context.textAlign = "left";
-
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/png"),
-  );
+  context.fillStyle = "#f5d47c";
+  context.font = "900 25px Arial";
+  context.fillText("SEN DE TAHMİNİNİ YAP", width / 2, height - 112);
+  context.fillStyle = "#ead5a4";
+  context.font = "700 21px Arial";
+  context.fillText("hasgardaslarligi.vercel.app", width / 2, height - 72);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
   if (!blob) throw new Error("Görsel kart hazırlanamadı.");
   return blob;
 }
@@ -162,11 +150,13 @@ export default function WeeklyPredictionCard({
   matches,
   predictions,
   theme,
+  ownerName,
 }: {
   week: number;
   matches: CardMatch[];
   predictions: Record<string, PredictionValue>;
   theme: AppTheme;
+  ownerName: string;
 }) {
   const [notice, setNotice] = useState("");
   const [previewUrl, setPreviewUrl] = useState("");
@@ -183,7 +173,7 @@ export default function WeeklyPredictionCard({
   ).length;
   const isReady = savedCount === matches.length && matches.length > 0;
   async function downloadImage() {
-    const image = await createShareImage({ week, lines: matchLines, themeId: theme.id });
+    const image = await createShareImage({ week, lines: matchLines, ownerName });
     const link = document.createElement("a");
     const imageUrl = URL.createObjectURL(image);
     link.href = imageUrl;
@@ -194,7 +184,7 @@ export default function WeeklyPredictionCard({
 
   async function shareCard() {
     try {
-      const image = await createShareImage({ week, lines: matchLines, themeId: theme.id });
+      const image = await createShareImage({ week, lines: matchLines, ownerName });
       const imageFile = new File([image], `has-gardaslar-ligi-${week}-hafta-tahmin-karti.png`, { type: "image/png" });
 
       if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [imageFile] }))) {
@@ -222,7 +212,7 @@ export default function WeeklyPredictionCard({
 
   async function previewImage() {
     try {
-      const image = await createShareImage({ week, lines: matchLines, themeId: theme.id });
+      const image = await createShareImage({ week, lines: matchLines, ownerName });
       const nextUrl = URL.createObjectURL(image);
       setPreviewUrl((currentUrl) => {
         if (currentUrl) URL.revokeObjectURL(currentUrl);
