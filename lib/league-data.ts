@@ -1,5 +1,9 @@
 export const LEAGUE_TEAM_DATA = [
-  { name: "Alanyaspor", crest: "alanyaspor", aliases: [] },
+  {
+    name: "Alanyaspor",
+    crest: "alanyaspor",
+    aliases: ["Corendon Alanyaspor"],
+  },
   {
     name: "Amed SK",
     crest: "amed-sfk",
@@ -11,7 +15,11 @@ export const LEAGUE_TEAM_DATA = [
       "Amed Sportif Faaliyetler",
     ],
   },
-  { name: "Beşiktaş", crest: "besiktas", aliases: ["Beşiktaş JK"] },
+  {
+    name: "Beşiktaş",
+    crest: "besiktas",
+    aliases: ["Beşiktaş JK", "Beşiktaş A.Ş.", "Besiktas"],
+  },
   {
     name: "Başakşehir",
     crest: "istanbul-basaksehir",
@@ -20,17 +28,24 @@ export const LEAGUE_TEAM_DATA = [
       "İstanbul Başakşehir",
       "İstanbul Başakşehir FK",
       "İstanbul BB",
+      "İstanbul Başakşehir FK A.Ş.",
     ],
   },
   {
     name: "Çaykur Rizespor",
     crest: "caykur-rizespor",
-    aliases: ["Rizespor", "Çaykur Rize", "Çaykur Rize Spor"],
+    aliases: [
+      "Rizespor",
+      "Çaykur Rize",
+      "Çaykur Rize Spor",
+      "Çaykur Rizespor A.Ş.",
+      "Caykur Rizespor",
+    ],
   },
   {
     name: "Çorum FK",
     crest: "corum-fk",
-    aliases: ["Çorum", "Çorum Futbol Kulübü"],
+    aliases: ["Çorum", "Çorum Futbol Kulübü", "Arca Çorum FK"],
   },
   {
     name: "Erzurumspor FK",
@@ -41,25 +56,61 @@ export const LEAGUE_TEAM_DATA = [
       "Büyükşehir Belediye Erzurumspor",
     ],
   },
-  { name: "Eyüpspor", crest: "eyupspor", aliases: ["Eyüp Spor"] },
-  { name: "Fenerbahçe", crest: "fenerbahce", aliases: [] },
-  { name: "Galatasaray", crest: "galatasaray", aliases: [] },
+  {
+    name: "Eyüpspor",
+    crest: "eyupspor",
+    aliases: ["Eyüp Spor", "Eyupspor"],
+  },
+  {
+    name: "Fenerbahçe",
+    crest: "fenerbahce",
+    aliases: ["Fenerbahçe A.Ş.", "Fenerbahce"],
+  },
+  {
+    name: "Galatasaray",
+    crest: "galatasaray",
+    aliases: ["Galatasaray A.Ş.", "Galatasaray AS"],
+  },
   {
     name: "Gaziantep FK",
     crest: "gaziantep-fk",
-    aliases: ["Gaziantep", "Gaziantepspor"],
+    aliases: [
+      "Gaziantep",
+      "Gaziantepspor",
+      "Gaziantep Futbol Kulübü A.Ş.",
+    ],
   },
   {
     name: "Gençlerbirliği",
     crest: "genclerbirligi",
     aliases: [],
   },
-  { name: "Göztepe", crest: "goztepe", aliases: [] },
-  { name: "Kasımpaşa", crest: "kasimpasa", aliases: [] },
+  {
+    name: "Göztepe",
+    crest: "goztepe",
+    aliases: ["Göztepe A.Ş.", "Goztepe"],
+  },
+  {
+    name: "Kasımpaşa",
+    crest: "kasimpasa",
+    aliases: ["Kasımpaşa A.Ş.", "Kasimpasa"],
+  },
   { name: "Kocaelispor", crest: "kocaelispor", aliases: [] },
-  { name: "Konyaspor", crest: "konyaspor", aliases: [] },
-  { name: "Samsunspor", crest: "samsunspor", aliases: [] },
-  { name: "Trabzonspor", crest: "trabzonspor", aliases: [] },
+  {
+    name: "Konyaspor",
+    crest: "konyaspor",
+    aliases: ["Tümosan Konyaspor"],
+  },
+  {
+    name: "Samsunspor",
+    crest: "samsunspor",
+    aliases: ["Samsunspor A.Ş."],
+  },
+  {
+    name: "Trabzonspor",
+    crest: "trabzonspor",
+    aliases: ["Trabzonspor A.Ş."],
+  },
 ] as const;
 
 export type LeagueTeamName = (typeof LEAGUE_TEAM_DATA)[number]["name"];
