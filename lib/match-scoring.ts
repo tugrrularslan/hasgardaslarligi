@@ -22,6 +22,8 @@ export type SaveMatchResultInput = {
   awayScore: unknown;
   goalEvents: GoalEventInput[];
   idempotencyKey: string;
+  /** Only trusted server-side fixture sync may omit scorer details. */
+  allowIncompleteGoalEvents?: boolean;
 };
 
 export class AdminScoringError extends Error {
@@ -179,7 +181,15 @@ function validateAndNormalizeResultInput(
 
   const expectedGoalCount = homeScore + awayScore;
 
-  if (!Array.isArray(input.goalEvents) || input.goalEvents.length !== expectedGoalCount) {
+  const allowsMissingGoalDetails =
+    input.allowIncompleteGoalEvents === true &&
+    Array.isArray(input.goalEvents) &&
+    input.goalEvents.length === 0;
+
+  if (
+    !Array.isArray(input.goalEvents) ||
+    (!allowsMissingGoalDetails && input.goalEvents.length !== expectedGoalCount)
+  ) {
     throw new AdminScoringError(
       "Skora karşılık gelen her gol için golü atan oyuncuyu gir.",
     );
@@ -234,6 +244,7 @@ function validateAndNormalizeResultInput(
     idempotencyKey: input.idempotencyKey,
     result: calculateResult(homeScore, awayScore),
     goalEvents,
+    goalDetailsComplete: goalEvents.length === expectedGoalCount,
   };
 }
 
@@ -827,10 +838,19 @@ export async function saveMatchResult({
     initialMatchData.result === normalized.result;
 
   if (sameCompletedResult) {
-    await matchReference.update({
-      goalEvents: normalized.goalEvents,
-      updatedAt: FieldValue.serverTimestamp(),
-    });
+    const existingGoalEvents = Array.isArray(initialMatchData.goalEvents)
+      ? initialMatchData.goalEvents
+      : [];
+
+    if (normalized.goalDetailsComplete || existingGoalEvents.length === 0) {
+      await matchReference.update({
+        goalEvents: normalized.goalEvents,
+        goalDetailsStatus: normalized.goalDetailsComplete
+          ? "complete"
+          : "unavailable",
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
 
     return {
       alreadyCalculated: true,
@@ -886,6 +906,9 @@ export async function saveMatchResult({
       awayScore: normalized.awayScore,
       result: normalized.result,
       goalEvents: normalized.goalEvents,
+      goalDetailsStatus: normalized.goalDetailsComplete
+        ? "complete"
+        : "unavailable",
       status: "finished",
       pointsCalculated: false,
       scoreRevision: revision,

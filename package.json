@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "test": "npm run test:data-health",
+    "test": "npm run test:data-health && npm run test:super-lig-sync",
     "test:data-health": "node --no-warnings --experimental-strip-types scripts/data-health-check.mjs",
+    "test:super-lig-sync": "node --no-warnings --experimental-strip-types scripts/super-lig-sync-check.mjs",
+    "test:super-lig-source": "node --no-warnings --experimental-strip-types scripts/super-lig-source-smoke.mjs",
     "backup:firestore": "node scripts/firestore-backup.mjs",
     "restore:firestore": "node scripts/firestore-restore.mjs",
     "deploy:firestore-rules": "firebase deploy --only firestore:rules --project has-gardaslar-ligi",

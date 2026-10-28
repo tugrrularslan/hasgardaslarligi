@@ -141,6 +141,7 @@ export default function AdminPage() {
     null
   );
   const [syncingResults, setSyncingResults] = useState(false);
+  const [syncingSuperLig, setSyncingSuperLig] = useState(false);
   const [updatingPlayers, setUpdatingPlayers] = useState(false);
   const [deletingMatchId, setDeletingMatchId] = useState<
     string | null
@@ -920,6 +921,87 @@ export default function AdminPage() {
       );
     } finally {
       setSyncingResults(false);
+    }
+  }
+
+  async function handleSyncSuperLig() {
+    if (!user) {
+      setMessage("Süper Lig eşitlemesi için yeniden giriş yap.");
+      return;
+    }
+
+    const currentSeasonName = seasonName.trim() || DEFAULT_SEASON_NAME;
+    const confirmed = window.confirm(
+      `${currentSeasonName} fikstürü, maç saati değişiklikleri ve iki kaynağın doğruladığı sonuçlar eşitlenecek. ` +
+        "Yeni hafta yayınlanmayacak veya otomatik geçilmeyecek. Devam edilsin mi?",
+    );
+
+    if (!confirmed) return;
+
+    setSyncingSuperLig(true);
+    setMessage("");
+
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/admin/sync-super-lig", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        createdCount?: number;
+        updatedCount?: number;
+        newlyImportedFinishedCount?: number;
+        scoredCount?: number;
+        scoreConflictCount?: number;
+        ambiguousLegacyMatchCount?: number;
+        scoringErrors?: string[];
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? "Süper Lig eşitlenemedi.");
+      }
+
+      const scoringErrorCount = Array.isArray(data.scoringErrors)
+        ? data.scoringErrors.length
+        : 0;
+      const scoreConflictCount =
+        typeof data.scoreConflictCount === "number"
+          ? data.scoreConflictCount
+          : 0;
+      const ambiguousLegacyMatchCount =
+        typeof data.ambiguousLegacyMatchCount === "number"
+          ? data.ambiguousLegacyMatchCount
+          : 0;
+      const warnings = [
+        scoreConflictCount > 0
+          ? `${scoreConflictCount} sonuç çelişkisi güvenlik için atlandı.`
+          : "",
+        scoringErrorCount > 0
+          ? `${scoringErrorCount} sonuç puanlanamadı; tekrar eşitleyebilirsin.`
+          : "",
+        ambiguousLegacyMatchCount > 0
+          ? `${ambiguousLegacyMatchCount} yinelenen eski maç güvenlik için atlandı.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      setMessage(
+        `Süper Lig eşitlendi: ${data.createdCount ?? 0} maç eklendi, ` +
+          `${data.updatedCount ?? 0} mevcut maçın saati/fikstürü güncellendi, ` +
+          `${data.scoredCount ?? 0} mevcut maçın sonucu puanlandı. ` +
+          `Yeni hafta yayınlanmadı ve haftalık şampiyon bonusu otomatik verilmedi.` +
+          (warnings ? ` ${warnings}` : ""),
+      );
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        error instanceof Error ? error.message : "Süper Lig eşitlenemedi.",
+      );
+    } finally {
+      setSyncingSuperLig(false);
     }
   }
 
@@ -2224,8 +2306,25 @@ export default function AdminPage() {
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                 <button
                   type="button"
+                  onClick={handleSyncSuperLig}
+                  disabled={
+                    syncingSuperLig ||
+                    syncingResults ||
+                    savingResultId !== null ||
+                    deletingMatchId !== null
+                  }
+                  className="hg-primary hg-icon-label w-full rounded-xl bg-emerald-500 px-4 py-3 text-sm font-black text-black transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                >
+                  <HittiteIcon name="clock" size="sm" />
+                  {syncingSuperLig
+                    ? "Süper Lig Eşitleniyor..."
+                    : "Süper Lig'i Eşitle"}
+                </button>
+                <button
+                  type="button"
                   onClick={handleFetchMatchResults}
                   disabled={
+                    syncingSuperLig ||
                     syncingResults ||
                     savingResultId !== null ||
                     deletingMatchId !== null
