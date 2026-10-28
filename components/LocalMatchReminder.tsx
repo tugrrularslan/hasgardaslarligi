@@ -4,12 +4,14 @@ import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import {
   collection,
-  getDocs,
+  doc,
+  onSnapshot,
   query,
   Timestamp,
   where,
 } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { DEFAULT_SEASON_ID } from "@/lib/season";
 
 const RECENT_REMINDER_WINDOW_MS = 5 * 60 * 1000;
 const MAX_TIMER_DELAY_MS = 6 * 60 * 60 * 1000;
@@ -113,67 +115,90 @@ function scheduleReminder(
  */
 export default function LocalMatchReminder() {
   useEffect(() => {
-    const timers: number[] = [];
-    let cancelled = false;
+    let stopSession = () => {};
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      stopSession();
+      stopSession = () => {};
+      if (!user) return;
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user || !notificationPermissionGranted()) {
-        return;
-      }
+      let stopPublications = () => {};
+      const weekSubscriptions = new Map<number, () => void>();
+      const clearWeeks = () => {
+        weekSubscriptions.forEach((stop) => stop());
+        weekSubscriptions.clear();
+      };
+      const stopSeason = onSnapshot(doc(db, "settings", "currentSeason"), (seasonSnapshot) => {
+        stopPublications();
+        clearWeeks();
+        const value = seasonSnapshot.data()?.seasonId;
+        const seasonId = typeof value === "string" && value.trim()
+          ? value.trim() : DEFAULT_SEASON_ID;
 
-      try {
-        const matchesSnapshot = await getDocs(
-          query(collection(db, "matches"), where("status", "==", "scheduled")),
+        stopPublications = onSnapshot(
+          query(collection(db, "publishedWeeks"), where("seasonId", "==", seasonId)),
+          (publicationSnapshot) => {
+            const publishedWeeks = new Set<number>();
+            publicationSnapshot.docs.forEach((publication) => {
+              const data = publication.data();
+              if (data.published === true && Number.isInteger(data.week) && data.week > 0) {
+                publishedWeeks.add(data.week);
+              }
+            });
+            weekSubscriptions.forEach((stop, week) => {
+              if (!publishedWeeks.has(week)) {
+                stop();
+                weekSubscriptions.delete(week);
+              }
+            });
+            publishedWeeks.forEach((week) => {
+              if (weekSubscriptions.has(week)) return;
+              let timers: number[] = [];
+              const clearTimers = () => {
+                timers.forEach((timer) => window.clearTimeout(timer));
+                timers = [];
+              };
+              const stopMatches = onSnapshot(
+                query(collection(db, "matches"), where("week", "==", week)),
+                (matchesSnapshot) => {
+                  clearTimers();
+                  matchesSnapshot.docs.forEach((matchDocument) => {
+                    const data = matchDocument.data();
+                    const matchSeasonId = data.seasonId || DEFAULT_SEASON_ID;
+                    if (matchSeasonId !== seasonId || data.status !== "scheduled" ||
+                        !(data.kickoff instanceof Timestamp)) return;
+                    const reminder: LocalReminder = {
+                      id: matchDocument.id,
+                      kickoff: data.kickoff.toMillis(),
+                      homeTeam: typeof data.homeTeam === "string" ? data.homeTeam : "Ev sahibi",
+                      awayTeam: typeof data.awayTeam === "string" ? data.awayTeam : "Deplasman",
+                    };
+                    const addTimer = (timer: number) => timers.push(timer);
+                    scheduleReminder(reminder, "one-hour", reminder.kickoff - 60 * 60 * 1000, addTimer);
+                    scheduleReminder(reminder, "deadline", reminder.kickoff - 15 * 60 * 1000, addTimer);
+                  });
+                },
+                (error) => {
+                  clearTimers();
+                  console.warn("Maç hatırlatıcıları güncellenemedi:", error);
+                },
+              );
+              weekSubscriptions.set(week, () => { stopMatches(); clearTimers(); });
+            });
+          },
+          (error) => {
+            clearWeeks();
+            console.warn("Yayınlanmış haftalar alınamadı:", error);
+          },
         );
-
-        if (cancelled) return;
-
-        const reminders = matchesSnapshot.docs.flatMap((matchDocument) => {
-          const data = matchDocument.data();
-          const kickoff = data.kickoff;
-
-          if (!(kickoff instanceof Timestamp)) {
-            return [];
-          }
-
-          return [
-            {
-              id: matchDocument.id,
-              kickoff: kickoff.toMillis(),
-              homeTeam:
-                typeof data.homeTeam === "string" ? data.homeTeam : "Ev sahibi",
-              awayTeam:
-                typeof data.awayTeam === "string" ? data.awayTeam : "Deplasman",
-            } satisfies LocalReminder,
-          ];
-        });
-
-        const addTimer = (timer: number) => timers.push(timer);
-
-        reminders.forEach((reminder) => {
-          scheduleReminder(
-            reminder,
-            "one-hour",
-            reminder.kickoff - 60 * 60 * 1000,
-            addTimer,
-          );
-          scheduleReminder(
-            reminder,
-            "deadline",
-            reminder.kickoff - 15 * 60 * 1000,
-            addTimer,
-          );
-        });
-      } catch (error) {
-        console.warn("Yerel maç hatırlatıcıları yüklenemedi:", error);
-      }
+      }, (error) => {
+        stopPublications();
+        clearWeeks();
+        console.warn("Aktif sezon alınamadı:", error);
+      });
+      stopSession = () => { stopSeason(); stopPublications(); clearWeeks(); };
     });
 
-    return () => {
-      cancelled = true;
-      unsubscribe();
-      timers.forEach((timer) => window.clearTimeout(timer));
-    };
+    return () => { unsubscribe(); stopSession(); };
   }, []);
 
   return null;
