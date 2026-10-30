@@ -16,8 +16,6 @@ let stored = { ...context, week: 10, seasonId: "2026-2027", result: "2", status:
   goalDetailsSource: "espn", goalDetailsStatus: "complete", assistDetailsStatus: "complete", assistTotals: details.assistTotals,
   goalEvents: details.goalEvents.map(event => ({ team: "Galatasaray", scorer: event.scorer, scorerKey: getPlayerIdentityKey(event.scorer), assister: null, assisterKey: null, ownGoal: false })),
 };
-assert.equal(createAssistDraft(stored).mode, "totals");
-assert.equal(createAssistDraft(stored).rows[1].player, "Gabriel Gomes");
 const choices = mergeMatchPlayerOptions([], stored);
 assert.ok(choices.some(player => player.name === "Gabriel Gomes"));
 assert.ok(choices.some(player => player.name === "Alexey Batrakov"));
@@ -54,8 +52,6 @@ const apiMocks = { "next/server":{NextResponse:{json:(body,init)=>({body,status:
   "@/lib/match-scoring":scoringExports,
   "@/lib/firebase-admin":{adminDb:db,adminAuth:{verifyIdToken:async token=>({uid:token==="admin-token"?"admin":"other"})}} };
 vm.runInNewContext(compile("../app/api/admin/save-match-result/route.ts"), {exports:apiExports,require:name=>apiMocks[name]??require(name), console:{error(){}}});
-const formExports = {};
-vm.runInNewContext(compile("../components/AdminMatchAssists.tsx"), {exports:formExports,require});
 let slots=[],effects=[],pending=[],cursor=0,requests=[];
 const router={replace(){}};
 const hooks={
@@ -69,7 +65,6 @@ const pageMocks={ react:hooks,"next/navigation":{useRouter:()=>router},"@/lib/fi
     query:value=>value,orderBy(){},getDoc:async()=>({exists:()=>true,data:()=>({isAdmin:true})}),
     onSnapshot(ref,callback){if(ref.collection==="matches"){matchesListener=callback;emitMatches();}else{callback({exists:()=>true,data:()=>({seasonId:"2026-2027",name:"2026-2027 Sezonu"})});}return()=>{};},
   },
-  "@/components/AdminMatchAssists":formExports,
   "@/lib/admin-assists":{createAssistDraft,mergeMatchPlayerOptions,normalizeManualAssistTotals},
   "@/lib/match-details":{getMatchAssistTotals},"@/lib/season":season,
   "@/lib/admin-reset":{getSeasonResetConfirmation:()=>"RESET"},"@/lib/kahin":{resolveKahinTeamName:value=>value},
@@ -106,41 +101,33 @@ function nodes(node){
 }
 const byLabel=(tree,label)=>nodes(tree).find(node=>node.props["aria-label"]===label);
 let tree=await render(true);
-assert.equal(byLabel(tree,"Asist girişi").props.value,"totals");
-assert.equal(byLabel(tree,"Asist oyuncusu 1").props.value,"Alexey Batrakov");
-assert.equal(byLabel(tree,"Asist oyuncusu 2").props.value,"Gabriel Gomes");
-assert.equal(byLabel(tree,"Asist sayısı 2").props.value,"2");
-assert.ok(nodes(byLabel(tree,"Asist oyuncusu 2")).some(node=>node.type==="option"&&node.props.value==="Gabriel Gomes"),"Imported assistant must remain selectable with an empty roster");
-byLabel(tree,"Asist girişi").props.onChange({target:{value:"goals"}});
-tree=await render();
-const goalSelect=byLabel(tree,"Asist 1 Galatasaray");
-assert.ok(goalSelect);
-assert.ok(nodes(goalSelect).some(node=>node.type==="option"&&node.props.value==="Gabriel Gomes"));
-byLabel(tree,"Asist girişi").props.onChange({target:{value:"totals"}});
-tree=await render();assert.equal(byLabel(tree,"Asist oyuncusu 2").props.value,"Gabriel Gomes");
-
-// Update an actual populated control, save through the actual handler and API, then reload.
-byLabel(tree,"Asist oyuncusu 2").props.onChange({target:{value:"Yunus Akgün"}});
-tree=await render();
-byLabel(tree,"Asist sayısı 2").props.onChange({target:{value:"1"}});
-tree=await render();
-// A remote snapshot must not overwrite the unsaved administrator draft.
-emitMatches();tree=await render();assert.equal(byLabel(tree,"Asist oyuncusu 2").props.value,"Yunus Akgün");
+assert.equal(byLabel(tree,"Asist girişi"),undefined,"No assist entry mode or extra stage may be shown");
+assert.equal(byLabel(tree,"Asist sayısı 1"),undefined);
+const first=byLabel(tree,"Asist 1 Galatasaray");
+assert.ok(first);
+assert.ok(nodes(first).some(node=>node.type==="option"&&node.props.value==="Gabriel Gomes"),"Recorded assistants must be in each goal's player list even with an empty roster");
+assert.ok(nodes(first).some(node=>node.type==="option"&&node.props.value==="Alexey Batrakov"));
+for(const [number,player] of [[1,"Gabriel Gomes"],[2,"Gabriel Gomes"],[3,"Alexey Batrakov"]]) {
+  byLabel(tree,`Asist ${number} Galatasaray`).props.onChange({target:{value:player}});
+  tree=await render();
+}
+emitMatches();tree=await render();
+assert.equal(byLabel(tree,"Asist 1 Galatasaray").props.value,"Gabriel Gomes","A source update must not erase unsaved per-goal choices");
 const save=nodes(tree).find(node=>node.type==="button"&&node.props.children==="Sonucu Güncelle");
 assert.ok(save);await save.props.onClick();
 assert.equal(requests.length,1);
-assert.equal(requests[0].assistMode,"totals");
-assert.equal(requests[0].assistTotals[1].player,"Yunus Akgün");
-assert.equal(stored.assistTotals[1].player,"Yunus Akgün");
-assert.equal(stored.assistTotals[1].count,1);
+assert.equal(requests[0].assistMode,undefined,"The single-step form sends the per-goal record directly");
+assert.equal(requests[0].goalEvents[0].assister,"Gabriel Gomes");
+assert.equal(stored.goalEvents[0].assister,"Gabriel Gomes");
+assert.equal(stored.goalEvents[1].assister,"Gabriel Gomes");
+assert.equal(stored.goalEvents[2].assister,"Alexey Batrakov");
 assert.equal(stored.pointsCalculated,true);assert.equal(stored.scoreRevision,7);
-assert.equal(getMatchAssistTotals(stored).reduce((sum,row)=>sum+row.count,0),2);
+assert.equal(getMatchAssistTotals(stored).reduce((sum,row)=>sum+row.count,0),3);
 tree=await render(true);
-assert.equal(byLabel(tree,"Asist oyuncusu 2").props.value,"Yunus Akgün");
-assert.equal(byLabel(tree,"Asist sayısı 2").props.value,"1");
-// Non-dirty forms must follow later source data rather than keeping stale values forever.
-stored.assistTotals[1].count=2;emitMatches();tree=await render();
-assert.equal(byLabel(tree,"Asist sayısı 2").props.value,"2");
-const bad=await apiExports.POST({headers:new Headers({authorization:"Bearer admin-token"}),json:async()=>({...requests[0],assistTotals:[{team:"Other",player:"A",count:1}]})});
+assert.equal(byLabel(tree,"Asist 1 Galatasaray").props.value,"Gabriel Gomes");
+assert.equal(byLabel(tree,"Asist 3 Galatasaray").props.value,"Alexey Batrakov");
+stored.goalEvents[0].assister="Yunus Akgün";emitMatches();tree=await render();
+assert.equal(byLabel(tree,"Asist 1 Galatasaray").props.value,"Yunus Akgün");
+const bad=await apiExports.POST({headers:new Headers({authorization:"Bearer admin-token"}),json:async()=>({...requests[0],assistMode:"totals",assistTotals:[{team:"Other",player:"A",count:1}]})});
 assert.equal(bad.status,400);
-console.log("Yönetici formu: dolu asist oyuncuları, kadro eksikken seçenekler, giriş türü, düzenleme, gerçek API ile kayıt, yeniden açılış ve puan koruması başarılı.");
+console.log("Yönetici formu: tek adımda her gole asist seçimi, oyuncu seçenekleri, gerçek API ile kayıt, yeniden açılış ve puan koruması başarılı.");

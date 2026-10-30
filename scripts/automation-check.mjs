@@ -218,13 +218,14 @@ function renderedText(node) {
 }
 const detailsText = renderedText(pageExports.MatchResultDetails({ match: {
   homeTeam: "Konyaspor", awayTeam: "Galatasaray", homeScore: 0, awayScore: 1,
-  goalEvents: [{ team: "Galatasaray", scorer: "Golcü", ownGoal: false }],
+  goalEvents: [{ team: "Galatasaray", scorer: "Golcü", assister: "Asistçi", ownGoal: false }],
   assistTotals: [{ team: "Galatasaray", player: "Asistçi", playerKey: "asistci", count: 1 }],
   assistDetailsStatus: "complete",
 }, theme: {} }));
 assert.ok(detailsText.includes("Golcü"));
 assert.ok(detailsText.indexOf("Asistçi") > detailsText.indexOf("Golcü"), "Assists must remain below the goals inside the team card");
-assert.ok(/Asistçi.*1.*asist/.test(detailsText), "Match detail card must show imported assists");
+assert.ok(/Golcü.*Asist:.*Asistçi/.test(detailsText), "The assist must be directly under its goal scorer");
+assert.ok(!detailsText.includes("Asistler"), "No separate aggregate assist panel should remain");
 const pendingText = renderedText(pageExports.MatchResultDetails({ match: {
   homeTeam: "Konyaspor", awayTeam: "Galatasaray", homeScore: 0, awayScore: 1, goalEvents: [],
 }, theme: {} }));

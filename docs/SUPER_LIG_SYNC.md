@@ -34,8 +34,8 @@ günceller. Aynı uç nokta GitHub Actions tarafından saatte bir otomatik çağ
   iki kaynakla doğrulanmış sonuçla eşleşmelidir. Penaltı golleri sayılır;
   seri penaltılar ve iptal edilen olaylar sayılmaz. Kendi kalesine golün
   asist kaydı oluşturulmaz.
-- Kaynak gol bazında asist bağlantısı vermiyorsa asistler ilgili takım kartında gollerin altında
-  oyuncu ve toplam sayı olarak gösterilir; rastgele bir gole bağlanmaz.
+- Kaynak gol bazında asist bağlantısı vermiyorsa doğrulanmış asist eşleşmesi ilgili golün altında
+  gösterilir; rastgele bir gole bağlanmaz.
   Gol ve asist krallığı aynı toplamları kullanır; asist iki kez sayılmaz.
 - Eski eksik kayıtlar en yeni maçlardan başlanarak, her çalışmada en fazla
   12 maç olacak şekilde tamamlanır. Dört paralel istek ve istek başına sekiz
@@ -118,15 +118,12 @@ kaydı da yeniden okunarak raporlanır; sonuç yalnızca yazma sayacına dayanma
 
 ## Yönetici sonuç formu
 
-Kaynak yalnızca oyuncu bazlı asist toplamı verdiğinde yönetici formu bu
-kayıtları dolu oyuncu ve sayı alanlarıyla açar. “Oyuncu başına asist toplamı”
-seçeneğiyle oyuncu eklenebilir, değiştirilebilir, sayı düzenlenebilir veya
-kayıt kaldırılabilir. “Her gol için asist seç” seçeneği eski gol bazlı
-manuel girişi korur; kaynağın doğrulamadığı gol-asist eşleştirmesi üretilmez.
+Her gol satırında golcü ve tek bir asist oyuncusu seçilir. Ayrı giriş biçimi,
+oyuncu başına sayı formu veya ikinci aşama yoktur. Maçta kayıtlı asistçiler,
+kadro eski veya boş olsa da oyuncu listesine eklenir. Sonucu Kaydet/Güncelle,
+gol-asist eşleşmesini mevcut sonuç API'sine kaydeder.
 
-Maçta kayıtlı golcü ve asistçiler, kadro listesi eski veya boş olsa da oyuncu
-seçeneklerine eklenir. Sonucu Kaydet/Güncelle, seçilen asist giriş biçimini
-aynı sonuç API'si üzerinden kaydeder. Kaydedilen tek veri tahmin ekranında,
-yönetici formunda ve asist krallığında kullanılır. Asist toplamları takım
-ve gol sayılarıyla sunucuda doğrulanır. Değişmemiş form canlı kaynakla
-senkronize olur; kaydedilmemiş yönetici düzenlemesi korunur.
+Tahmin ekranında asist oyuncusu ilgili golün hemen altında gösterilir.
+Gol bazında kaydı bulunmayan asist için çizgi gösterilir; maç toplamları
+rastgele gollere dağıtılmaz. Kaynağın verdiği toplamlar istatistikler için
+korunur; yönetici gol bazında düzenleme kaydettiğinde bu eşleşmeler kullanılır.

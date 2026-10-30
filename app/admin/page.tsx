@@ -15,14 +15,13 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
-import AdminMatchAssists from "@/components/AdminMatchAssists";
-import { createAssistDraft, mergeMatchPlayerOptions, normalizeManualAssistTotals, type AssistDraft } from "@/lib/admin-assists";
+import { mergeMatchPlayerOptions } from "@/lib/admin-assists";
 import CollapsiblePanel from "@/components/CollapsiblePanel";
 import HittiteIcon from "@/components/HittiteIcon";
 import KahinAdminPanel from "@/components/KahinAdminPanel";
 import SeasonLabel from "@/components/SeasonLabel";
 import TeamCrest from "@/components/TeamCrest";
-import { getMatchAssistTotals, type MatchAssistTotal } from "@/lib/match-details";
+import { type MatchAssistTotal } from "@/lib/match-details";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 import { getSeasonResetConfirmation } from "@/lib/admin-reset";
 import { resolveKahinTeamName } from "@/lib/kahin";
@@ -131,7 +130,6 @@ export default function AdminPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [scoreInputs, setScoreInputs] = useState<ScoreInputs>({});
   const [goalEventInputs, setGoalEventInputs] = useState<GoalEventInputs>({});
-  const [assistDrafts, setAssistDrafts] = useState<Record<string, AssistDraft>>({});
   const dirtyResultIds = useRef(new Set<string>());
   const [leaguePlayers, setLeaguePlayers] = useState<LeaguePlayerRecord[]>([]);
   const [playerSyncReport, setPlayerSyncReport] =
@@ -308,9 +306,7 @@ export default function AdminPage() {
 
           return next;
         });
-        setAssistDrafts(current => Object.fromEntries(matchList.map(match => [match.id,
-          dirtyResultIds.current.has(match.id) && current[match.id] ? current[match.id] : createAssistDraft(match),
-        ])));
+
       },
       (error) => {
         console.error(error);
@@ -1536,16 +1532,6 @@ export default function AdminPage() {
       return;
     }
 
-    const assistDraft = assistDrafts[match.id] ?? createAssistDraft(match);
-    let assistTotals: MatchAssistTotal[] | undefined;
-    if (assistDraft.mode === "totals") {
-      try {
-        assistTotals = normalizeManualAssistTotals(assistDraft.rows, { homeTeam: match.homeTeam, awayTeam: match.awayTeam, homeScore, awayScore, goalEvents });
-      } catch (error) {
-        setMessage(error instanceof Error ? error.message : "Asist kayıtlarını kontrol et.");
-        return;
-      }
-    }
     const result = calculateResult(homeScore, awayScore);
 
     const resultText =
@@ -1590,8 +1576,6 @@ export default function AdminPage() {
             ownGoal: event.ownGoal,
           })),
           idempotencyKey,
-          assistMode: assistDraft.mode,
-          ...(assistDraft.mode === "totals" ? { assistTotals } : {}),
         }),
       });
       const saveData = await saveResponse.json();
@@ -2464,8 +2448,7 @@ export default function AdminPage() {
                     away: "",
                   };
                   const goalEvents = goalEventInputs[match.id] ?? [];
-                  const assistDraft = assistDrafts[match.id] ?? createAssistDraft(match);
-                  const availablePlayers = mergeMatchPlayerOptions(leaguePlayers, match, assistDraft.rows);
+                  const availablePlayers = mergeMatchPlayerOptions(leaguePlayers, match);
                   const homePlayers = getPlayersForTeam(
                     availablePlayers,
                     match.homeTeam,
@@ -2815,24 +2798,9 @@ export default function AdminPage() {
                               </div>
 
                               <p className="mt-1 text-xs text-zinc-500">
-                                {assistDraft.mode === "totals" ? "Golcüleri aşağıdan, asist oyuncularını ve sayılarını asist kayıtlarından düzenleyebilirsin." : "Her gol için golcüyü ve varsa asist yapan oyuncuyu seç. Asisti kaldırmak için “Asist yok” seçeneğini kullan."}
+                                Her gol için golcüyü ve varsa asist yapan oyuncuyu seç. Asisti kaldırmak için “Asist yok” seçeneğini kullan.
                               </p>
 
-                              <AdminMatchAssists
-                                draft={assistDraft} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
-                                players={[...homePlayers.map(player => ({ ...player, team: match.homeTeam })), ...awayPlayers.map(player => ({ ...player, team: match.awayTeam }))]}
-                                disabled={savingThisResult || deletingThisMatch || savingThisEdit}
-                                onChange={next => { dirtyResultIds.current.add(match.id); setAssistDrafts(current => ({ ...current, [match.id]: next })); }}
-                                onModeChange={mode => {
-                                  const next = { ...assistDraft, mode };
-                                  if (mode === "totals" && assistDraft.mode === "goals") {
-                                    const linkedRows = getMatchAssistTotals({ goalEvents: goalEvents.map(event => ({ ...event, team: event.side === "home" ? match.homeTeam : match.awayTeam })) }).map(value => ({ team: value.team, player: value.player, count: String(value.count) }));
-                                    if (linkedRows.length > 0 || createAssistDraft(match).mode !== "totals" || assistDraft.rows.length === 0) next.rows = linkedRows;
-                                  }
-                                  dirtyResultIds.current.add(match.id);
-                                  setAssistDrafts(current => ({ ...current, [match.id]: next }));
-                                }}
-                              />
                               {goalEvents.length > 0 ? (
                                 <div className="mt-4 space-y-3">
                                   {goalEvents.map((event, index) => {
@@ -2932,7 +2900,7 @@ export default function AdminPage() {
                                             </option>
                                           ))}
                                         </select>
-                                        {assistDraft.mode === "goals" ? <select
+                                        <select
                                           aria-label={`Asist ${index + 1} ${scoringTeam}`}
                                           value={event.assister}
                                           onChange={(inputEvent) =>
@@ -2973,7 +2941,7 @@ export default function AdminPage() {
                                               {player.name}
                                             </option>
                                           ))}
-                                        </select> : <p className="self-center text-xs text-sky-200">Asist oyuncuları ve sayıları yukarıda kayıtlı.</p>}
+                                        </select>
                                       </div>
                                     );
                                   })}

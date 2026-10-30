@@ -22,7 +22,6 @@ import GameNavigation from "@/components/GameNavigation";
 import MatchChat from "@/components/MatchChat";
 import TeamCrest from "@/components/TeamCrest";
 import WeeklyPredictionCard from "@/components/WeeklyPredictionCard";
-import { getMatchAssistTotals, type MatchAssistTotal } from "@/lib/match-details";
 import { getAdminActiveWeek } from "@/lib/active-week";
 import { DEFAULT_SEASON_ID } from "@/lib/season";
 import { getThemeById, type AppTheme } from "@/lib/themes";
@@ -43,8 +42,6 @@ type Match = {
   homeScore: number | null;
   awayScore: number | null;
   goalEvents?: GoalEvent[];
-  assistTotals?: MatchAssistTotal[];
-  assistDetailsStatus?: string;
 };
 
 type GoalEvent = {
@@ -685,7 +682,6 @@ function MatchResultDetails({
   match: Match;
   theme: AppTheme;
 }) {
-  const assists = getMatchAssistTotals(match);
   const homeGoals = getGoalEventsForTeam(match.goalEvents, match.homeTeam);
   const awayGoals = getGoalEventsForTeam(match.goalEvents, match.awayTeam);
 
@@ -709,16 +705,12 @@ function MatchResultDetails({
           team={match.homeTeam}
           goalEvents={homeGoals}
           expectedGoals={match.homeScore ?? 0}
-          assistTotals={assists.filter(value => value.team === match.homeTeam)}
-          showAssistTotals={match.assistDetailsStatus === "complete"}
           theme={theme}
         />
         <TeamGoalDetails
           team={match.awayTeam}
           goalEvents={awayGoals}
           expectedGoals={match.awayScore ?? 0}
-          assistTotals={assists.filter(value => value.team === match.awayTeam)}
-          showAssistTotals={match.assistDetailsStatus === "complete"}
           theme={theme}
         />
       </div>
@@ -730,15 +722,11 @@ function TeamGoalDetails({
   team,
   goalEvents,
   expectedGoals,
-  assistTotals,
-  showAssistTotals,
   theme,
 }: {
   team: string;
   goalEvents: GoalEvent[];
   expectedGoals: number;
-  assistTotals: MatchAssistTotal[];
-  showAssistTotals: boolean;
   theme: AppTheme;
 }) {
   return (
@@ -774,27 +762,16 @@ function TeamGoalDetails({
                     Kendi kalesine gol
                   </p>
                 ) : (
-                  assister && (
-                    <p className={`mt-0.5 text-xs ${theme.mutedTextClass}`}>
-                      Asist: {assister}
-                    </p>
-                  )
+                  <p className={`mt-0.5 text-xs ${theme.mutedTextClass}`}>
+                    Asist: {assister || "—"}
+                  </p>
                 )}
               </li>
             );
           })}
         </ul>
       )}
-      {showAssistTotals && (
-        <div className={`mt-3 border-t pt-3 text-sm ${theme.mutedTextClass}`}>
-          <p className="font-bold">Asistler</p>
-          {assistTotals.length === 0 ? <p className="mt-1">Asist kaydı yok.</p> : (
-            <ul className="mt-1 space-y-1">{assistTotals.map(value => (
-              <li key={value.playerKey}>{value.player} · {value.count} asist</li>
-            ))}</ul>
-          )}
-        </div>
-      )}
+
     </div>
   );
 }
