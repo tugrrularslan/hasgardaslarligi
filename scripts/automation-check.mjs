@@ -17,7 +17,7 @@ const require = createRequire(import.meta.url);
 const { Timestamp } = require("firebase-admin/firestore");
 const sourceText = readFileSync(new URL("../app/api/admin/sync-super-lig/route.ts", import.meta.url), "utf8");
 const code = ts.transpileModule(sourceText, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-const secret = "s".repeat(40);
+const workflowToken = "github-oidc";
 let rows, writes, scored, sourceCalls, failScoring, sourceFailure;
 const fixture = {
   sourceTffMatchId: "123", sourceEventId: "456", week: 3,
@@ -51,6 +51,9 @@ const db = {
   }; },
 };
 const mocks = {
+  "@/lib/github-sync-auth": { async verifyGithubSyncToken(token) {
+    if (token !== workflowToken) throw Error("invalid workflow identity");
+  } },
   "firebase-admin/firestore": { Timestamp, FieldValue: { serverTimestamp: () => "timestamp" } },
   "next/server": { NextResponse: { json: (body, init) => ({ body, status: init?.status ?? 200 }) } },
   "@/lib/firebase-admin": { adminDb: db, adminAuth: { async verifyIdToken(token) {
@@ -70,16 +73,20 @@ const mocks = {
   } },
 };
 const exports = {};
-vm.runInNewContext(code, { exports, Buffer, process: { env: { SUPER_LIG_SYNC_SECRET: secret } },
+vm.runInNewContext(code, { exports, Buffer, process: { env: {} },
   require: (name) => mocks[name] ?? require(name), console: { error() {} }, Map, Date });
-const post = (token) => exports.POST({ headers: new Headers(token ? { authorization: `Bearer ${token}` } : {}) });
+const post = (token, mode = token === workflowToken ? "github-actions" : null) => exports.POST({
+  headers: new Headers({ ...(token ? { authorization: `Bearer ${token}` } : {}), ...(mode ? { "x-super-lig-auth": mode } : {}) }),
+});
 reset();
 for (const [token, status] of [[null, 401], ["invalid", 401], ["user", 403]]) {
   assert.equal((await post(token)).status, status);
 }
+assert.equal((await post("fake-github-token", "github-actions")).status, 401);
+assert.equal((await post("former-shared-secret")).status, 401);
 assert.equal(sourceCalls, 0, "Unauthorized requests must not fetch sources or write data");
 assert.equal(writes.length, 0);
-for (const token of [secret, "admin"]) {
+for (const token of [workflowToken, "admin"]) {
   reset();
   const response = await post(token);
   assert.equal(response.status, 200);
@@ -93,25 +100,25 @@ for (const token of [secret, "admin"]) {
 reset();
 rows = [{ id: "legacy-match", data: () => ({ seasonId: "2026-2027", sourceTffMatchId: "123",
   status: "finished", pointsCalculated: true, homeScore: 2, awayScore: 1 }) }];
-await post(secret);
+await post(workflowToken);
 assert.equal(scored.length, 0, "Unchanged result must not award points again");
 reset();
 fixture.completedScore = null;
-await post(secret);
+await post(workflowToken);
 assert.equal(scored.length, 0, "Unconfirmed result must never be scored");
 fixture.completedScore = { homeScore: 2, awayScore: 1 };
 reset();
 rows = [{ id: "legacy-match", data: () => ({ seasonId: "2026-2027", sourceTffMatchId: "123",
   status: "finished", pointsCalculated: false, scoringStatus: "failed", homeScore: 2, awayScore: 1 }) }];
-await post(secret);
+await post(workflowToken);
 assert.equal(scored.length, 1, "Failed revision must be retried using the existing scoring service");
 reset(); failScoring = true;
-const failure = await post(secret);
+const failure = await post(workflowToken);
 assert.equal(failure.status, 500);
 assert.equal(failure.body.success, false);
 assert.equal(failure.body.scoringErrors.length, 1);
 reset(); sourceFailure = true;
-assert.equal((await post(secret)).status, 500);
+assert.equal((await post(workflowToken)).status, 500);
 assert.equal(writes.length, 0, "Source failures must leave data untouched");
 console.log("Otomasyon yetkisi, sonuç kaydı, puanlama tekrarı ve aktif hafta kontrolleri başarılı.");
 

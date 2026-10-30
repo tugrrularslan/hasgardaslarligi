@@ -9,24 +9,35 @@ concurrency:
   cancel-in-progress: false
 jobs:
   sync:
+    permissions:
+      id-token: write
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
       - name: Doğrulanmış sonuçları kaydet ve puanla
         env:
-          SITE_URL: ${{ vars.SUPER_LIG_SITE_URL }}
-          SYNC_SECRET: ${{ secrets.SUPER_LIG_SYNC_SECRET }}
+          SITE_URL: ${{ vars.SUPER_LIG_SITE_URL || 'https://hasgardaslarligi.vercel.app' }}
         run: |
           node --input-type=module <<'JS'
-          const { SITE_URL, SYNC_SECRET } = process.env;
-          if (!SITE_URL || !SYNC_SECRET || SYNC_SECRET.length < 32) {
-            throw new Error('SUPER_LIG_SITE_URL ve en az 32 karakterli SUPER_LIG_SYNC_SECRET gerekli.');
+          const { SITE_URL, ACTIONS_ID_TOKEN_REQUEST_URL, ACTIONS_ID_TOKEN_REQUEST_TOKEN } = process.env;
+          if (!SITE_URL || !ACTIONS_ID_TOKEN_REQUEST_URL || !ACTIONS_ID_TOKEN_REQUEST_TOKEN) {
+            throw new Error('GitHub görev kimliği alınamadı. id-token: write yetkisini kontrol edin.');
           }
+          const identityUrl = new URL(ACTIONS_ID_TOKEN_REQUEST_URL);
+          identityUrl.searchParams.set('audience', 'https://hasgardaslarligi.vercel.app/api/admin/sync-super-lig');
+          const identityResponse = await fetch(identityUrl, {
+            headers: { Authorization: `bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}` },
+            signal: AbortSignal.timeout(15000),
+          });
+          if (!identityResponse.ok) throw new Error('GitHub görev kimliği verilemedi.');
+          const identity = await identityResponse.json();
+          if (typeof identity.value !== 'string' || !identity.value) throw new Error('GitHub görev kimliği boş.');
+          console.log(`::add-mask::${identity.value}`);
           const url = new URL('/api/admin/sync-super-lig', SITE_URL);
           if (url.protocol !== 'https:') throw new Error('Site adresi HTTPS olmalı.');
           const response = await fetch(url, {
             method: 'POST',
-            headers: { Authorization: `Bearer ${SYNC_SECRET}` },
+            headers: { Authorization: `Bearer ${identity.value}`, "x-super-lig-auth": "github-actions" },
             signal: AbortSignal.timeout(70000),
             redirect: 'error',
           });

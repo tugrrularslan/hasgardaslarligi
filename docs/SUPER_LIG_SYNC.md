@@ -52,29 +52,30 @@ bir kez geniş eşleştirme yapar; sonra yalnızca aktif sezon sorgulanır. Veri
 Yerel veri kuralları için `npm test`, canlı kaynakla salt-okunur uyumluluk
 kontrolü için ise `npm run test:super-lig-source` kullanılır.
 
-## Otomasyonu devreye alma
+## Otomatik çalışma ve kimlik doğrulama
 
-1. En az 32 karakterli rastgele bir `SUPER_LIG_SYNC_SECRET` oluşturun. Bunu
-   Vercel Production ortam değişkenlerine ekleyin; tarayıcıya açık `NEXT_PUBLIC_`
-   öneki kullanmayın. Mevcut Firebase Admin değişkenleri korunur.
-2. Aynı değeri GitHub → Settings → Secrets and variables → Actions → Secrets
-   altında `SUPER_LIG_SYNC_SECRET` adıyla kaydedin.
-3. Actions → Variables altında `SUPER_LIG_SITE_URL` değerini gerçek HTTPS üretim
-   adresi olarak girin (ör. https://uygulamaniz.vercel.app).
-4. Değişiklikleri üretime dağıtın. Workflow dosyası varsayılan dala girdikten
-   sonra Actions → Süper Lig sonuçlarını eşitle → Run workflow ile deneyin.
-   HTTP başarı yanıtında `scoringErrors` boş olmalı. Kaynak uyuşmazlıklarını
-   ve atlanan belirsiz maç sayılarını da kontrol edin.
-5. Yönetici panelinde istenen haftayı **Haftayı Yayınla** ile aktif seçin.
-   Zaten yayınlanmış bir hafta yeniden seçilebilir; bildirim tekrar gönderilmez.
+GitHub Actions görevi her saatin 17. dakikasında çalışır. Elle denemek için
+Actions → Süper Lig sonuçlarını eşitle → Run workflow → main kullanılır.
+Varsayılan üretim adresi `https://hasgardaslarligi.vercel.app` şeklindedir;
+`SUPER_LIG_SITE_URL` Actions değişkeniyle hedef adres değiştirilebilir.
 
-Görev her saatin 17. dakikasında çalışır; GitHub zamanlaması gecikebilir.
-Ücretsiz standart Linux çalıştırıcısı kullanılır; açık depolarda Actions
-ücretsizdir. Özel depolarda hesabın ücretsiz dakika kotası geçerlidir:
-Actions harcama bütçesini sıfır tutun. Firebase/Vercel ücretsiz kotaları da
-geçerlidir; sınırsız hizmet varsayılmaz. Başarısız görev sonraki saatte tekrar
-çalışır. Yarım kalan aynı skorun puanlaması mevcut sürümleme sistemiyle
-sürdürülür; puan iki kez verilmez. Yönetici düğmesi kullanılmaya devam eder.
+Vercel veya GitHub'a ortak gizli anahtar girilmez. Her çalışmada GitHub'dan
+kısa süreli OIDC kimliği alınır ve sunucuda GitHub'ın resmi imza anahtarlarıyla
+doğrulanır. İmza, süre, issuer, audience ve subject denetiminden sonra yalnızca
+`1307847878` kimlikli `tugrrularslan/hasgardaslarligi` deposunun, `307523598`
+kimlikli sahibinin, main dalındaki `.github/workflows/super-lig-sync.yml`
+görevinin `schedule` veya `workflow_dispatch` çalışmaları kabul edilir.
+Başka depo, dal, görev veya pull request kimliği sonuç kaydedemez.
+
+Workflow'un `id-token: write` izni yalnızca GitHub kimliği almak içindir;
+depo içeriği yazma izni verilmez. Normal yönetici düğmesi mevcut Firebase
+oturumuyla çalışır. `SUPER_LIG_SYNC_SECRET` ve `CRON_SECRET` bu uç noktada
+kullanılmaz; eski özel eşitleme anahtarı artık kaldırılabilir.
+
+Standart Linux çalıştırıcısı kullanılır. Açık depoda GitHub Actions
+ücretsizdir; Firebase ve Vercel ücretsiz kotaları geçerlidir. GitHub
+zamanlaması gecikebilir. Başarısız görev sonraki saatte tekrar çalışır;
+sonuç ve puanlama hataları çalışma günlüklerine bildirilir.
 
 ## Aktif hafta
 

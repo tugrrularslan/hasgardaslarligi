@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "test": "npm run test:data-health && npm run test:super-lig-sync && npm run test:automation",
+    "test": "npm run test:data-health && npm run test:super-lig-sync && npm run test:automation && npm run test:github-auth",
+    "test:github-auth": "node --no-warnings --experimental-strip-types scripts/github-sync-auth-check.mjs",
     "test:automation": "node --no-warnings --experimental-strip-types scripts/automation-check.mjs",
     "test:data-health": "node --no-warnings --experimental-strip-types scripts/data-health-check.mjs",
     "test:super-lig-sync": "node --no-warnings --experimental-strip-types scripts/super-lig-sync-check.mjs",
@@ -18,6 +19,7 @@
   "dependencies": {
     "firebase": "^12.16.0",
     "firebase-admin": "^13.10.0",
+    "jose": "^6.2.14",
     "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4"

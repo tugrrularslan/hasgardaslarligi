@@ -1,6 +1,6 @@
-import { timingSafeEqual } from "node:crypto";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyGithubSyncToken } from "@/lib/github-sync-auth";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { AdminScoringError, saveMatchResult } from "@/lib/match-scoring";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
@@ -206,12 +206,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const secret = process.env.SUPER_LIG_SYNC_SECRET;
-    const supplied = Buffer.from(idToken);
-    const expected = Buffer.from(secret ?? "");
-    const automated = expected.length >= 32 && supplied.length === expected.length &&
-      timingSafeEqual(supplied, expected);
+    const automated = request.headers.get("x-super-lig-auth") === "github-actions";
     let actorId = "system:super-lig-sync";
+
+    if (automated) {
+      try {
+        await verifyGithubSyncToken(idToken);
+      } catch {
+        return NextResponse.json({ success: false, error: "GitHub görev kimliği doğrulanamadı." }, { status: 401 });
+      }
+    }
 
     if (!automated) {
       let uid: string;
