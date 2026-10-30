@@ -114,3 +114,19 @@ sırasını ev/deplasman olarak gruplaması dahil, mevcut asist toplamları koru
 Açık bir yönetici asist düzeltmesi mevcut kural uyarınca kaynak toplamını
 manuel kayıtla değiştirir. Eşitleme yanıtında en son tamamlanan maçın asist
 kaydı da yeniden okunarak raporlanır; sonuç yalnızca yazma sayacına dayanmaz.
+
+
+## Yönetici sonuç formu
+
+Kaynak yalnızca oyuncu bazlı asist toplamı verdiğinde yönetici formu bu
+kayıtları dolu oyuncu ve sayı alanlarıyla açar. “Oyuncu başına asist toplamı”
+seçeneğiyle oyuncu eklenebilir, değiştirilebilir, sayı düzenlenebilir veya
+kayıt kaldırılabilir. “Her gol için asist seç” seçeneği eski gol bazlı
+manuel girişi korur; kaynağın doğrulamadığı gol-asist eşleştirmesi üretilmez.
+
+Maçta kayıtlı golcü ve asistçiler, kadro listesi eski veya boş olsa da oyuncu
+seçeneklerine eklenir. Sonucu Kaydet/Güncelle, seçilen asist giriş biçimini
+aynı sonuç API'si üzerinden kaydeder. Kaydedilen tek veri tahmin ekranında,
+yönetici formunda ve asist krallığında kullanılır. Asist toplamları takım
+ve gol sayılarıyla sunucuda doğrulanır. Değişmemiş form canlı kaynakla
+senkronize olur; kaydedilmemiş yönetici düzenlemesi korunur.

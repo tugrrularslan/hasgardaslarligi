@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "test": "npm run test:data-health && npm run test:super-lig-sync && npm run test:automation && npm run test:github-auth && npm run test:match-details",
+    "test": "npm run test:data-health && npm run test:super-lig-sync && npm run test:automation && npm run test:github-auth && npm run test:match-details && npm run test:admin-assists",
+    "test:admin-assists": "node --no-warnings --experimental-strip-types scripts/admin-assists-check.mjs",
     "test:match-details": "node --no-warnings --experimental-strip-types scripts/match-details-check.mjs",
     "test:github-auth": "node --no-warnings --experimental-strip-types scripts/github-sync-auth-check.mjs",
     "test:automation": "node --no-warnings --experimental-strip-types scripts/automation-check.mjs",

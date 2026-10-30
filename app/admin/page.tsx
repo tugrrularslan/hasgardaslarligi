@@ -15,6 +15,8 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
+import AdminMatchAssists from "@/components/AdminMatchAssists";
+import { createAssistDraft, mergeMatchPlayerOptions, normalizeManualAssistTotals, type AssistDraft } from "@/lib/admin-assists";
 import CollapsiblePanel from "@/components/CollapsiblePanel";
 import HittiteIcon from "@/components/HittiteIcon";
 import KahinAdminPanel from "@/components/KahinAdminPanel";
@@ -129,6 +131,8 @@ export default function AdminPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [scoreInputs, setScoreInputs] = useState<ScoreInputs>({});
   const [goalEventInputs, setGoalEventInputs] = useState<GoalEventInputs>({});
+  const [assistDrafts, setAssistDrafts] = useState<Record<string, AssistDraft>>({});
+  const dirtyResultIds = useRef(new Set<string>());
   const [leaguePlayers, setLeaguePlayers] = useState<LeaguePlayerRecord[]>([]);
   const [playerSyncReport, setPlayerSyncReport] =
     useState<PlayerSyncReport | null>(null);
@@ -273,7 +277,7 @@ export default function AdminPage() {
           for (const match of matchList) {
             const existing = current[match.id];
 
-            next[match.id] = existing ?? {
+            next[match.id] = (dirtyResultIds.current.has(match.id) ? existing : undefined) ?? {
               home:
                 typeof match.homeScore === "number"
                   ? String(match.homeScore)
@@ -296,7 +300,7 @@ export default function AdminPage() {
             const loadedEvents = sanitizeGoalEvents(match.goalEvents, match);
 
             next[match.id] = reconcileGoalEventInputs(
-              existing ?? loadedEvents,
+              dirtyResultIds.current.has(match.id) ? existing ?? loadedEvents : loadedEvents,
               typeof match.homeScore === "number" ? match.homeScore : 0,
               typeof match.awayScore === "number" ? match.awayScore : 0,
             );
@@ -304,6 +308,9 @@ export default function AdminPage() {
 
           return next;
         });
+        setAssistDrafts(current => Object.fromEntries(matchList.map(match => [match.id,
+          dirtyResultIds.current.has(match.id) && current[match.id] ? current[match.id] : createAssistDraft(match),
+        ])));
       },
       (error) => {
         console.error(error);
@@ -885,6 +892,7 @@ export default function AdminPage() {
         return;
       }
 
+      for (const result of results) dirtyResultIds.current.add(result.matchId);
       setScoreInputs((current) => {
         const next = { ...current };
 
@@ -1427,6 +1435,7 @@ export default function AdminPage() {
       return;
     }
 
+    dirtyResultIds.current.add(matchId);
     const nextScore = {
       home: scoreInputs[matchId]?.home ?? "",
       away: scoreInputs[matchId]?.away ?? "",
@@ -1454,6 +1463,7 @@ export default function AdminPage() {
     field: "scorer" | "assister",
     value: string,
   ) {
+    dirtyResultIds.current.add(matchId);
     setGoalEventInputs((current) => {
       const events = current[matchId] ?? [];
 
@@ -1471,6 +1481,7 @@ export default function AdminPage() {
     index: number,
     ownGoal: boolean,
   ) {
+    dirtyResultIds.current.add(matchId);
     setGoalEventInputs((current) => {
       const events = current[matchId] ?? [];
 
@@ -1525,6 +1536,16 @@ export default function AdminPage() {
       return;
     }
 
+    const assistDraft = assistDrafts[match.id] ?? createAssistDraft(match);
+    let assistTotals: MatchAssistTotal[] | undefined;
+    if (assistDraft.mode === "totals") {
+      try {
+        assistTotals = normalizeManualAssistTotals(assistDraft.rows, { homeTeam: match.homeTeam, awayTeam: match.awayTeam, homeScore, awayScore, goalEvents });
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Asist kayıtlarını kontrol et.");
+        return;
+      }
+    }
     const result = calculateResult(homeScore, awayScore);
 
     const resultText =
@@ -1569,6 +1590,8 @@ export default function AdminPage() {
             ownGoal: event.ownGoal,
           })),
           idempotencyKey,
+          assistMode: assistDraft.mode,
+          ...(assistDraft.mode === "totals" ? { assistTotals } : {}),
         }),
       });
       const saveData = await saveResponse.json();
@@ -1578,6 +1601,7 @@ export default function AdminPage() {
       }
 
       delete resultRequestIds.current[match.id];
+      dirtyResultIds.current.delete(match.id);
 
       const checkedPredictionCount =
         typeof saveData.checkedPredictionCount === "number"
@@ -2440,12 +2464,14 @@ export default function AdminPage() {
                     away: "",
                   };
                   const goalEvents = goalEventInputs[match.id] ?? [];
+                  const assistDraft = assistDrafts[match.id] ?? createAssistDraft(match);
+                  const availablePlayers = mergeMatchPlayerOptions(leaguePlayers, match, assistDraft.rows);
                   const homePlayers = getPlayersForTeam(
-                    leaguePlayers,
+                    availablePlayers,
                     match.homeTeam,
                   );
                   const awayPlayers = getPlayersForTeam(
-                    leaguePlayers,
+                    availablePlayers,
                     match.awayTeam,
                   );
                   const expectedGoalCount =
@@ -2789,14 +2815,24 @@ export default function AdminPage() {
                               </div>
 
                               <p className="mt-1 text-xs text-zinc-500">
-                                Her gol için golü atan oyuncu zorunludur; asist isteğe bağlıdır. Geçmiş bir maçtaki asisti silmek için “Asist yok” seçeneğini kullanıp sonucu güncelleyebilirsin.
+                                {assistDraft.mode === "totals" ? "Golcüleri aşağıdan, asist oyuncularını ve sayılarını asist kayıtlarından düzenleyebilirsin." : "Her gol için golcüyü ve varsa asist yapan oyuncuyu seç. Asisti kaldırmak için “Asist yok” seçeneğini kullan."}
                               </p>
 
-                              {match.assistDetailsStatus === "complete" && (
-                                <p className="mb-3 text-sm text-slate-300">
-                                  Asistler: {getMatchAssistTotals(match).map(value => `${value.player} (${value.count})`).join(", ") || "Asist kaydı yok"}
-                                </p>
-                              )}
+                              <AdminMatchAssists
+                                draft={assistDraft} homeTeam={match.homeTeam} awayTeam={match.awayTeam}
+                                players={[...homePlayers.map(player => ({ ...player, team: match.homeTeam })), ...awayPlayers.map(player => ({ ...player, team: match.awayTeam }))]}
+                                disabled={savingThisResult || deletingThisMatch || savingThisEdit}
+                                onChange={next => { dirtyResultIds.current.add(match.id); setAssistDrafts(current => ({ ...current, [match.id]: next })); }}
+                                onModeChange={mode => {
+                                  const next = { ...assistDraft, mode };
+                                  if (mode === "totals" && assistDraft.mode === "goals") {
+                                    const linkedRows = getMatchAssistTotals({ goalEvents: goalEvents.map(event => ({ ...event, team: event.side === "home" ? match.homeTeam : match.awayTeam })) }).map(value => ({ team: value.team, player: value.player, count: String(value.count) }));
+                                    if (linkedRows.length > 0 || createAssistDraft(match).mode !== "totals" || assistDraft.rows.length === 0) next.rows = linkedRows;
+                                  }
+                                  dirtyResultIds.current.add(match.id);
+                                  setAssistDrafts(current => ({ ...current, [match.id]: next }));
+                                }}
+                              />
                               {goalEvents.length > 0 ? (
                                 <div className="mt-4 space-y-3">
                                   {goalEvents.map((event, index) => {
@@ -2896,7 +2932,8 @@ export default function AdminPage() {
                                             </option>
                                           ))}
                                         </select>
-                                        <select
+                                        {assistDraft.mode === "goals" ? <select
+                                          aria-label={`Asist ${index + 1} ${scoringTeam}`}
                                           value={event.assister}
                                           onChange={(inputEvent) =>
                                             handleGoalEventChange(
@@ -2936,7 +2973,7 @@ export default function AdminPage() {
                                               {player.name}
                                             </option>
                                           ))}
-                                        </select>
+                                        </select> : <p className="self-center text-xs text-sky-200">Asist oyuncuları ve sayıları yukarıda kayıtlı.</p>}
                                       </div>
                                     );
                                   })}

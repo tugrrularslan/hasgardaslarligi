@@ -14,6 +14,8 @@ type SaveMatchResultBody = {
   awayScore?: unknown;
   goalEvents?: unknown;
   idempotencyKey?: unknown;
+  assistMode?: unknown;
+  assistTotals?: unknown;
 };
 
 function getBearerToken(request: NextRequest) {
@@ -74,6 +76,8 @@ export async function POST(request: NextRequest) {
         homeScore: body.homeScore,
         awayScore: body.awayScore,
         goalEvents: asGoalEventInputs(body.goalEvents),
+        assistMode: body.assistMode as "goals" | "totals" | undefined,
+        assistTotals: body.assistTotals,
         idempotencyKey:
           typeof body.idempotencyKey === "string"
             ? body.idempotencyKey.trim()

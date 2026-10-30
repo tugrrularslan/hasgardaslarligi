@@ -4,6 +4,8 @@ import {
   Timestamp,
 } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
+import { normalizeManualAssistTotals, type AssistInputMode } from "@/lib/admin-assists";
+import { getMatchAssistTotals, type MatchAssistTotal } from "@/lib/match-details";
 import { getPlayerIdentityKey } from "@/lib/player-identity";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 
@@ -22,6 +24,8 @@ export type SaveMatchResultInput = {
   awayScore: unknown;
   goalEvents: GoalEventInput[];
   idempotencyKey: string;
+  assistMode?: AssistInputMode;
+  assistTotals?: unknown;
   /** Only trusted server-side fixture sync may omit scorer details. */
   allowIncompleteGoalEvents?: boolean;
 };
@@ -153,6 +157,10 @@ async function getSeasonContext(seasonId?: string): Promise<SeasonContext> {
   };
 }
 
+function assistTotalsSignature(totals: MatchAssistTotal[]) {
+  return JSON.stringify(totals.map(value => JSON.stringify([value.team, value.playerKey, value.count])).sort());
+}
+
 function validateAndNormalizeResultInput(
   input: SaveMatchResultInput,
   matchData: Record<string, unknown>,
@@ -237,8 +245,25 @@ function validateAndNormalizeResultInput(
     };
   });
 
+  if (input.assistMode !== undefined && input.assistMode !== "goals" && input.assistMode !== "totals") {
+    throw new AdminScoringError("Geçersiz asist giriş biçimi.");
+  }
+  let assistTotals: MatchAssistTotal[] | undefined;
+  if (input.assistMode === "totals") {
+    try {
+      assistTotals = normalizeManualAssistTotals(input.assistTotals, { homeTeam, awayTeam, homeScore, awayScore, goalEvents: input.goalEvents });
+    } catch (error) {
+      throw new AdminScoringError(error instanceof Error ? error.message : "Asist kayıtları geçersiz.");
+    }
+    if (matchData.assistDetailsStatus !== "complete" || assistTotalsSignature(assistTotals) !== assistTotalsSignature(getMatchAssistTotals(matchData))) {
+      // A changed aggregate cannot retain stale goal-to-assist associations.
+      for (const event of goalEvents) { event.assister = null; event.assisterKey = null; }
+    }
+  }
   return {
     matchId: input.matchId,
+    assistMode: input.assistMode,
+    assistTotals,
     homeScore,
     awayScore,
     idempotencyKey: input.idempotencyKey,
@@ -854,12 +879,17 @@ export async function saveMatchResult({
     const detailsUnchanged = JSON.stringify(existingGoalEvents.map(goalSignature).sort()) ===
       JSON.stringify(normalized.goalEvents.map(goalSignature).sort()) &&
       initialMatchData.goalDetailsStatus === (normalized.goalDetailsComplete ? "complete" : "unavailable");
+    const assistsUnchanged = normalized.assistMode === "totals"
+      ? initialMatchData.assistDetailsStatus === "complete" && assistTotalsSignature(normalized.assistTotals!) === assistTotalsSignature(getMatchAssistTotals(initialMatchData))
+      : normalized.assistMode === "goals" ? !Array.isArray(initialMatchData.assistTotals) && initialMatchData.assistDetailsStatus !== "complete" : true;
     // Saving an unchanged score/card must not erase separately imported assist totals.
-    if (!detailsUnchanged && (normalized.goalDetailsComplete || existingGoalEvents.length === 0)) {
+    if (!(detailsUnchanged && assistsUnchanged) && (normalized.goalDetailsComplete || existingGoalEvents.length === 0)) {
       await matchReference.update({
         goalEvents: normalized.goalEvents,
         ...(input.allowIncompleteGoalEvents === true ? {} : {
-          goalDetailsSource: "manual", assistTotals: FieldValue.delete(), assistDetailsStatus: FieldValue.delete(),
+          goalDetailsSource: "manual",
+          assistTotals: normalized.assistMode === "totals" ? normalized.assistTotals : FieldValue.delete(),
+          assistDetailsStatus: normalized.assistMode === "totals" ? "complete" : FieldValue.delete(),
         }),
         goalDetailsStatus: normalized.goalDetailsComplete
           ? "complete"
@@ -923,8 +953,8 @@ export async function saveMatchResult({
       result: normalized.result,
       goalEvents: normalized.goalEvents,
       goalDetailsSource: input.allowIncompleteGoalEvents === true ? "unavailable" : "manual",
-      assistTotals: FieldValue.delete(),
-      assistDetailsStatus: FieldValue.delete(),
+      assistTotals: normalized.assistMode === "totals" ? normalized.assistTotals : FieldValue.delete(),
+      assistDetailsStatus: normalized.assistMode === "totals" ? "complete" : FieldValue.delete(),
       goalDetailsLastCheckedAt: FieldValue.delete(),
       goalDetailsSourceVersion: FieldValue.delete(),
       goalDetailsStatus: normalized.goalDetailsComplete

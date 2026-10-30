@@ -4,6 +4,7 @@ import { createRequire } from "node:module";
 import vm from "node:vm";
 import ts from "typescript";
 import { parseEspnMatchDetails, getMatchAssistTotals } from "../lib/match-details.ts";
+import { normalizeManualAssistTotals } from "../lib/admin-assists.ts";
 import { getPlayerIdentityKey } from "../lib/player-identity.ts";
 const sample = JSON.parse(readFileSync(new URL("./fixtures/espn-super-lig-summary.json", import.meta.url), "utf8"));
 const context = { sourceEventId: "401888259", homeTeam: "Konyaspor", awayTeam: "Galatasaray", homeScore: 0, awayScore: 4 };
@@ -114,6 +115,8 @@ const scoringReference = {
   },
 };
 const scoringMocks = {
+  "@/lib/admin-assists": { normalizeManualAssistTotals },
+  "@/lib/match-details": { getMatchAssistTotals },
   "firebase-admin/firestore": { Timestamp, FieldValue: { serverTimestamp: () => Timestamp.now(), delete: () => deleted } },
   "@/lib/firebase-admin": { adminDb: { collection: () => ({ doc: () => scoringReference }) } },
   "@/lib/player-identity": { getPlayerIdentityKey },
