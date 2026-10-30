@@ -17,19 +17,19 @@ export function createAssistDraft(match: MatchSource): AssistDraft {
 /** Include athletes already recorded on the match even when the roster is stale or empty. */
 export function mergeMatchPlayerOptions(players: Array<{ name: string; team: string }>, match: MatchSource, rows: AssistTotalInput[] = []) {
   const options = new Map<string, { name: string; team: string }>();
-  const add = (name: string, team: string) => {
+  const add = (name: string, team: string, recorded = false) => {
     if (!name.trim() || !team.trim()) return;
     const key = `${canonicalTeamName(team) ?? team}:${getPlayerIdentityKey(name)}`;
-    if (!options.has(key)) options.set(key, { name: name.trim(), team });
+    if (recorded || !options.has(key)) options.set(key, { name: name.trim(), team });
   };
   players.forEach(player => add(player.name, player.team));
   for (const event of match.goalEvents ?? []) {
     const scorerTeam = event.ownGoal ? event.team === match.homeTeam ? match.awayTeam : match.homeTeam : event.team;
-    add(event.scorer, scorerTeam);
-    if (event.assister && !event.ownGoal) add(event.assister, event.team);
+    add(event.scorer, scorerTeam, true);
+    if (event.assister && !event.ownGoal) add(event.assister, event.team, true);
   }
-  getMatchAssistTotals(match).forEach(value => add(value.player, value.team));
-  rows.forEach(value => add(value.player, value.team));
+  getMatchAssistTotals(match).forEach(value => add(value.player, value.team, true));
+  rows.forEach(value => add(value.player, value.team, true));
   return [...options.values()];
 }
 

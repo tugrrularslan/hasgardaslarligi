@@ -21,6 +21,7 @@ assert.equal(createAssistDraft(stored).rows[1].player, "Gabriel Gomes");
 const choices = mergeMatchPlayerOptions([], stored);
 assert.ok(choices.some(player => player.name === "Gabriel Gomes"));
 assert.ok(choices.some(player => player.name === "Alexey Batrakov"));
+assert.ok(mergeMatchPlayerOptions([{name:"Yunus Akgun",team:"Galatasaray"}],stored).some(player=>player.name==="Yunus Akgün"), "Saved player spelling must remain a selectable value when the roster uses a different accent");
 for (const rows of [ [{team:"Other",player:"A",count:1}], [{team:"Galatasaray",player:"A",count:5}], [{team:"Galatasaray",player:"A",count:0}], [{team:"Galatasaray",player:"A",count:1},{team:"Galatasaray",player:"A",count:1}] ]) {
   assert.throws(() => normalizeManualAssistTotals(rows, { ...context, goalEvents: details.goalEvents }));
 }
