@@ -97,6 +97,7 @@ export default function PredictionsPage() {
         }
 
         setUser(firebaseUser);
+        setSelectedWeek(null);
 
         const userReference = doc(db, "users", firebaseUser.uid);
 
@@ -205,7 +206,6 @@ export default function PredictionsPage() {
 
   useEffect(() => {
     if (!user) return;
-    setSelectedWeek(null);
     return onSnapshot(doc(db, "settings", "currentSeason"), (snapshot) => {
       const data = snapshot.data() ?? {};
       const currentSeason = data.seasonId || DEFAULT_SEASON_ID;
