@@ -34,8 +34,8 @@ günceller. Aynı uç nokta GitHub Actions tarafından saatte bir otomatik çağ
   iki kaynakla doğrulanmış sonuçla eşleşmelidir. Penaltı golleri sayılır;
   seri penaltılar ve iptal edilen olaylar sayılmaz. Kendi kalesine golün
   asist kaydı oluşturulmaz.
-- Kaynak gol bazında asist bağlantısı vermiyorsa asistler maç skorunun hemen altında
-  oyuncu, takım ve toplam sayı olarak gösterilir; rastgele bir gole bağlanmaz.
+- Kaynak gol bazında asist bağlantısı vermiyorsa asistler ilgili takım kartında gollerin altında
+  oyuncu ve toplam sayı olarak gösterilir; rastgele bir gole bağlanmaz.
   Gol ve asist krallığı aynı toplamları kullanır; asist iki kez sayılmaz.
 - Eski eksik kayıtlar en yeni maçlardan başlanarak, her çalışmada en fazla
   12 maç olacak şekilde tamamlanır. Dört paralel istek ve istek başına sekiz

@@ -223,7 +223,7 @@ const detailsText = renderedText(pageExports.MatchResultDetails({ match: {
   assistDetailsStatus: "complete",
 }, theme: {} }));
 assert.ok(detailsText.includes("Golcü"));
-assert.ok(detailsText.indexOf("Asistçi") < detailsText.indexOf("Golcü"), "Assists must be visible above the goal list");
+assert.ok(detailsText.indexOf("Asistçi") > detailsText.indexOf("Golcü"), "Assists must remain below the goals inside the team card");
 assert.ok(/Asistçi.*1.*asist/.test(detailsText), "Match detail card must show imported assists");
 const pendingText = renderedText(pageExports.MatchResultDetails({ match: {
   homeTeam: "Konyaspor", awayTeam: "Galatasaray", homeScore: 0, awayScore: 1, goalEvents: [],
