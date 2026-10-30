@@ -8,7 +8,7 @@ const keys = createLocalJWKSet({ keys: [{ ...jwk, kid: "test", alg: "RS256" }] }
 const now = Math.floor(Date.now() / 1000);
 const claims = {
   iss: "https://token.actions.githubusercontent.com", aud: GITHUB_SYNC_AUDIENCE,
-  sub: "repo:tugrrularslan/hasgardaslarligi:ref:refs/heads/main",
+  sub: "repo:tugrrularslan@307523598/hasgardaslarligi@1307847878:ref:refs/heads/main",
   repository: "tugrrularslan/hasgardaslarligi", repository_id: "1307847878", repository_owner_id: "307523598",
   ref: "refs/heads/main", event_name: "schedule",
   workflow_ref: "tugrrularslan/hasgardaslarligi/.github/workflows/super-lig-sync.yml@refs/heads/main",
@@ -22,7 +22,8 @@ await verifyGithubSyncToken(await token({ event_name: "workflow_dispatch" }), ke
 for (const changes of [
   { repository: "other/repo" }, { repository_id: "1" }, { repository_owner_id: "1" },
   { ref: "refs/heads/feature" }, { workflow_ref: "tugrrularslan/hasgardaslarligi/.github/workflows/other.yml@refs/heads/main" },
-  { sub: "repo:other/repo:ref:refs/heads/main" }, { event_name: "pull_request" },
+  { sub: "repo:other/repo:ref:refs/heads/main" },
+  { sub: "repo:tugrrularslan/hasgardaslarligi:ref:refs/heads/main" }, { event_name: "pull_request" },
   { aud: "other-service" }, { iss: "https://untrusted.example" },
   { exp: now - 60 }, { exp: undefined }, { iat: undefined }, { iat: now - 900 },
 ]) {

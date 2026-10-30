@@ -66,6 +66,8 @@ doğrulanır. İmza, süre, issuer, audience ve subject denetiminden sonra yaln�
 kimlikli sahibinin, main dalındaki `.github/workflows/super-lig-sync.yml`
 görevinin `schedule` veya `workflow_dispatch` çalışmaları kabul edilir.
 Başka depo, dal, görev veya pull request kimliği sonuç kaydedemez.
+Deponun `use_immutable_subject` ayarıyla uyumlu, sahip ve depo sayısal
+kimliklerini içeren subject biçimi doğrulanır.
 
 Workflow'un `id-token: write` izni yalnızca GitHub kimliği almak içindir;
 depo içeriği yazma izni verilmez. Normal yönetici düğmesi mevcut Firebase

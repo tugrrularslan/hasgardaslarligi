@@ -22,7 +22,7 @@ export async function verifyGithubSyncToken(token: string, keys: JWTVerifyGetKey
     repository_owner_id: "307523598",
     ref: "refs/heads/main",
     workflow_ref: WORKFLOW,
-    sub: `repo:${REPOSITORY}:ref:refs/heads/main`,
+    sub: "repo:tugrrularslan@307523598/hasgardaslarligi@1307847878:ref:refs/heads/main",
   };
   for (const [name, expected] of Object.entries(expectedClaims)) {
     if (payload[name] !== expected) throw new Error(`github-policy:${name}`);
