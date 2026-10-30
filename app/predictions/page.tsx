@@ -704,21 +704,25 @@ function MatchResultDetails({
         Gol ve asist detayları
       </p>
 
+      <div className={`mt-3 rounded-xl border p-3 ${theme.secondaryCardClass}`} aria-label="Maçın asistleri">
+        <p className={`font-black ${theme.textClass}`}>Asistler</p>
+        {assists.length > 0 ? (
+          <ul className={`mt-2 space-y-1 text-sm ${theme.textClass}`}>
+            {assists.map(value => <li key={`${value.team}-${value.playerKey}`}><span className="font-bold">{value.player}</span> · {value.count} asist <span className={theme.mutedTextClass}>({value.team})</span></li>)}
+          </ul>
+        ) : <p className={`mt-1 text-sm ${theme.mutedTextClass}`}>{match.assistDetailsStatus === "complete" ? "Bu maçta asist kaydı yok." : "Asist bilgisi henüz doğrulanmadı."}</p>}
+      </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         <TeamGoalDetails
           team={match.homeTeam}
           goalEvents={homeGoals}
           expectedGoals={match.homeScore ?? 0}
-          assistTotals={assists.filter(value => value.team === match.homeTeam)}
-          showAssistTotals={match.assistDetailsStatus === "complete"}
           theme={theme}
         />
         <TeamGoalDetails
           team={match.awayTeam}
           goalEvents={awayGoals}
           expectedGoals={match.awayScore ?? 0}
-          assistTotals={assists.filter(value => value.team === match.awayTeam)}
-          showAssistTotals={match.assistDetailsStatus === "complete"}
           theme={theme}
         />
       </div>
@@ -730,15 +734,11 @@ function TeamGoalDetails({
   team,
   goalEvents,
   expectedGoals,
-  assistTotals,
-  showAssistTotals,
   theme,
 }: {
   team: string;
   goalEvents: GoalEvent[];
   expectedGoals: number;
-  assistTotals: MatchAssistTotal[];
-  showAssistTotals: boolean;
   theme: AppTheme;
 }) {
   return (
@@ -785,16 +785,7 @@ function TeamGoalDetails({
           })}
         </ul>
       )}
-      {showAssistTotals && (
-        <div className={`mt-3 border-t pt-3 text-sm ${theme.mutedTextClass}`}>
-          <p className="font-bold">Asistler</p>
-          {assistTotals.length === 0 ? <p className="mt-1">Asist kaydı yok.</p> : (
-            <ul className="mt-1 space-y-1">{assistTotals.map(value => (
-              <li key={value.playerKey}>{value.player} · {value.count} asist</li>
-            ))}</ul>
-          )}
-        </div>
-      )}
+
     </div>
   );
 }

@@ -34,8 +34,8 @@ günceller. Aynı uç nokta GitHub Actions tarafından saatte bir otomatik çağ
   iki kaynakla doğrulanmış sonuçla eşleşmelidir. Penaltı golleri sayılır;
   seri penaltılar ve iptal edilen olaylar sayılmaz. Kendi kalesine golün
   asist kaydı oluşturulmaz.
-- Kaynak gol bazında asist bağlantısı vermiyorsa asistler takım altında
-  oyuncu ve toplam sayı olarak gösterilir; rastgele bir gole bağlanmaz.
+- Kaynak gol bazında asist bağlantısı vermiyorsa asistler maç skorunun hemen altında
+  oyuncu, takım ve toplam sayı olarak gösterilir; rastgele bir gole bağlanmaz.
   Gol ve asist krallığı aynı toplamları kullanır; asist iki kez sayılmaz.
 - Eski eksik kayıtlar en yeni maçlardan başlanarak, her çalışmada en fazla
   12 maç olacak şekilde tamamlanır. Dört paralel istek ve istek başına sekiz
@@ -108,3 +108,9 @@ Yayın öncesi: `npm test`, `npx tsc --noEmit`, `npm run build` çalıştırın.
 Canlı kaynak kontrolü `npm run test:super-lig-source` salt okunurdur. Gerçek
 Firebase yazma/puanlama doğrulaması, üretime geçmeden önce ayrı bir test
 Firebase projesinde yönetici hesabıyla yapılmalıdır.
+
+Aynı tamamlanmış sonuç değiştirilmeden yeniden kaydedildiğinde, formun gol
+sırasını ev/deplasman olarak gruplaması dahil, mevcut asist toplamları korunur.
+Açık bir yönetici asist düzeltmesi mevcut kural uyarınca kaynak toplamını
+manuel kayıtla değiştirir. Eşitleme yanıtında en son tamamlanan maçın asist
+kaydı da yeniden okunarak raporlanır; sonuç yalnızca yazma sayacına dayanmaz.

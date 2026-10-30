@@ -1,5 +1,6 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
+import { getMatchAssistTotals } from "@/lib/match-details";
 import { syncMatchDetails } from "@/lib/match-details-sync";
 import { verifyGithubSyncToken } from "@/lib/github-sync-auth";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
@@ -452,8 +453,19 @@ export async function POST(request: NextRequest) {
 
     const detailSummary = await syncMatchDetails(detailCandidates);
 
+    const latest = [...detailCandidates].sort((a, b) => b.source.kickoff.getTime() - a.source.kickoff.getTime())[0];
+    const latestData = latest ? (await adminDb.collection("matches").doc(latest.id).get()).data() : undefined;
+    const latestFinishedMatchDetails = latestData?.status === "finished" ? {
+      week: latestData.week, homeTeam: latestData.homeTeam, awayTeam: latestData.awayTeam,
+      homeScore: latestData.homeScore, awayScore: latestData.awayScore,
+      goalDetailsSource: latestData.goalDetailsSource ?? "unknown",
+      assistDetailsStatus: latestData.assistDetailsStatus ?? "unavailable",
+      assists: getMatchAssistTotals(latestData),
+      linkedAssistCount: Array.isArray(latestData.goalEvents) ? latestData.goalEvents.filter(event => event?.assister).length : 0,
+    } : null;
     return NextResponse.json({
       ...detailSummary,
+      latestFinishedMatchDetails,
       success: scoringErrors.length === 0,
       seasonId,
       source: source.sourceStats,

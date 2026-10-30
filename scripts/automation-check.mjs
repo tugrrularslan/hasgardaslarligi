@@ -52,6 +52,7 @@ const db = {
   }; },
 };
 const mocks = {
+  "@/lib/match-details": { getMatchAssistTotals },
   "@/lib/match-details-sync": { async syncMatchDetails() { return { goalDetailsUpdatedCount: 0 }; } },
   "@/lib/github-sync-auth": { async verifyGithubSyncToken(token) {
     if (token !== workflowToken) throw Error("invalid workflow identity");
@@ -222,6 +223,7 @@ const detailsText = renderedText(pageExports.MatchResultDetails({ match: {
   assistDetailsStatus: "complete",
 }, theme: {} }));
 assert.ok(detailsText.includes("Golcü"));
+assert.ok(detailsText.indexOf("Asistçi") < detailsText.indexOf("Golcü"), "Assists must be visible above the goal list");
 assert.ok(/Asistçi.*1.*asist/.test(detailsText), "Match detail card must show imported assists");
 const pendingText = renderedText(pageExports.MatchResultDetails({ match: {
   homeTeam: "Konyaspor", awayTeam: "Galatasaray", homeScore: 0, awayScore: 1, goalEvents: [],

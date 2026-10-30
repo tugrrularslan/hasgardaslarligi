@@ -101,3 +101,58 @@ assert.equal(result.goalDetailErrors.length, 1);
 assert.equal(stored.goalEvents.length, 0);
 assert.equal(stored.pointsCalculated, true);
 console.log("Gol ve asist ayrıntıları: gerçek kaynak, skor/takım doğrulama, toplamlar, tekrar çalıştırma ve yönetici kaydı koruması başarılı.");
+
+// Regression: clicking Save without changing a completed result must retain aggregate assists.
+const scoringExports = {};
+const scoringReference = {
+  get: async () => snapshot(),
+  update: async patch => {
+    updates.push(patch);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === deleted) delete stored[key]; else stored[key] = value;
+    }
+  },
+};
+const scoringMocks = {
+  "firebase-admin/firestore": { Timestamp, FieldValue: { serverTimestamp: () => Timestamp.now(), delete: () => deleted } },
+  "@/lib/firebase-admin": { adminDb: { collection: () => ({ doc: () => scoringReference }) } },
+  "@/lib/player-identity": { getPlayerIdentityKey },
+  "@/lib/season": { DEFAULT_SEASON_ID: "2026-2027", DEFAULT_SEASON_NAME: "2026-2027 Sezonu" },
+};
+const scoringCode = ts.transpileModule(readFileSync(new URL("../lib/match-scoring.ts", import.meta.url), "utf8"), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+vm.runInNewContext(scoringCode, { exports: scoringExports, require: name => scoringMocks[name] ?? require(name), Date, Map, Promise, Array });
+reset();
+stored.goalEvents = details.goalEvents.map(goal => ({ team: goal.side === "home" ? context.homeTeam : context.awayTeam,
+  scorer: goal.scorer, scorerKey: getPlayerIdentityKey(goal.scorer), assister: null, assisterKey: null, ownGoal: goal.ownGoal }));
+stored.goalDetailsStatus = "complete";
+stored.goalDetailsSource = "espn";
+stored.assistDetailsStatus = "complete";
+stored.assistTotals = details.assistTotals;
+const originalTotals = JSON.stringify(stored.assistTotals);
+const resultInput = { matchId: "existing-match", homeScore: 0, awayScore: 4, goalEvents: details.goalEvents, idempotencyKey: "manual-save-test" };
+await scoringExports.saveMatchResult({ adminId: "administrator", input: resultInput });
+assert.equal(JSON.stringify(stored.assistTotals), originalTotals);
+assert.equal(stored.goalDetailsSource, "espn");
+assert.equal(updates.length, 0, "An unchanged result save must not clear imported assists");
+await scoringExports.saveMatchResult({ adminId: "administrator", input: { ...resultInput,
+  goalEvents: resultInput.goalEvents.map((goal, index) => index === 0 ? { ...goal, assister: "Manuel Asistçi" } : goal),
+} });
+assert.equal(stored.assistTotals, undefined, "Explicit manual assist edits must replace imported aggregates");
+assert.equal(stored.goalEvents[0].assister, "Manuel Asistçi");
+assert.equal(stored.pointsCalculated, true);
+assert.equal(stored.scoreRevision, 3);
+console.log("Aynı sonucu yeniden kaydetmede asist kaybı regresyonu ve açık yönetici düzeltmesi kontrolü başarılı.");
+
+reset();
+stored.homeScore = 1; stored.awayScore = 1; stored.result = "X";
+stored.goalEvents = [{ team: "Galatasaray", scorer: "Away Scorer", assister: null, ownGoal: false }, { team: "Konyaspor", scorer: "Home Scorer", assister: null, ownGoal: false }];
+stored.goalDetailsStatus = "complete"; stored.goalDetailsSource = "espn";
+stored.assistTotals = [{ team: "Galatasaray", player: "Imported", count: 1 }];
+await scoringExports.saveMatchResult({ adminId: "administrator", input: {
+  matchId: "existing-match", homeScore: 1, awayScore: 1, idempotencyKey: "reordered-save",
+  goalEvents: [{ side: "home", scorer: "Home Scorer", assister: "", ownGoal: false }, { side: "away", scorer: "Away Scorer", assister: "", ownGoal: false }],
+} });
+assert.equal(updates.length, 0, "Administrator form grouping home and away goals must not erase aggregate assists");
+assert.equal(stored.assistTotals[0].count, 1);

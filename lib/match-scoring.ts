@@ -842,7 +842,20 @@ export async function saveMatchResult({
       ? initialMatchData.goalEvents
       : [];
 
-    if (normalized.goalDetailsComplete || existingGoalEvents.length === 0) {
+    const goalSignature = (event: Record<string, unknown> | null) => {
+      if (!event || typeof event !== "object") return "invalid";
+      return JSON.stringify([
+        event.team,
+        typeof event.scorer === "string" ? getPlayerIdentityKey(event.scorer) : "",
+        typeof event.assister === "string" && event.assister.trim() ? getPlayerIdentityKey(event.assister) : null,
+        event.ownGoal === true,
+      ]);
+    };
+    const detailsUnchanged = JSON.stringify(existingGoalEvents.map(goalSignature).sort()) ===
+      JSON.stringify(normalized.goalEvents.map(goalSignature).sort()) &&
+      initialMatchData.goalDetailsStatus === (normalized.goalDetailsComplete ? "complete" : "unavailable");
+    // Saving an unchanged score/card must not erase separately imported assist totals.
+    if (!detailsUnchanged && (normalized.goalDetailsComplete || existingGoalEvents.length === 0)) {
       await matchReference.update({
         goalEvents: normalized.goalEvents,
         ...(input.allowIncompleteGoalEvents === true ? {} : {
