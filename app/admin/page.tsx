@@ -1098,6 +1098,13 @@ export default function AdminPage() {
       `${activeSeasonId}_${weekNumber}`
     );
 
+    const activateWeek = () => setDoc(doc(db, "settings", "currentSeason"), {
+      activeWeek: weekNumber,
+      activeWeekSeasonId: activeSeasonId,
+      updatedBy: user.uid,
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+
     try {
       const publicationSnapshot = await getDoc(
         publicationReference
@@ -1107,8 +1114,9 @@ export default function AdminPage() {
         publicationSnapshot.exists() &&
         publicationSnapshot.data().published === true
       ) {
+        await activateWeek();
         setMessage(
-          `${weekNumber}. hafta daha önce yayınlanmış. Yeniden bildirim gönderilmedi.`
+          `${weekNumber}. hafta aktif olarak seçildi. Yeniden bildirim gönderilmedi.`
         );
         return;
       }
@@ -1160,8 +1168,9 @@ export default function AdminPage() {
         { merge: true }
       );
 
+      await activateWeek();
       setMessage(
-        `${weekNumber}. hafta yayınlandı. Bildirim başarılı: ${
+        `${weekNumber}. hafta yayınlandı ve aktif seçildi. Bildirim başarılı: ${
           responseData.successCount ?? 0
         }, başarısız: ${responseData.failureCount ?? 0}.`
       );

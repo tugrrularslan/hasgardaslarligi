@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "test": "npm run test:data-health && npm run test:super-lig-sync",
+    "test": "npm run test:data-health && npm run test:super-lig-sync && npm run test:automation",
+    "test:automation": "node --no-warnings --experimental-strip-types scripts/automation-check.mjs",
     "test:data-health": "node --no-warnings --experimental-strip-types scripts/data-health-check.mjs",
     "test:super-lig-sync": "node --no-warnings --experimental-strip-types scripts/super-lig-sync-check.mjs",
     "test:super-lig-source": "node --no-warnings --experimental-strip-types scripts/super-lig-source-smoke.mjs",

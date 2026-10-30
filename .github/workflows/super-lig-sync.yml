@@ -1,0 +1,38 @@
+name: Süper Lig sonuçlarını eşitle
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: super-lig-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Doğrulanmış sonuçları kaydet ve puanla
+        env:
+          SITE_URL: ${{ vars.SUPER_LIG_SITE_URL }}
+          SYNC_SECRET: ${{ secrets.SUPER_LIG_SYNC_SECRET }}
+        run: |
+          node --input-type=module <<'JS'
+          const { SITE_URL, SYNC_SECRET } = process.env;
+          if (!SITE_URL || !SYNC_SECRET || SYNC_SECRET.length < 32) {
+            throw new Error('SUPER_LIG_SITE_URL ve en az 32 karakterli SUPER_LIG_SYNC_SECRET gerekli.');
+          }
+          const url = new URL('/api/admin/sync-super-lig', SITE_URL);
+          if (url.protocol !== 'https:') throw new Error('Site adresi HTTPS olmalı.');
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${SYNC_SECRET}` },
+            signal: AbortSignal.timeout(70000),
+            redirect: 'error',
+          });
+          const result = await response.json();
+          console.log(JSON.stringify(result));
+          if (!response.ok || !result.success || result.scoringErrors?.length) {
+            throw new Error('Eşitleme tamamlanamadı; günlükteki hatayı inceleyin.');
+          }
+          JS

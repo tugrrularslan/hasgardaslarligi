@@ -22,6 +22,8 @@ import GameNavigation from "@/components/GameNavigation";
 import MatchChat from "@/components/MatchChat";
 import TeamCrest from "@/components/TeamCrest";
 import WeeklyPredictionCard from "@/components/WeeklyPredictionCard";
+import { getAdminActiveWeek } from "@/lib/active-week";
+import { DEFAULT_SEASON_ID } from "@/lib/season";
 import { getThemeById, type AppTheme } from "@/lib/themes";
 
 const CURRENT_SEASON = "2026–2027 Sezonu";
@@ -31,6 +33,7 @@ type PredictionValue = "1" | "X" | "2";
 type Match = {
   id: string;
   week: number;
+  seasonId?: string;
   homeTeam: string;
   awayTeam: string;
   kickoff: Timestamp;
@@ -66,6 +69,9 @@ export default function PredictionsPage() {
   const [predictions, setPredictions] = useState<PredictionMap>({});
   const [savedPredictions, setSavedPredictions] =
     useState<PredictionMap>({});
+  const [seasonId, setSeasonId] = useState(DEFAULT_SEASON_ID);
+  const [adminWeek, setAdminWeek] = useState<number | null>(null);
+  const [weekLoading, setWeekLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState<WeekFilter>(null);
 
   const [loading, setLoading] = useState(true);
@@ -198,19 +204,20 @@ export default function PredictionsPage() {
   }, [user]);
 
   useEffect(() => {
-    if (loading || matches.length === 0) return;
-
-    const weeks = getWeekNumbers(matches);
-    const firstOpenWeek = matches.find(
-      (match) => !isPredictionClosed(match) && !savedPredictions[match.id],
-    )?.week;
-    const fallbackWeek = firstOpenWeek ?? weeks.at(-1) ?? null;
-
-    setSelectedWeek((current) => {
-      if (current === "all") return current;
-      return current !== null && weeks.includes(current) ? current : fallbackWeek;
+    if (!user) return;
+    setSelectedWeek(null);
+    return onSnapshot(doc(db, "settings", "currentSeason"), (snapshot) => {
+      const data = snapshot.data() ?? {};
+      const currentSeason = data.seasonId || DEFAULT_SEASON_ID;
+      setSeasonId(currentSeason);
+      const week = getAdminActiveWeek(data, currentSeason);
+      setAdminWeek(week);
+      setWeekLoading(false);
+    }, () => {
+      setMessage("Aktif hafta alınamadı. Lütfen sayfayı yeniden aç.");
+      setWeekLoading(false);
     });
-  }, [loading, matches, savedPredictions]);
+  }, [user]);
 
   const activeTheme = useMemo(() => {
     return getThemeById(profile?.selectedTheme);
@@ -278,7 +285,7 @@ export default function PredictionsPage() {
     }
   }
 
-  if (loading) {
+  if (loading || weekLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-black text-white">
         Tahminler yükleniyor...
@@ -286,12 +293,14 @@ export default function PredictionsPage() {
     );
   }
 
-  const weekNumbers = getWeekNumbers(matches);
-  const activeWeek = selectedWeek ?? weekNumbers.at(-1) ?? null;
+  const seasonMatches = matches.filter((match) => match.seasonId === seasonId ||
+    (!match.seasonId && seasonId === DEFAULT_SEASON_ID));
+  const weekNumbers = getWeekNumbers(seasonMatches);
+  const activeWeek = selectedWeek ?? adminWeek;
   const visibleMatches =
-    activeWeek === "all" || activeWeek === null
-      ? matches
-      : matches.filter((match) => match.week === activeWeek);
+    activeWeek === "all"
+      ? seasonMatches
+      : seasonMatches.filter((match) => match.week === activeWeek);
   const groupedMatches = groupMatchesByWeek(visibleMatches);
 
   return (
@@ -342,6 +351,9 @@ export default function PredictionsPage() {
           </div>
         </header>
 
+        {activeWeek === null && (
+          <p className="mb-6">Yönetici henüz aktif hafta belirlemedi. Aşağıdan bir haftaya bakabilirsin.</p>
+        )}
         {message && (
           <div
             className={`mb-6 rounded-2xl border p-4 ${activeTheme.secondaryCardClass} ${activeTheme.textClass}`}

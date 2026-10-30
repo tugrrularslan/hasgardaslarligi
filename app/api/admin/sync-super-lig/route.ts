@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
@@ -13,6 +14,7 @@ import { loadSuperLigSources } from "@/lib/super-lig-sync-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 type StoredMatch = {
   id: string;
@@ -181,7 +183,8 @@ function shouldScoreExistingMatch(
   score: Score,
 ) {
   if (data.scoringStatus === "processing" || data.scoringStatus === "failed") {
-    return false;
+    // saveMatchResult resumes the revision and enforces its processing lease.
+    return data.homeScore === score.homeScore && data.awayScore === score.awayScore;
   }
 
   return (
@@ -203,17 +206,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const adminSnapshot = await adminDb
-      .collection("users")
-      .doc(decodedToken.uid)
-      .get();
+    const secret = process.env.SUPER_LIG_SYNC_SECRET;
+    const supplied = Buffer.from(idToken);
+    const expected = Buffer.from(secret ?? "");
+    const automated = expected.length >= 32 && supplied.length === expected.length &&
+      timingSafeEqual(supplied, expected);
+    let actorId = "system:super-lig-sync";
 
-    if (!adminSnapshot.exists || adminSnapshot.data()?.isAdmin !== true) {
-      return NextResponse.json(
-        { success: false, error: "Yönetici yetkisi gerekiyor." },
-        { status: 403 },
-      );
+    if (!automated) {
+      let uid: string;
+      try {
+        uid = (await adminAuth.verifyIdToken(idToken)).uid;
+      } catch {
+        return NextResponse.json({ success: false, error: "Geçersiz oturum." }, { status: 401 });
+      }
+      const adminSnapshot = await adminDb.collection("users").doc(uid).get();
+      if (!adminSnapshot.exists || adminSnapshot.data()?.isAdmin !== true) {
+        return NextResponse.json({ success: false, error: "Yönetici yetkisi gerekiyor." }, { status: 403 });
+      }
+      actorId = uid;
     }
 
     const seasonSnapshot = await adminDb
@@ -319,13 +330,13 @@ export async function POST(request: NextRequest) {
               sourceMatch,
               seasonId,
               seasonName,
-              adminId: decodedToken.uid,
+              adminId: actorId,
             })
           : scheduledMatchData({
               sourceMatch,
               seasonId,
               seasonName,
-              adminId: decodedToken.uid,
+              adminId: actorId,
             });
 
         addWrite(() => batch.set(reference, matchData, { merge: false }));
@@ -344,7 +355,7 @@ export async function POST(request: NextRequest) {
 
       if (scheduledMatchChanged || sourceMetadataChanged) {
         const updates: FirebaseFirestore.UpdateData<FirebaseFirestore.DocumentData> = {
-          updatedBy: decodedToken.uid,
+          updatedBy: actorId,
           updatedAt: FieldValue.serverTimestamp(),
           ...sourceMetadata(sourceMatch),
         };
@@ -399,7 +410,7 @@ export async function POST(request: NextRequest) {
     for (const match of matchesToScore) {
       try {
         await saveMatchResult({
-          adminId: decodedToken.uid,
+          adminId: actorId,
           input: {
             matchId: match.id,
             homeScore: match.score.homeScore,
@@ -425,7 +436,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      success: true,
+      success: scoringErrors.length === 0,
       seasonId,
       source: source.sourceStats,
       createdCount,
@@ -439,7 +450,7 @@ export async function POST(request: NextRequest) {
       automaticWeeklyChampionAward: false,
       message:
         "Fikstür, saatler ve doğrulanmış sonuçlar eşitlendi. Yeni hafta yayınlanmadı; hafta geçişi ve şampiyon bonusu yönetici tarafından ayrıca yapılır.",
-    });
+    }, { status: scoringErrors.length ? 500 : 200 });
   } catch (error) {
     const status = error instanceof AdminScoringError ? error.status : 500;
 
