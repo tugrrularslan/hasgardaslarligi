@@ -212,8 +212,15 @@ export async function POST(request: NextRequest) {
     if (automated) {
       try {
         await verifyGithubSyncToken(idToken);
-      } catch {
-        return NextResponse.json({ success: false, error: "GitHub görev kimliği doğrulanamadı." }, { status: 401 });
+      } catch (error) {
+        // Report only a fixed failure category, never a token or credential value.
+        const failure = error as { code?: string; claim?: string; message?: string };
+        const reason = failure.message?.startsWith("github-policy:")
+          ? failure.message
+          : failure.code?.startsWith("ERR_") ? failure.code
+          : error instanceof ReferenceError ? "AUTH_RUNTIME_ERROR" : "AUTH_VERIFICATION_ERROR";
+        const claim = ["iss", "aud", "exp", "iat", "nbf"].includes(failure.claim ?? "") ? failure.claim : undefined;
+        return NextResponse.json({ success: false, error: "GitHub görev kimliği doğrulanamadı.", reason, claim }, { status: 401 });
       }
     }
 

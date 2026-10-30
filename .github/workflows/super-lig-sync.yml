@@ -42,6 +42,12 @@ jobs:
             redirect: 'error',
           });
           const result = await response.json();
+          if (response.status === 401) {
+            // Public workflow provenance only; do not print the identity token.
+            const claims = JSON.parse(Buffer.from(identity.value.split('.')[1], 'base64url').toString());
+            const names = ['iss', 'aud', 'repository', 'repository_id', 'repository_owner_id', 'ref', 'workflow_ref', 'event_name'];
+            console.log('Workflow provenance:', JSON.stringify(Object.fromEntries(names.map(name => [name, claims[name]]))));
+          }
           console.log(JSON.stringify(result));
           if (!response.ok || !result.success || result.scoringErrors?.length) {
             throw new Error('Eşitleme tamamlanamadı; günlükteki hatayı inceleyin.');

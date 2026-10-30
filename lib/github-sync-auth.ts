@@ -16,11 +16,18 @@ export async function verifyGithubSyncToken(token: string, keys: JWTVerifyGetKey
     maxTokenAge: "10m",
     clockTolerance: 5,
   });
-  if (payload.repository !== REPOSITORY || payload.repository_id !== "1307847878" ||
-      payload.repository_owner_id !== "307523598" || payload.ref !== "refs/heads/main" ||
-      payload.workflow_ref !== WORKFLOW ||
-      payload.sub !== `repo:${REPOSITORY}:ref:refs/heads/main` ||
-      !["schedule", "workflow_dispatch"].includes(String(payload.event_name))) {
-    throw new Error("Bu GitHub görevinin sonuç eşitleme yetkisi yok.");
+  const expectedClaims = {
+    repository: REPOSITORY,
+    repository_id: "1307847878",
+    repository_owner_id: "307523598",
+    ref: "refs/heads/main",
+    workflow_ref: WORKFLOW,
+    sub: `repo:${REPOSITORY}:ref:refs/heads/main`,
+  };
+  for (const [name, expected] of Object.entries(expectedClaims)) {
+    if (payload[name] !== expected) throw new Error(`github-policy:${name}`);
+  }
+  if (!["schedule", "workflow_dispatch"].includes(String(payload.event_name))) {
+    throw new Error("github-policy:event_name");
   }
 }
