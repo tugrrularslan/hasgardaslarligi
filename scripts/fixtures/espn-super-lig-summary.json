@@ -1,0 +1,1608 @@
+{
+  "header": {
+    "id": "401888259",
+    "competitions": [
+      {
+        "status": {
+          "type": {
+            "id": "28",
+            "name": "STATUS_FULL_TIME",
+            "state": "post",
+            "completed": true,
+            "description": "Full Time",
+            "detail": "FT",
+            "shortDetail": "FT"
+          }
+        },
+        "competitors": [
+          {
+            "homeAway": "home",
+            "score": "0",
+            "team": {
+              "displayName": "Konyaspor"
+            }
+          },
+          {
+            "homeAway": "away",
+            "score": "4",
+            "team": {
+              "displayName": "Galatasaray"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "keyEvents": [
+    {
+      "id": "54492563",
+      "type": {
+        "id": "70",
+        "text": "Goal",
+        "type": "goal"
+      },
+      "text": "Victor Osimhen (Galatasaray) Goal at 12'",
+      "shortText": "Victor Osimhen Goal",
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 682.0,
+        "displayValue": "12'"
+      },
+      "scoringPlay": true,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "228296",
+            "displayName": "Victor Osimhen"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T17:11:45Z",
+      "shootout": false
+    },
+    {
+      "id": "54492564",
+      "type": {
+        "id": "70",
+        "text": "Goal",
+        "type": "goal"
+      },
+      "text": "Yunus Akgün (Galatasaray) Goal at 28'",
+      "shortText": "Yunus Akgün Goal",
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 1634.0,
+        "displayValue": "28'"
+      },
+      "scoringPlay": true,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "266575",
+            "displayName": "Yunus Akgün"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T17:27:37Z",
+      "shootout": false
+    },
+    {
+      "id": "54492565",
+      "type": {
+        "id": "94",
+        "text": "Yellow Card",
+        "type": "yellow-card"
+      },
+      "text": "Gabriel Gomes (Galatasaray) Yellow Card at 31'",
+      "shortText": "Gabriel Gomes Yellow Card",
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 1830.0,
+        "displayValue": "31'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "268478",
+            "displayName": "Gabriel Gomes"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T17:30:54Z",
+      "shootout": false
+    },
+    {
+      "id": "54492568",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Deniz Ertas (Konyaspor) Substitution at 40'",
+      "shortText": "Deniz Ertas Substitution",
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 2399.0,
+        "displayValue": "40'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "7648",
+        "displayName": "Konyaspor"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "356185",
+            "displayName": "Deniz Ertas"
+          }
+        },
+        {
+          "athlete": {
+            "id": "275956",
+            "displayName": "Bahadir Han Güngördü"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T17:40:23Z",
+      "shootout": false
+    },
+    {
+      "id": "54492571",
+      "type": {
+        "id": "94",
+        "text": "Yellow Card",
+        "type": "yellow-card"
+      },
+      "text": "Deniz Turuc (Konyaspor) Yellow Card at 45'+6'",
+      "shortText": "Deniz Turuc Yellow Card",
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 2700.0,
+        "displayValue": "45'+6'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "7648",
+        "displayName": "Konyaspor"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "177065",
+            "displayName": "Deniz Turuc"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T17:51:01Z",
+      "shootout": false
+    },
+    {
+      "id": "54492829",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Enis Bardhi (Konyaspor) Substitution at 45'",
+      "shortText": "Enis Bardhi Substitution",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 2700.0,
+        "displayValue": "45'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "7648",
+        "displayName": "Konyaspor"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "218104",
+            "displayName": "Enis Bardhi"
+          }
+        },
+        {
+          "athlete": {
+            "id": "396075",
+            "displayName": "Rajmund Tóth"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:07:58Z",
+      "shootout": false
+    },
+    {
+      "id": "54492830",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Mostafa Mohamed (Konyaspor) Substitution at 45'",
+      "shortText": "Mostafa Mohamed Substitution",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 2700.0,
+        "displayValue": "45'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "7648",
+        "displayName": "Konyaspor"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "243816",
+            "displayName": "Mostafa Mohamed"
+          }
+        },
+        {
+          "athlete": {
+            "id": "273223",
+            "displayName": "Jackson Muleka"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:07:58Z",
+      "shootout": false
+    },
+    {
+      "id": "54492958",
+      "type": {
+        "id": "70",
+        "text": "Goal",
+        "type": "goal"
+      },
+      "text": "Alexey Batrakov (Galatasaray) Goal at 49'",
+      "shortText": "Alexey Batrakov Goal",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 2888.0,
+        "displayValue": "49'"
+      },
+      "scoringPlay": true,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "355113",
+            "displayName": "Alexey Batrakov"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:12:10Z",
+      "shootout": false
+    },
+    {
+      "id": "54493151",
+      "type": {
+        "id": "98",
+        "text": "Penalty - Scored",
+        "type": "penalty---scored"
+      },
+      "text": "Rafael Leão (Galatasaray) Penalty - Scored at 55'",
+      "shortText": "Rafael Leão Penalty - Scored",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 3293.0,
+        "displayValue": "55'"
+      },
+      "scoringPlay": true,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "258917",
+            "displayName": "Rafael Leão"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:18:55Z",
+      "shootout": false
+    },
+    {
+      "id": "54493155",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Ugurcan Yazgili (Konyaspor) Substitution at 56'",
+      "shortText": "Ugurcan Yazgili Substitution",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 3330.0,
+        "displayValue": "56'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "7648",
+        "displayName": "Konyaspor"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "277382",
+            "displayName": "Ugurcan Yazgili"
+          }
+        },
+        {
+          "athlete": {
+            "id": "229690",
+            "displayName": "Yhoan Andzouana"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:19:32Z",
+      "shootout": false
+    },
+    {
+      "id": "54493364",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Leroy Sané (Galatasaray) Substitution at 61'",
+      "shortText": "Leroy Sané Substitution",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 3619.0,
+        "displayValue": "61'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "202641",
+            "displayName": "Leroy Sané"
+          }
+        },
+        {
+          "athlete": {
+            "id": "266575",
+            "displayName": "Yunus Akgün"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:24:21Z",
+      "shootout": false
+    },
+    {
+      "id": "54493366",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Lesley Ugochukwu (Galatasaray) Substitution at 61'",
+      "shortText": "Lesley Ugochukwu Substitution",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 3628.0,
+        "displayValue": "61'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "309563",
+            "displayName": "Lesley Ugochukwu"
+          }
+        },
+        {
+          "athlete": {
+            "id": "212973",
+            "displayName": "Lucas Torreira"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:24:30Z",
+      "shootout": false
+    },
+    {
+      "id": "54493365",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Ilkay Gündogan (Galatasaray) Substitution at 61'",
+      "shortText": "Ilkay Gündogan Substitution",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 3637.0,
+        "displayValue": "61'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "131424",
+            "displayName": "Ilkay Gündogan"
+          }
+        },
+        {
+          "athlete": {
+            "id": "355113",
+            "displayName": "Alexey Batrakov"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:24:39Z",
+      "shootout": false
+    },
+    {
+      "id": "54493369",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Renato Nhaga (Galatasaray) Substitution at 61'",
+      "shortText": "Renato Nhaga Substitution",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 3638.0,
+        "displayValue": "61'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "402986",
+            "displayName": "Renato Nhaga"
+          }
+        },
+        {
+          "athlete": {
+            "id": "268478",
+            "displayName": "Gabriel Gomes"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:24:40Z",
+      "shootout": false
+    },
+    {
+      "id": "54493368",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Deniz Gül (Galatasaray) Substitution at 61'",
+      "shortText": "Deniz Gül Substitution",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 3639.0,
+        "displayValue": "61'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "350513",
+            "displayName": "Deniz Gül"
+          }
+        },
+        {
+          "athlete": {
+            "id": "228296",
+            "displayName": "Victor Osimhen"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:24:41Z",
+      "shootout": false
+    },
+    {
+      "id": "54493598",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "El Chadaille Bitshiabu (Galatasaray) Substitution at 69'",
+      "shortText": "El Chadaille Bitshiabu Substitut",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 4094.0,
+        "displayValue": "69'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "432",
+        "displayName": "Galatasaray"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "304740",
+            "displayName": "El Chadaille Bitshiabu"
+          }
+        },
+        {
+          "athlete": {
+            "id": "197105",
+            "displayName": "Davinson Sánchez"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:32:16Z",
+      "shootout": false
+    },
+    {
+      "id": "54493657",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Ebrima Colley (Konyaspor) Substitution at 71'",
+      "shortText": "Ebrima Colley Substitution",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 4248.0,
+        "displayValue": "71'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "7648",
+        "displayName": "Konyaspor"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "287077",
+            "displayName": "Ebrima Colley"
+          }
+        },
+        {
+          "athlete": {
+            "id": "206999",
+            "displayName": "Jean-Luc Dompé"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:34:50Z",
+      "shootout": false
+    },
+    {
+      "id": "54493948",
+      "type": {
+        "id": "76",
+        "text": "Substitution",
+        "type": "substitution"
+      },
+      "text": "Enis Destan (Konyaspor) Substitution at 82'",
+      "shortText": "Enis Destan Substitution",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 4875.0,
+        "displayValue": "82'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "7648",
+        "displayName": "Konyaspor"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "317076",
+            "displayName": "Enis Destan"
+          }
+        },
+        {
+          "athlete": {
+            "id": "296563",
+            "displayName": "Melih Ibrahimoglu"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:45:16Z",
+      "shootout": false
+    },
+    {
+      "id": "54494120",
+      "type": {
+        "id": "94",
+        "text": "Yellow Card",
+        "type": "yellow-card"
+      },
+      "text": "Marko Jevtovic (Konyaspor) Yellow Card at 90'",
+      "shortText": "Marko Jevtovic Yellow Card",
+      "period": {
+        "number": 2
+      },
+      "clock": {
+        "value": 5356.0,
+        "displayValue": "90'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "7648",
+        "displayName": "Konyaspor"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "222395",
+            "displayName": "Marko Jevtovic"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-10-30T18:53:18Z",
+      "shootout": false
+    }
+  ],
+  "rosters": [
+    {
+      "team": {
+        "displayName": "Konyaspor"
+      },
+      "roster": [
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Bahadir Han Güngördü"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Chidozie Awaziem"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Rayyan Baniya"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Arthur Masuaku"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Yhoan Andzouana"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Rajmund Tóth"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Melih Ibrahimoglu"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Marko Jevtovic"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Jackson Muleka"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Jean-Luc Dompé"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Deniz Turuc"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Arif Bosluk"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Enis Destan"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Mostafa Mohamed"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Enis Bardhi"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Deniz Ertas"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Ebrima Colley"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Diogo Gonçalves"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Ugurcan Yazgili"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Emir Bars"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Ahmet Oguz"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "team": {
+        "displayName": "Galatasaray"
+      },
+      "roster": [
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Ugurcan Çakir"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Wilfried Singo"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Davinson Sánchez"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Eren Elmali"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Roland Sallai"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Alexey Batrakov"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 1.0,
+              "displayValue": "1"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Gabriel Gomes"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 2.0,
+              "displayValue": "2"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Lucas Torreira"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Victor Osimhen"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Rafael Leão"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Yunus Akgün"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Mario Lemina"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Renato Nhaga"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Lesley Ugochukwu"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Günay Güvenc"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Ismail Jakobs"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Deniz Gül"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": false,
+          "athlete": {
+            "displayName": "Baris Alper Yilmaz"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "El Chadaille Bitshiabu"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Leroy Sané"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": false,
+          "subbedIn": true,
+          "athlete": {
+            "displayName": "Ilkay Gündogan"
+          },
+          "stats": [
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

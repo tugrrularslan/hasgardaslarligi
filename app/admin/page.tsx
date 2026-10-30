@@ -20,6 +20,7 @@ import HittiteIcon from "@/components/HittiteIcon";
 import KahinAdminPanel from "@/components/KahinAdminPanel";
 import SeasonLabel from "@/components/SeasonLabel";
 import TeamCrest from "@/components/TeamCrest";
+import { getMatchAssistTotals, type MatchAssistTotal } from "@/lib/match-details";
 import { DEFAULT_SEASON_ID, DEFAULT_SEASON_NAME } from "@/lib/season";
 import { getSeasonResetConfirmation } from "@/lib/admin-reset";
 import { resolveKahinTeamName } from "@/lib/kahin";
@@ -77,6 +78,8 @@ type Match = {
   awayScore: number | null;
   result: MatchResult | null;
   goalEvents?: GoalEvent[];
+  assistTotals?: MatchAssistTotal[];
+  assistDetailsStatus?: string;
   pointsCalculated?: boolean;
   scoringStatus?: "processing" | "failed" | "completed";
 };
@@ -2789,6 +2792,11 @@ export default function AdminPage() {
                                 Her gol için golü atan oyuncu zorunludur; asist isteğe bağlıdır. Geçmiş bir maçtaki asisti silmek için “Asist yok” seçeneğini kullanıp sonucu güncelleyebilirsin.
                               </p>
 
+                              {match.assistDetailsStatus === "complete" && (
+                                <p className="mb-3 text-sm text-slate-300">
+                                  Asistler: {getMatchAssistTotals(match).map(value => `${value.player} (${value.count})`).join(", ") || "Asist kaydı yok"}
+                                </p>
+                              )}
                               {goalEvents.length > 0 ? (
                                 <div className="mt-4 space-y-3">
                                   {goalEvents.map((event, index) => {

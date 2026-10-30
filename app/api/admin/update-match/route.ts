@@ -224,6 +224,13 @@ export async function POST(request: NextRequest) {
           });
         }
 
+        if (Array.isArray(currentMatchData.assistTotals)) {
+          updates.assistTotals = renameGoalEventTeams({
+            goalEvents: currentMatchData.assistTotals,
+            previousHomeTeam, previousAwayTeam, homeTeam, awayTeam,
+          });
+        }
+
         if (currentlyScheduled) {
           // Cloud Tasks yerine, yalnızca uygulama açıkken çalışan yerel
           // hatırlatıcı kullanılacak. Eski görev adlarına dokunmuyoruz;

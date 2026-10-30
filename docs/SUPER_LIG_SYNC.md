@@ -29,6 +29,21 @@ günceller. Aynı uç nokta GitHub Actions tarafından saatte bir otomatik çağ
 - Planlanmış maçlarda hafta, takım adı, tarih, saat ve tahmin son zamanı
   güncellenir. Sonuçlanmış maçların skor düzeltmesi mevcut, sürümlemeli puan
   hesaplama yolundan geçer.
+- Tamamlanan maçların ESPN özetinden golcü ve oyuncu bazlı asist toplamları
+  otomatik alınır. Özetin maç kimliği, takımları, tamamlanma durumu ve skoru
+  iki kaynakla doğrulanmış sonuçla eşleşmelidir. Penaltı golleri sayılır;
+  seri penaltılar ve iptal edilen olaylar sayılmaz. Kendi kalesine golün
+  asist kaydı oluşturulmaz.
+- Kaynak gol bazında asist bağlantısı vermiyorsa asistler takım altında
+  oyuncu ve toplam sayı olarak gösterilir; rastgele bir gole bağlanmaz.
+  Gol ve asist krallığı aynı toplamları kullanır; asist iki kez sayılmaz.
+- Eski eksik kayıtlar en yeni maçlardan başlanarak, her çalışmada en fazla
+  12 maç olacak şekilde tamamlanır. Dört paralel istek ve istek başına sekiz
+  saniye sınırı kullanılır. Hiç kontrol edilmemiş maçlar yeniden denemelerden
+  önce işlenir. Doğrulanmış ayrıntılar günde bir, eksik ayrıntılar saatte bir
+  yeniden kontrol edilir. Yönetici tarafından girilen gol ayrıntıları korunur.
+- Ayrıntı tamamlama yalnızca gol/asist alanlarını günceller; sonuç, puanlama
+  sürümü, kullanıcı puanı, aktif hafta ve şampiyon kaydına dokunmaz.
 - Haricî kaynak golcü ayrıntısı doğrulanamadığında skor yine işlenebilir; maç
   `goalDetailsStatus: "unavailable"` olarak işaretlenir. Yönetici dilerse
   sonradan mevcut sonuç düzenleme ekranından golcüleri ekleyebilir.

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { parseEspnMatchDetails, type MatchDetailContext } from "@/lib/match-details";
 import { LEAGUE_TEAM_DATA } from "@/lib/league-data";
 import {
   ESPN_SUPER_LIG_SCOREBOARD_URL,
@@ -10,14 +11,14 @@ import {
   parseTffFixtures,
 } from "@/lib/super-lig-sync";
 
-async function fetchSource(url: string) {
+async function fetchSource(url: string, timeout = 15_000) {
   const response = await fetch(url, {
     cache: "no-store",
     headers: {
       "User-Agent": "Has-Gardaslar-Ligi fixture synchronizer",
       Accept: "text/html, application/json;q=0.9, */*;q=0.1",
     },
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(timeout),
   });
 
   if (!response.ok) {
@@ -91,4 +92,12 @@ export async function loadSuperLigSources(seasonId: string) {
       matchedFixtureCount: merged.matches.length,
     },
   };
+}
+
+export async function loadEspnMatchDetails(context: MatchDetailContext) {
+  if (!/^\d+$/.test(context.sourceEventId)) throw new Error("Geçersiz kaynak maç kimliği.");
+  const response = await fetchSource(`https://site.api.espn.com/apis/site/v2/sports/soccer/tur.1/summary?event=${context.sourceEventId}`, 8000);
+  const details = parseEspnMatchDetails(await response.json(), context);
+  if (!details) throw new Error("Gol ayrıntıları doğrulanmış skor veya takımlarla eşleşmedi.");
+  return details;
 }

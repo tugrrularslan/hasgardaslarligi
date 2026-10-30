@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import vm from "node:vm";
 import ts from "typescript";
+import { getMatchAssistTotals } from "../lib/match-details.ts";
 import { getAdminActiveWeek } from "../lib/active-week.ts";
 
 assert.equal(getAdminActiveWeek({ activeWeek: 8, activeWeekSeasonId: "2026-2027" }, "2026-2027"), 8);
@@ -51,6 +52,7 @@ const db = {
   }; },
 };
 const mocks = {
+  "@/lib/match-details-sync": { async syncMatchDetails() { return { goalDetailsUpdatedCount: 0 }; } },
   "@/lib/github-sync-auth": { async verifyGithubSyncToken(token) {
     if (token !== workflowToken) throw Error("invalid workflow identity");
   } },
@@ -125,7 +127,7 @@ console.log("Otomasyon yetkisi, sonuç kaydı, puanlama tekrarı ve aktif hafta 
 // Render the real prediction page with deterministic hooks and Firebase listeners.
 const pageCode = ts.transpileModule(readFileSync(new URL("../app/predictions/page.tsx", import.meta.url), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
-}).outputText;
+}).outputText + "\nexports.MatchResultDetails = MatchResultDetails;";
 let states, effects, pending, cursor;
 const firebaseUser = { uid: "user", displayName: "Tester" };
 const router = { replace() {} };
@@ -164,6 +166,7 @@ const pageMocks = {
   },
   "@/lib/firebase": {},
   "@/lib/themes": { getThemeById: () => ({}) },
+  "@/lib/match-details": { getMatchAssistTotals },
   "@/lib/active-week": { getAdminActiveWeek },
   "@/lib/season": { DEFAULT_SEASON_ID: "2026-2027" },
 };
@@ -204,3 +207,24 @@ allButton.props.onClick();
 assert.deepEqual(visibleWeeks(await renderPage()), [2, 3, 4]);
 assert.deepEqual(visibleWeeks(await renderPage(true)), [3], "Re-entry must reset browsing to administrator week");
 console.log("Tahmin ekranı: aktif hafta ile açılış, diğer haftalar ve yeniden giriş kontrolü başarılı.");
+
+function renderedText(node) {
+  if (Array.isArray(node)) return node.map(renderedText).join(" ");
+  if (node === null || node === undefined || node === false) return "";
+  if (typeof node !== "object") return String(node);
+  if (typeof node.type === "function") return renderedText(node.type(node.props));
+  return renderedText(node.props?.children);
+}
+const detailsText = renderedText(pageExports.MatchResultDetails({ match: {
+  homeTeam: "Konyaspor", awayTeam: "Galatasaray", homeScore: 0, awayScore: 1,
+  goalEvents: [{ team: "Galatasaray", scorer: "Golcü", ownGoal: false }],
+  assistTotals: [{ team: "Galatasaray", player: "Asistçi", playerKey: "asistci", count: 1 }],
+  assistDetailsStatus: "complete",
+}, theme: {} }));
+assert.ok(detailsText.includes("Golcü"));
+assert.ok(/Asistçi.*1.*asist/.test(detailsText), "Match detail card must show imported assists");
+const pendingText = renderedText(pageExports.MatchResultDetails({ match: {
+  homeTeam: "Konyaspor", awayTeam: "Galatasaray", homeScore: 0, awayScore: 1, goalEvents: [],
+}, theme: {} }));
+assert.ok(pendingText.includes("Gol ayrıntıları bekleniyor."), "Missing scorers must not be presented as no goals");
+console.log("Maç kartı: golcü, asist toplamı ve eksik ayrıntı görünümü başarılı.");

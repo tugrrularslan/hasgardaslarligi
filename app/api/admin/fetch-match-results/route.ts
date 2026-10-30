@@ -179,8 +179,8 @@ async function fetchGoalEvents(
             ? "home"
             : "away",
         scorer: scorer.trim(),
-        // ESPN'in ücretsiz akışı kişi bazlı asist bilgisi sunmadığı için
-        // yönetici bu alanı sonuç kaydından önce tamamlar.
+        // Bu taslakta gol bazında doğrulanamayan asist boş bırakılır.
+        // Otomatik eşitleme oyuncu bazlı asist toplamlarını ayrıca kaydeder.
         assister: "",
       },
     ];

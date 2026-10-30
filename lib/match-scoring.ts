@@ -845,6 +845,9 @@ export async function saveMatchResult({
     if (normalized.goalDetailsComplete || existingGoalEvents.length === 0) {
       await matchReference.update({
         goalEvents: normalized.goalEvents,
+        ...(input.allowIncompleteGoalEvents === true ? {} : {
+          goalDetailsSource: "manual", assistTotals: FieldValue.delete(), assistDetailsStatus: FieldValue.delete(),
+        }),
         goalDetailsStatus: normalized.goalDetailsComplete
           ? "complete"
           : "unavailable",
@@ -906,6 +909,11 @@ export async function saveMatchResult({
       awayScore: normalized.awayScore,
       result: normalized.result,
       goalEvents: normalized.goalEvents,
+      goalDetailsSource: input.allowIncompleteGoalEvents === true ? "unavailable" : "manual",
+      assistTotals: FieldValue.delete(),
+      assistDetailsStatus: FieldValue.delete(),
+      goalDetailsLastCheckedAt: FieldValue.delete(),
+      goalDetailsSourceVersion: FieldValue.delete(),
       goalDetailsStatus: normalized.goalDetailsComplete
         ? "complete"
         : "unavailable",

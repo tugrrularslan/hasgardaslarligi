@@ -1,5 +1,6 @@
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { NextRequest, NextResponse } from "next/server";
+import { syncMatchDetails } from "@/lib/match-details-sync";
 import { verifyGithubSyncToken } from "@/lib/github-sync-auth";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
 import { AdminScoringError, saveMatchResult } from "@/lib/match-scoring";
@@ -305,6 +306,7 @@ export async function POST(request: NextRequest) {
         writesInBatch = 0;
       }
     };
+    const detailCandidates: Array<{ id: string; data: FirebaseFirestore.DocumentData; source: SuperLigSourceMatch }> = [];
     const matchesToScore: Array<{ id: string; score: Score; eventId: string }> = [];
     let createdCount = 0;
     let updatedCount = 0;
@@ -350,6 +352,7 @@ export async function POST(request: NextRequest) {
               adminId: actorId,
             });
 
+        detailCandidates.push({ id: reference.id, data: matchData, source: sourceMatch });
         addWrite(() => batch.set(reference, matchData, { merge: false }));
         createdCount += 1;
         if (sourceScore) newlyImportedFinishedCount += 1;
@@ -395,6 +398,7 @@ export async function POST(request: NextRequest) {
         updatedCount += 1;
       }
 
+      if (sourceScore) detailCandidates.push({ id: existing.id, data: existing.data, source: sourceMatch });
       if (sourceScore && shouldScoreExistingMatch(existing.data, sourceScore)) {
         matchesToScore.push({
           id: existing.id,
@@ -446,7 +450,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const detailSummary = await syncMatchDetails(detailCandidates);
+
     return NextResponse.json({
+      ...detailSummary,
       success: scoringErrors.length === 0,
       seasonId,
       source: source.sourceStats,

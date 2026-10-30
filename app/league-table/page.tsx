@@ -9,6 +9,7 @@ import HittiteIcon from "@/components/HittiteIcon";
 import PlayerPortrait from "@/components/PlayerPortrait";
 import TeamCrest from "@/components/TeamCrest";
 import { auth, db } from "@/lib/firebase";
+import { getMatchAssistTotals } from "@/lib/match-details";
 import { getPlayerIdentityKey } from "@/lib/player-identity";
 import { DEFAULT_SEASON_ID } from "@/lib/season";
 import { getThemeById, type AppTheme } from "@/lib/themes";
@@ -180,7 +181,7 @@ export default function LeagueTablePage() {
             ? data.goalEvents
             : [];
 
-          return rawEvents.flatMap((event): GoalEvent[] => {
+          const events = rawEvents.flatMap((event): GoalEvent[] => {
             if (!event || typeof event !== "object") return [];
 
             const goal = event as Record<string, unknown>;
@@ -207,6 +208,15 @@ export default function LeagueTablePage() {
               },
             ];
           });
+          if (data.assistDetailsStatus !== "complete" || !Array.isArray(data.assistTotals)) return events;
+          // Confirmed match totals replace linked assists for this match, so each assist counts once.
+          return [
+            ...events.map(event => ({ ...event, assister: null, assisterKey: null })),
+            ...getMatchAssistTotals(data).flatMap(value => Array.from({ length: value.count }, (): GoalEvent => ({
+              team: value.team, scorer: "", scorerKey: "", assister: value.player,
+              assisterKey: value.playerKey, ownGoal: false,
+            }))),
+          ];
         });
 
         setGoalEvents(nextGoalEvents);
