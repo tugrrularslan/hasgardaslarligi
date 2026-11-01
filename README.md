@@ -25,3 +25,4 @@ Geçiş adımları, Firestore yedek/geri yükleme araçları, kotalar ve manuel 
 Süper Lig fikstürü, saat değişiklikleri ve doğrulanmış sonuçların GitHub Actions ile otomatik veya yönetici
 tarafından eşitlenmesi için [Süper Lig eşitleme kılavuzuna](docs/SUPER_LIG_SYNC.md)
 bakın.
+Site kesintilerinin GitHub Actions ile kaydedilmesi ve GitHub bildirimleri için [site erişim izleme kılavuzuna](docs/UPTIME_MONITORING.md) bakın.
