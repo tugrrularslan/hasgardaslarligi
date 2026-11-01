@@ -1,6 +1,12 @@
 name: Site erişim izleme
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/uptime-monitor.yml"
+      - "scripts/uptime-monitor.mjs"
   schedule:
     # Saat başındaki yoğunluktan kaçınarak, her 5 dakikada bir (UTC) çalışır.
     - cron: "2-57/5 * * * *"
